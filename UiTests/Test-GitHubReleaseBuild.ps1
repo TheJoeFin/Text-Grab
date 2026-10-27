@@ -7,8 +7,7 @@ $ErrorActionPreference = 'Stop'
 $Root = Join-Path ([System.IO.Path]::GetTempPath()) ('text-grab-release-build-' + [guid]::NewGuid().ToString('N'))
 $ArtifactRoot = Join-Path $Root 'bld\artifacts'
 $ScriptPath = Join-Path $Root 'build-exe-for-gh.ps1'
-$SigningMode = 'Success'
-$SigningCalls = 0
+$SigningState = [pscustomobject]@{ Mode = 'Success'; Calls = 0 }
 
 function Assert-True {
     param([bool]$Condition, [string]$Message)
@@ -24,18 +23,18 @@ function dotnet {
 function sign-exe {
     param([string]$SearchPath)
 
-    $script:SigningCalls++
+    $SigningState.Calls++
     Assert-True ($SearchPath -eq $ArtifactRoot) 'Signing must target the complete artifact folder.'
     & $env:ComSpec /c 'exit 0'
-    if ($SigningMode -eq 'Cancelled') { return }
-    if ($SigningMode -eq 'Failed') {
+    if ($SigningState.Mode -eq 'Cancelled') { return }
+    if ($SigningState.Mode -eq 'Failed') {
         & $env:ComSpec /c 'exit 7'
         return
     }
-    if ($SigningMode -eq 'Throws') { throw 'Signing service unavailable.' }
+    if ($SigningState.Mode -eq 'Throws') { throw 'Signing service unavailable.' }
 
     Get-ChildItem -LiteralPath $SearchPath -Filter '*.exe' -File -Recurse | ForEach-Object {
-        if ($SigningMode -ne 'Partial' -or $_.Name -ne 'helper.exe') {
+        if ($SigningState.Mode -ne 'Partial' -or $_.Name -ne 'helper.exe') {
             Set-Content -LiteralPath $_.FullName -Value 'signed'
         }
     }
@@ -45,7 +44,7 @@ function Get-AuthenticodeSignature {
     param([string]$LiteralPath)
 
     $Status = if ((Get-Content -LiteralPath $LiteralPath -Raw).Trim() -eq 'signed') { 'Valid' } else { 'NotSigned' }
-    if ($SigningMode -eq 'Invalid') { $Status = 'HashMismatch' }
+    if ($SigningState.Mode -eq 'Invalid') { $Status = 'HashMismatch' }
     [pscustomobject]@{ Status = $Status }
 }
 
@@ -76,8 +75,8 @@ foreach ($Architecture in 'x64', 'arm64') {
 & $env:ComSpec /c 'exit 0'
 '@
 
-    & $ScriptPath -SkipRelease
-    Assert-True ($SigningCalls -eq 1) 'The release must invoke sign-exe exactly once.'
+    & $ScriptPath -Rebuild
+    Assert-True ($SigningState.Calls -eq 1) 'The rebuild must invoke sign-exe exactly once.'
     Assert-True (@(Get-ChildItem -LiteralPath $ArtifactRoot).Count -eq 4) 'The build must produce exactly four release artifacts.'
     foreach ($Name in 'Text-Grab.exe', 'Text-Grab-arm64.exe') {
         $Content = (Get-Content -LiteralPath (Join-Path $ArtifactRoot $Name) -Raw).Trim()
@@ -105,8 +104,9 @@ foreach ($Architecture in 'x64', 'arm64') {
         }
     }
 
-    foreach ($SigningMode in 'Cancelled', 'Failed', 'Throws', 'Partial', 'Invalid') {
-        $ExpectedError = switch ($SigningMode) {
+    foreach ($Mode in 'Cancelled', 'Failed', 'Throws', 'Partial', 'Invalid') {
+        $SigningState.Mode = $Mode
+        $ExpectedError = switch ($Mode) {
             'Failed' { '*sign-exe failed with exit code 7*' }
             'Throws' { '*Signing service unavailable*' }
             default { '*does not have a valid signature*' }
@@ -118,8 +118,8 @@ foreach ($Architecture in 'x64', 'arm64') {
         catch {
             $Failure = $_.Exception.Message
         }
-        Assert-True ($Failure -like $ExpectedError) "The release must stop on $SigningMode signing. Got: $Failure"
-        Assert-True (@(Get-ChildItem -LiteralPath $ArtifactRoot -Filter '*.zip').Count -eq 0) "ZIPs must not be created after $SigningMode signing."
+        Assert-True ($Failure -like $ExpectedError) "The release must stop on $Mode signing. Got: $Failure"
+        Assert-True (@(Get-ChildItem -LiteralPath $ArtifactRoot -Filter '*.zip').Count -eq 0) "ZIPs must not be created after $Mode signing."
     }
 
     Remove-Item Function:\sign-exe

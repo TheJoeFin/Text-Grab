@@ -6,12 +6,15 @@ Builds Text Grab's unpackaged downloads and uploads them to a draft GitHub relea
 .EXAMPLE
 .\build-exe-for-gh.ps1 -SkipRelease
 .EXAMPLE
+.\build-exe-for-gh.ps1 -Rebuild
+.EXAMPLE
 .\build-exe-for-gh.ps1 -Prerelease -Notes 'Release notes'
 #>
 [CmdletBinding()]
 param(
     [string]$Notes,
     [switch]$Prerelease,
+    [Alias('Rebuild')]
     [switch]$SkipRelease,
 
     # Uncommitted changes will be built but will not be included in the tag.
