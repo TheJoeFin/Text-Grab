@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
 
 namespace Text_Grab.Controls;
@@ -23,11 +24,11 @@ public partial class GrabPageRangeDialog : FluentWindow
 {
     private readonly int _pageCount;
 
-    /// <summary>0-based index of the first page to grab. Only meaningful when the dialog returned true.</summary>
-    public int FirstPageIndex { get; private set; }
-
-    /// <summary>0-based index of the last page to grab (inclusive). Only meaningful when the dialog returned true.</summary>
-    public int LastPageIndex { get; private set; }
+    /// <summary>
+    /// 0-based indices of the pages to grab, ascending, after the parity filter.
+    /// Only meaningful when the dialog returned true.
+    /// </summary>
+    public List<int> PageIndices { get; private set; } = [];
 
     /// <summary>Whether the text from each page should be separated by an empty line.</summary>
     public bool InsertBlankLineBetweenPages => BlankLineBetweenPagesCheckBox.IsChecked is true;
@@ -42,26 +43,20 @@ public partial class GrabPageRangeDialog : FluentWindow
         };
 
     /// <summary>
-    /// The 0-based page indices the grab should visit, in order, honoring the parity choice.
+    /// Keeps the 0-based page indices whose printed (1-based) page number matches the parity choice.
     /// </summary>
-    public static List<int> BuildPageIndices(int firstPageIndex, int lastPageIndex, GrabPageParity parity)
+    public static List<int> FilterByParity(IEnumerable<int> pageIndices, GrabPageParity parity)
     {
-        List<int> pageIndices = [];
-        for (int pageIndex = firstPageIndex; pageIndex <= lastPageIndex; pageIndex++)
+        return [.. pageIndices.Where(pageIndex =>
         {
             int pageNumber = pageIndex + 1;
-            bool include = parity switch
+            return parity switch
             {
                 GrabPageParity.OddOnly => pageNumber % 2 == 1,
                 GrabPageParity.EvenOnly => pageNumber % 2 == 0,
                 _ => true,
             };
-
-            if (include)
-                pageIndices.Add(pageIndex);
-        }
-
-        return pageIndices;
+        })];
     }
 
     public GrabPageRangeDialog(int currentPageIndex, int pageCount, bool isTableMode)
@@ -75,8 +70,17 @@ public partial class GrabPageRangeDialog : FluentWindow
             ? "The current table boundary and settings are applied to every page in the range, and the results are joined into a new spreadsheet in an Edit Text Window."
             : "The current Grab Frame settings are applied to every page in the range, and the results are joined into a new Edit Text Window.";
 
-        FromPageTextBox.Text = currentPageNumber.ToString();
-        ToPageTextBox.Text = _pageCount.ToString();
+        PagesTextBox.Text = currentPageNumber == _pageCount
+            ? currentPageNumber.ToString()
+            : $"{currentPageNumber}-{_pageCount}";
+        AllPagesRadioButton.Content = $"All pages (1-{_pageCount})";
+        PagesTextBox.SelectAll();
+        PagesTextBox.Focus();
+
+        foreach (RadioButton button in PageParityPanel.Children.OfType<RadioButton>())
+        {
+            button.Checked += (_, _) => ValidateRange();
+        }
         // Tables usually want their rows to run together across pages; plain text reads
         // better with a gap between pages.
         BlankLineBetweenPagesCheckBox.IsChecked = !isTableMode;
@@ -84,38 +88,57 @@ public partial class GrabPageRangeDialog : FluentWindow
         ValidateRange();
     }
 
-    private void PageTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void PagesTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
+        ValidateRange();
+    }
+
+    private void PagesTextBox_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
+    {
+        // Clicking into the range box means the user wants a range.
+        RangeRadioButton.IsChecked = true;
+    }
+
+    private void PageScopeRadioButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (PagesTextBox is null || RangeRadioButton is null)
+            return;
+
+        PagesTextBox.IsEnabled = RangeRadioButton.IsChecked is true;
+        if (PagesTextBox.IsEnabled)
+            PagesTextBox.Focus();
+
         ValidateRange();
     }
 
     private bool ValidateRange()
     {
-        if (FromPageTextBox is null || ToPageTextBox is null)
+        if (PagesTextBox is null || PageParityPanel is null || RangeRadioButton is null)
             return false;
 
-        if (!int.TryParse(FromPageTextBox.Text.Trim(), out int fromPage)
-            || !int.TryParse(ToPageTextBox.Text.Trim(), out int toPage))
+        List<int> parsed;
+        if (RangeRadioButton.IsChecked is true)
         {
-            ShowRangeError("Enter whole page numbers.");
-            return false;
+            if (!PageRangeParser.TryParse(PagesTextBox.Text, _pageCount, out parsed, out string error))
+            {
+                ShowRangeError(string.IsNullOrWhiteSpace(PagesTextBox.Text) ? "Enter a page range, like 4-9,12." : error);
+                return false;
+            }
+        }
+        else
+        {
+            parsed = [.. Enumerable.Range(0, _pageCount)];
         }
 
-        if (fromPage < 1 || toPage < 1 || fromPage > _pageCount || toPage > _pageCount)
+        List<int> filtered = FilterByParity(parsed, PageParity);
+        if (filtered.Count == 0)
         {
-            ShowRangeError($"Pages must be between 1 and {_pageCount}.");
-            return false;
-        }
-
-        if (fromPage > toPage)
-        {
-            ShowRangeError("The first page must come before the last page.");
+            ShowRangeError("No pages match the selected range and odd/even choice.");
             return false;
         }
 
         HideRangeError();
-        FirstPageIndex = fromPage - 1;
-        LastPageIndex = toPage - 1;
+        PageIndices = filtered;
         return true;
     }
 
@@ -134,7 +157,8 @@ public partial class GrabPageRangeDialog : FluentWindow
         if (RangeErrorText is null || OkButton is null)
             return;
 
-        RangeErrorText.Visibility = Visibility.Collapsed;
+        // Hidden (not Collapsed) keeps the space reserved so the window doesn't resize.
+        RangeErrorText.Visibility = Visibility.Hidden;
         OkButton.IsEnabled = true;
     }
 

@@ -954,8 +954,7 @@ public partial class GrabFrame : Window
         if (dialog.ShowDialog() != true)
             return;
 
-        List<int> pageIndices = GrabPageRangeDialog.BuildPageIndices(dialog.FirstPageIndex, dialog.LastPageIndex, dialog.PageParity);
-        await GrabPageRangeAsync(pageIndices, dialog.InsertBlankLineBetweenPages);
+        await GrabPageRangeAsync(dialog.PageIndices, dialog.InsertBlankLineBetweenPages);
     }
 
     /// <summary>

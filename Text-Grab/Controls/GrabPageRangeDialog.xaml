@@ -7,11 +7,10 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Grab Multiple Pages"
     AutomationProperties.AutomationId="GrabPageRangeDialog"
-    Width="360"
-    Height="360"
-    MinWidth="320"
-    MinHeight="320"
+    Width="420"
+    MinWidth="360"
     ResizeMode="NoResize"
+    SizeToContent="Height"
     WindowStartupLocation="CenterOwner"
     mc:Ignorable="d">
     <Window.Resources>
@@ -38,42 +37,49 @@
                 Margin="0,0,0,12"
                 TextWrapping="Wrap" />
 
-            <Grid Margin="0,0,0,12">
+            <TextBlock Margin="0,0,0,4" Text="Pages to grab:" />
+            <RadioButton
+                x:Name="AllPagesRadioButton"
+                AutomationProperties.AutomationId="GrabPageRange.AllPages"
+                Checked="PageScopeRadioButton_Checked"
+                Content="All pages"
+                GroupName="PageScope" />
+            <Grid Margin="0,0,0,4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBlock
-                    Margin="0,0,8,0"
-                    VerticalAlignment="Center"
-                    Text="From page" />
-                <TextBox
-                    x:Name="FromPageTextBox"
+                <RadioButton
+                    x:Name="RangeRadioButton"
+                    AutomationProperties.AutomationId="GrabPageRange.Range"
+                    Checked="PageScopeRadioButton_Checked"
+                    Content="Range"
+                    GroupName="PageScope"
+                    IsChecked="True" />
+                <ui:TextBox
+                    x:Name="PagesTextBox"
                     Grid.Column="1"
-                    AutomationProperties.AutomationId="GrabPageRange.FromPage"
-                    TextChanged="PageTextBox_TextChanged" />
-                <TextBlock
-                    Grid.Column="2"
-                    Margin="12,0,8,0"
-                    VerticalAlignment="Center"
-                    Text="to" />
-                <TextBox
-                    x:Name="ToPageTextBox"
-                    Grid.Column="3"
-                    AutomationProperties.AutomationId="GrabPageRange.ToPage"
-                    TextChanged="PageTextBox_TextChanged" />
+                    AutomationProperties.AutomationId="GrabPageRange.Pages"
+                    GotKeyboardFocus="PagesTextBox_GotKeyboardFocus"
+                    PlaceholderText="e.g. 4-9,12"
+                    TextChanged="PagesTextBox_TextChanged" />
             </Grid>
+            <TextBlock
+                x:Name="PagesHintTextBlock"
+                Margin="0,0,0,12"
+                FontSize="11"
+                Opacity="0.7"
+                Text="Separate pages with commas and use dashes for ranges, like 4-9,12. Use 5- for page 5 to the end."
+                TextWrapping="Wrap" />
 
-            <TextBlock Margin="0,0,0,4" Text="Pages to include:" />
+            <TextBlock Margin="0,0,0,4" Text="Of those pages, grab:" />
             <StackPanel
                 x:Name="PageParityPanel"
                 AutomationProperties.AutomationId="GrabPageRange.PageParityOptions"
                 Margin="0,0,0,12"
                 Orientation="Horizontal">
                 <RadioButton
-                    Content="All"
+                    Content="Every page"
                     GroupName="PageParity"
                     IsChecked="True"
                     Tag="all" />
@@ -100,8 +106,10 @@
                 Margin="0,8,0,0"
                 FontSize="11"
                 Foreground="Red"
+                TextWrapping="Wrap"
+                MinHeight="30"
                 Text=""
-                Visibility="Collapsed" />
+                Visibility="Hidden" />
         </StackPanel>
 
         <StackPanel
