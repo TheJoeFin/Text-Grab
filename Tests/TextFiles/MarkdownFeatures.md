@@ -1,12 +1,12 @@
 # Markdown viewer feature gallery
 
-Open this file from disk in Text Grab's Edit Text Window and select Markdown mode.
-Keep it in this folder so the relative image paths resolve. This gallery uses
+Open this file from disk in Text Grab's Edit Text Window and select Markdown mode.  
+Keep it in this folder so the relative image paths resolve. This gallery uses  
 local images except for the explicitly labeled web-image checks.
 
 ## Manual check checklist
 
-- [ ] Check every section below in light and dark themes.
+- [x] Check every section below in light and dark themes.
 - [ ] Resize the window: images and diagrams should shrink without distortion.
 - [ ] Check that Sankey names/values and Quadrant point labels stay readable over their backgrounds in both themes.
 - [ ] Check strikethrough, highlights, underline, subscript, superscript, and native math; save and reopen without losing their syntax.
@@ -29,15 +29,13 @@ local images except for the explicitly labeled web-image checks.
 
 ###### Heading level 6
 
-Setext heading level 1
-=====================
+# Setext heading level 1
 
-Setext heading level 2
----------------------
+## Setext heading level 2
 
 ## 2. Paragraphs and inline formatting
 
-Plain text with **bold**, __alternate bold__, *italic*, _alternate italic_,
+Plain text with **bold**, **alternate bold**, *italic*, *alternate italic*,  
 ***bold and italic***, and **bold with *nested italic* inside**.
 
 ### Extended inline formatting
@@ -62,16 +60,16 @@ $$
 
 ### Code and literal punctuation
 
-Inline code: `TextGrab.exe`, `A --> B`, and ``a `backtick` inside code``.
-Markdown punctuation inside code should not turn into formatting.
+Inline code: `TextGrab.exe`, `A --> B`, and `a `backtick` inside code`.  
+Markdown punctuation inside code should not turn into formatting.  
 These are also code, not formatting: `~~strike~~ ==mark== H~2~O x^2^ $x^2$`.
 
-Escaped punctuation: \*not italic\*, \[not a link\], \# not a heading.
+Escaped punctuation: *not italic*, [not a link], # not a heading.
 
-Entities: &amp; &lt; &gt; &quot; &#169;.
-Emoji shortcodes: :smile: :heart: :warning:.
+Entities: &amp; &lt; &gt; &quot; &#169;.  
+Emoji shortcodes: 😄 ❤️ ⚠️.
 
-This sentence has a source newline
+This sentence has a source newline  
 before its second line.
 
 This sentence ends with a Markdown hard break.  
@@ -83,12 +81,12 @@ This is a separate paragraph after a blank line.
 
 - [Web link](https://example.com)
 - [Link with **bold** and *italic* text](https://example.com)
-- [Reference link][example-site]
+- [Reference link](https://example.com)
 - Autolink: <https://example.com>
 - Email autolink: <viewer-test@example.com>
 - [Relative Markdown file](MarkdownFeatures.md)
 
-Web links may open the default browser. Other destinations are included to check
+Web links may open the default browser. Other destinations are included to check  
 that the destination survives saving, not to promise in-app navigation.
 
 [example-site]: https://example.com "Reference destination"
@@ -97,10 +95,12 @@ that the destination survives saving, not to promise in-app navigation.
 
 - First bullet
 - Second bullet with **bold** and `code`
-  - Nested bullet
-  - Another nested bullet
-    1. Nested numbered item
-    2. Another numbered item
+  
+    - Nested bullet
+    - Another nested bullet
+      
+          1. Nested numbered item
+          2. Another numbered item
 - Third bullet
 
 3. Ordered list starting at three
@@ -116,20 +116,20 @@ Task markers are rendered symbols; this is not an interactive checkbox form.
 ## 5. Quotes and separators
 
 > A quote containing **bold**, *italic*, and `code`.
->
+
 > A second paragraph in the same quote.
->
+
 > > A nested quote.
 
 ---
 
 Thematic break above and below this paragraph.
 
-***
+---
 
 ## 6. Code blocks
 
-Fenced code remains code, not a diagram, when its language is not `mermaid`.
+Fenced code remains code, not a diagram, when its language is not `mermaid`.  
 Language names are retained when saving; syntax coloring is not expected.
 
 ```csharp
@@ -144,8 +144,10 @@ Plain fenced code
 
 Indented code:
 
-    first line
-    second line with <literal HTML> and **literal Markdown**
+```
+first line
+second line with <literal HTML> and **literal Markdown**
+```
 
 ## 7. Tables
 
@@ -154,7 +156,7 @@ Indented code:
 | Emphasis | **Bold** and *italic* | Header row is visually distinct |
 | Code | `alpha` | Monospace cell content |
 | Link | [Example](https://example.com) | Clickable destination |
-| Escaped pipe | left \| right | One cell, not two |
+| Escaped pipe | left \\| right | One cell, not two |
 | Image | ![Small local diagram](MarkdownFeatures.svg) | Scales inside a cell |
 
 ## 8. Local raster and SVG images
@@ -169,7 +171,7 @@ Local SVG with transparency, colored shapes, and text:
 
 Reference image:
 
-![Reference image][local-picture]
+![Reference image](MarkdownFeatures.svg "Reference SVG title")
 
 [local-picture]: MarkdownFeatures.svg "Reference SVG title"
 
@@ -185,7 +187,7 @@ Linked image:
 
 ### Optional online image checks
 
-These two images require internet access; loading must not freeze the editor.
+These two images require internet access; loading must not freeze the editor.  
 An offline failure should leave a readable fallback and preserve the destination.
 
 ![Web raster image](https://raw.githubusercontent.com/TheJoeFin/Text-Grab/main/Tests/Images/font_sample.png "Online PNG")
@@ -218,13 +220,13 @@ HTML layout, entities, numeric image dimensions, and linked images:
 
 <p align="center"><a href="https://example.com"><img src="MarkdownFeatures.svg" width="240" height="80" alt="Linked HTML SVG" /></a></p>
 
-Inline HTML among Markdown: before <strong>bold HTML</strong>, <em>italic HTML</em>,
+Inline HTML among Markdown: before <strong>bold HTML</strong>, <em>italic HTML</em>,  
 <span>a span</span>, and <a href="https://example.com">a link</a><br/>after a break.
 
 ## 10. Mermaid: all 24 diagram types
 
-Each labeled example below should render a native image, not its source code.
-No browser, JavaScript runtime, or network connection is needed for diagrams.
+Each labeled example below should render a native image, not its source code.  
+No browser, JavaScript runtime, or network connection is needed for diagrams.  
 Switch to plain text mode to inspect or edit their fenced source.
 
 FIND-BEFORE: text immediately before the first diagram.
@@ -538,7 +540,7 @@ treeView-beta
 ### List container
 
 - A diagram inside a list item:
-
+  
   ```mermaid
   flowchart LR
     item[List item] --> diagram[Diagram]
@@ -546,29 +548,20 @@ treeView-beta
 
 ### Uppercase language name and tilde fences
 
-~~~MERMAID
+```MERMAID
 flowchart LR
   plain[Plain text mode] --> rendered[Markdown mode]
-~~~
+```
 
 ## 12. Footnotes
 
-This sentence has a formatted footnote[^viewer-note]. This sentence reuses the
+This sentence has a formatted footnote[^viewer-note]. This sentence reuses the  
 same note[^viewer-note], and this one has a second note[^second-note].
 
-Ctrl+click each superscript number to jump to its numbered note at the end.
-Ctrl+click each return link to return to the corresponding reference. Check both
-return links on the first note, edit its text, and save and reopen the document.
+Ctrl+click each superscript number to jump to its numbered note at the end.  
+Ctrl+click each return link to return to the corresponding reference. Check both  
+return links on the first note, edit its text, and save and reopen the document.  
 The definitions must keep their labels and formatting without copying the gallery.
-
-[^viewer-note]: A **formatted footnote** with a [link](https://example.com) and `inline code`.
-
-    This second paragraph belongs to the same footnote.
-
-    - A footnote list item.
-    - Another item with *emphasis*.
-
-[^second-note]: A second note, numbered by the order of its first reference.
 
 ## 13. Intentional failures and unsupported content
 
@@ -611,6 +604,15 @@ flowchart LR
 
 ## End of gallery
 
-After saving and reopening a copy, recheck a local image, an HTML linked image,
-a table, a nested diagram, and the intentional Mermaid error. All Mermaid source
+After saving and reopening a copy, recheck a local image, an HTML linked image,  
+a table, a nested diagram, and the intentional Mermaid error. All Mermaid source  
 must still be present in plain text mode.
+
+[^viewer-note]: A **formatted footnote** with a [link](https://example.com) and `inline code`.
+    
+    This second paragraph belongs to the same footnote.
+    
+    - A footnote list item.
+    - Another item with *emphasis*.
+
+[^second-note]: A second note, numbered by the order of its first reference.
