@@ -937,12 +937,6 @@ public partial class FullscreenGrab
 
     private Rect GetHistoryPositionRect(FullscreenCaptureResult selection)
     {
-        if (selection.SelectionStyle is FsgSelectionStyle.Region or FsgSelectionStyle.AdjustAfter)
-        {
-            GetDpiAdjustedRegionOfSelectBorder(out _, out double posLeft, out double posTop);
-            return new Rect(posLeft, posTop, selectBorder.Width, selectBorder.Height);
-        }
-
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         return new Rect(
             selection.CaptureRegion.X / dpi.DpiScaleX,
