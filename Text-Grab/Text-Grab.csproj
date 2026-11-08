@@ -106,6 +106,7 @@
           <IncludeAssets>none</IncludeAssets>
         </PackageReference>
         <PackageReference Include="PdfPig" Version="0.1.16" />
+        <PackageReference Include="Svg" Version="3.4.8" />
         <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
         <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
         <PackageReference Include="WPF-UI" Version="4.3.0" />

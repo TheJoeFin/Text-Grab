@@ -31,6 +31,7 @@ The same package inventory is also available from the app's **About → Licenses
 | Microsoft.WindowsAppSDK.WinUI | App | Microsoft license terms | [Open](ThirdPartyNotices/licenses/Microsoft.WindowsAppSDK-license.txt) | [Project](https://github.com/microsoft/windowsappsdk) | Package ships Microsoft Windows App SDK license terms. |
 | NCalcAsync | App, Tests | MIT | [Open](https://github.com/ncalc/ncalc/blob/master/LICENSE) | [Project](https://github.com/ncalc/ncalc) | Shared by the application and the test project. |
 | PdfPig | App | Apache-2.0 | [Open](https://github.com/UglyToad/PdfPig/blob/master/LICENSE) | [Project](https://github.com/UglyToad/PdfPig) | — |
+| Svg | App | MIT | [Open](https://github.com/svg-net/SVG/blob/master/license.txt) | [Project](https://github.com/svg-net/SVG) | Renders SVG images in the Markdown editor. |
 | UnitsNet | App | MIT-0 | [Open](https://github.com/angularsen/UnitsNet/blob/master/LICENSE) | [Project](https://github.com/angularsen/UnitsNet) | — |
 | Vortice.Direct3D11 | App | MIT | [Open](https://github.com/amerkoleci/Vortice.Windows/blob/main/LICENSE) | [Project](https://github.com/amerkoleci/Vortice.Windows) | Direct3D 11 interop for HDR-aware screen capture. |
 | Vortice.DXGI | App | MIT | [Open](https://github.com/amerkoleci/Vortice.Windows/blob/main/LICENSE) | [Project](https://github.com/amerkoleci/Vortice.Windows) | DXGI interop for HDR-aware screen capture. |

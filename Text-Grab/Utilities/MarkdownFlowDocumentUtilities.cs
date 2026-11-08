@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -16,6 +17,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using MarkdigBlock = Markdig.Syntax.Block;
 using MarkdigInline = Markdig.Syntax.Inlines.Inline;
 using MarkdigTable = Markdig.Extensions.Tables.Table;
@@ -728,15 +730,20 @@ public static partial class MarkdownFlowDocumentUtilities
         try
         {
             Uri imageUri = ResolveImageUri(url, markdownFilePath);
-            BitmapImage bitmap = new();
-            bitmap.BeginInit();
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.UriSource = imageUri;
-            bitmap.DownloadFailed += (_, args) => ShowFailure(args.ErrorException);
-            bitmap.DecodeFailed += (_, args) => ShowFailure(args.ErrorException);
-            bitmap.EndInit();
-            if (loadFailed)
-                return imageSpan;
+            bool useLoader = SvgImageLoader.ShouldLoadWithLoader(imageUri);
+            BitmapImage? bitmap = null;
+            if (!useLoader)
+            {
+                bitmap = new();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = imageUri;
+                bitmap.DownloadFailed += (_, args) => ShowFailure(args.ErrorException);
+                bitmap.DecodeFailed += (_, args) => ShowFailure(args.ErrorException);
+                bitmap.EndInit();
+                if (loadFailed)
+                    return imageSpan;
+            }
 
             Image image = new()
             {
@@ -762,6 +769,8 @@ public static partial class MarkdownFlowDocumentUtilities
             SetRawSpan(imageContainer, rawStart, rawEnd);
             imageSpan.Inlines.Clear();
             imageSpan.Inlines.Add(imageContainer);
+            if (useLoader)
+                _ = LoadImageSourceAsync(imageUri, image, ShowFailure);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
             or ArgumentException or UriFormatException or NotSupportedException or InvalidOperationException
@@ -771,6 +780,28 @@ public static partial class MarkdownFlowDocumentUtilities
         }
 
         return imageSpan;
+    }
+
+    private static async Task LoadImageSourceAsync(Uri imageUri, Image image, Action<Exception> showFailure)
+    {
+        Dispatcher dispatcher = image.Dispatcher;
+        try
+        {
+            BitmapSource source = await SvgImageLoader.LoadAsync(imageUri).ConfigureAwait(false);
+            await dispatcher.InvokeAsync(() => image.Source = source);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // This runs unobserved, so every failure has to surface as the visible fallback.
+            try
+            {
+                await dispatcher.InvokeAsync(() => showFailure(exception));
+            }
+            catch (Exception dispatchException) when (dispatchException is TaskCanceledException or InvalidOperationException)
+            {
+                Debug.WriteLine($"Markdown image failure could not be shown: {dispatchException.Message}");
+            }
+        }
     }
 
     private static Uri ResolveImageUri(string url, string? markdownFilePath)
