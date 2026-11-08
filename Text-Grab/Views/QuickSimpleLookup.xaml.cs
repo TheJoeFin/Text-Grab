@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using PlacementMode = System.Windows.Controls.Primitives.PlacementMode;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Models;
@@ -28,6 +29,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     public TextBox? DestinationTextBox;
     private readonly string cacheFilename = "QuickSimpleLookupCache.csv";
     private bool isPuttingValueIn = false;
+    private readonly bool isPopupStyle;
+    private int suppressDeactivateClose = 0;
     private LookupItem? lastSelection;
     private int rowCount = 0;
     private string valueUnderEdit = string.Empty;
@@ -43,6 +46,43 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+
+        isPopupStyle = LookupWindowStyleSetting.Get(DefaultSettings) == LookupWindowStyle.Popup;
+        if (isPopupStyle)
+            ApplyPopupStyle();
+    }
+
+    /// <summary>
+    /// Popup style: no title bar, no taskbar button, no alt-tab entry; closes when focus is lost.
+    /// Must run before the window is shown (WindowStyle/ShowInTaskbar are fixed after that).
+    /// </summary>
+    private void ApplyPopupStyle()
+    {
+        WindowStyle = WindowStyle.None;
+        ResizeMode = ResizeMode.NoResize;
+        ShowInTaskbar = false;
+        WindowTitleBar.Visibility = Visibility.Collapsed;
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        if (!isPopupStyle)
+            return;
+
+        IntPtr handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        int exStyle = NativeMethods.GetWindowLong(handle, NativeMethods.GWL_EX_STYLE);
+        NativeMethods.SetWindowLong(handle, NativeMethods.GWL_EX_STYLE, (exStyle | NativeMethods.WS_EX_TOOLWINDOW) & ~NativeMethods.WS_EX_APPWINDOW);
+    }
+
+    private void Window_Deactivated(object? sender, EventArgs e)
+    {
+        if (!isPopupStyle || suppressDeactivateClose > 0 || isPuttingValueIn || !IsLoaded)
+            return;
+
+        Hide();
+        Close();
     }
 
     private async void SearchBar_SearchChanged(object? sender, EventArgs e)
@@ -146,7 +186,31 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         UpdateRowCount();
         MainDataGrid.ScrollIntoView(ItemsDictionary.LastOrDefault());
         AddItemBtn.Visibility = Visibility.Collapsed;
+        MarkDirty();
+    }
+
+    /// <summary>
+    /// Flags the lookup data as changed: shows the Save button, or saves right away when Auto Save is on.
+    /// The save is deferred so pending DataGrid cell edits are committed to the items first.
+    /// </summary>
+    private void MarkDirty()
+    {
         SaveBTN.Visibility = Visibility.Visible;
+
+        if (!DefaultSettings.LookupAutoSave)
+            return;
+
+        Dispatcher.BeginInvoke(async () => await WriteDataToCSV(clearSearch: false),
+            System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private async void AutoSaveMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        DefaultSettings.LookupAutoSave = AutoSaveMenuItem.IsChecked;
+        DefaultSettings.Save();
+
+        if (AutoSaveMenuItem.IsChecked && SaveBTN.Visibility == Visibility.Visible)
+            await WriteDataToCSV(clearSearch: false);
     }
 
     private void ClearOrExit()
@@ -303,7 +367,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (child is TextBox editedBox
             && valueUnderEdit != editedBox.Text)
         {
-            SaveBTN.Visibility = Visibility.Visible;
+            MarkDirty();
             valueUnderEdit = string.Empty;
             UpdateRowCount();
         }
@@ -316,13 +380,15 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             && list.Count < rowCount)
         {
             // A row has been deleted
-            SaveBTN.Visibility = Visibility.Visible;
+            MarkDirty();
             UpdateRowCount();
         }
     }
 
     private void NewFullscreen_Click(object sender, RoutedEventArgs e)
     {
+        // The grab writes into SearchBar.TextBox, so a popup must stay alive once focus moves to it.
+        suppressDeactivateClose++;
         WindowUtilities.LaunchFullScreenGrab(SearchBar.TextBox);
     }
 
@@ -335,12 +401,14 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
         MainDataGrid.ItemsSource = null;
 
-        ItemsDictionary.AddRange(ParseStringToRows(clipboardContent));
+        List<LookupItem> parsedRows = [.. ParseStringToRows(clipboardContent)];
+        ItemsDictionary.AddRange(parsedRows);
+        lookupItems.AddRange(parsedRows);
 
         MainDataGrid.ItemsSource = ItemsDictionary;
 
         UpdateRowCount();
-        SaveBTN.Visibility = Visibility.Visible;
+        MarkDirty();
     }
 
     private async void ParseCSVFileMenuItem_Click(object sender, RoutedEventArgs e)
@@ -354,7 +422,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             CheckFileExists = true
         };
 
+        suppressDeactivateClose++;
         bool? result = dlg.ShowDialog();
+        suppressDeactivateClose--;
 
         if (result is false || !File.Exists(dlg.FileName))
             return;
@@ -362,7 +432,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         string csvToOpenPath = dlg.FileName;
 
         await LoadDataGridContent(csvToOpenPath);
-        SaveBTN.Visibility = Visibility.Visible;
+        MarkDirty();
     }
 
     private void PasteToggleButton_Checked(object sender, RoutedEventArgs e)
@@ -389,7 +459,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             dlg.FileName = Path.GetFileName(DefaultSettings.LookupFileLocation);
         }
 
+        suppressDeactivateClose++;
         bool? result = dlg.ShowDialog();
+        suppressDeactivateClose--;
 
         if (result is false)
             return;
@@ -719,6 +791,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
             case Key.F:
                 if (KeyboardExtensions.IsCtrlDown())
                 {
+                    suppressDeactivateClose++;
                     WindowUtilities.LaunchFullScreenGrab(SearchBar.TextBox);
                     e.Handled = true;
                 }
@@ -770,19 +843,76 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         MainDataGrid.ItemsSource = null;
         ItemsDictionary.Clear();
 
-        ItemsDictionary.AddRange(ParseStringToRows(contentToParse, true));
-        lookupItems = [.. ItemsDictionary];
+        lookupItems = [.. ParseStringToRows(contentToParse, true)];
 
-        if (DefaultSettings.LookupSearchHistory)
-        {
-            AddHistoryItemsToItemsDictionary();
-            SearchHistory.IsChecked = true;
-        }
-
-        AddGrabTemplatesToItemsDictionary();
+        RebuildItemsDictionary();
 
         MainDataGrid.ItemsSource = ItemsDictionary;
 
+        UpdateRowCount();
+    }
+
+    /// <summary>
+    /// Refills <see cref="ItemsDictionary"/> from the sources selected in the filter.
+    /// <see cref="lookupItems"/> always keeps the full CSV data so saving is unaffected by the filter.
+    /// </summary>
+    private void RebuildItemsDictionary()
+    {
+        LookupSource sources = LookupSourceSetting.Get(DefaultSettings);
+
+        ItemsDictionary.Clear();
+
+        if (sources.HasFlag(LookupSource.Data))
+            ItemsDictionary.AddRange(lookupItems);
+
+        AddHistoryItemsToItemsDictionary(sources);
+
+        if (sources.HasFlag(LookupSource.GrabTemplates))
+            AddGrabTemplatesToItemsDictionary();
+    }
+
+    private void FilterButton_Click(object sender, RoutedEventArgs e)
+    {
+        LookupSource current = LookupSourceSetting.Get(DefaultSettings);
+
+        ContextMenu menu = new()
+        {
+            PlacementTarget = FilterButton,
+            Placement = PlacementMode.Bottom,
+        };
+
+        foreach ((LookupSource source, string label) in LookupSourceSetting.Options)
+        {
+            MenuItem item = new()
+            {
+                Header = label,
+                IsCheckable = true,
+                IsChecked = current.HasFlag(source),
+                StaysOpenOnClick = true,
+                Tag = source,
+            };
+            item.Click += FilterMenuItem_Click;
+            menu.Items.Add(item);
+        }
+
+        menu.IsOpen = true;
+    }
+
+    private async void FilterMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Parent: ContextMenu menu })
+            return;
+
+        LookupSource selected = LookupSource.None;
+        foreach (MenuItem item in menu.Items.OfType<MenuItem>())
+            if (item.IsChecked && item.Tag is LookupSource source)
+                selected |= source;
+
+        LookupSourceSetting.Set(DefaultSettings, selected);
+
+        MainDataGrid.ItemsSource = null;
+        RebuildItemsDictionary();
+        await ReSearch(SearchBar.TextBox.Text);
         UpdateRowCount();
     }
 
@@ -806,7 +936,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
                 if (selectedLookupItem.HistoryItem is null)
                 {
-                    SaveBTN.Visibility = Visibility.Visible;
+                    MarkDirty();
                     continue;
                 }
 
@@ -996,6 +1126,8 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        AutoSaveMenuItem.IsChecked = DefaultSettings.LookupAutoSave;
+
         await LoadDataGridContent(DefaultSettings.LookupFileLocation);
 
         if (DefaultSettings.TryInsert && !IsFromETW)
@@ -1009,28 +1141,24 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         SearchBar.TextBox.Focus();
     }
 
-    private void AddHistoryItemsToItemsDictionary()
+    private void AddHistoryItemsToItemsDictionary(LookupSource sources)
     {
-        List<HistoryInfo> textHistoryItems = Singleton<HistoryService>.Instance.GetEditWindows();
-
-        foreach (HistoryInfo historyItem in textHistoryItems)
+        if (sources.HasFlag(LookupSource.EditHistory))
         {
-            LookupItem newItem = new(historyItem);
-            ItemsDictionary.Add(newItem);
+            foreach (HistoryInfo historyItem in Singleton<HistoryService>.Instance.GetEditWindows())
+                ItemsDictionary.Add(new LookupItem(historyItem));
         }
 
-        List<HistoryInfo> grabFrameHistoryItems = Singleton<HistoryService>.Instance.GetRecentGrabs();
-
-        foreach (HistoryInfo historyItem in grabFrameHistoryItems)
+        if (sources.HasFlag(LookupSource.GrabHistory))
         {
-            LookupItem newItem = new(historyItem);
-            ItemsDictionary.Add(newItem);
+            foreach (HistoryInfo historyItem in Singleton<HistoryService>.Instance.GetRecentGrabs())
+                ItemsDictionary.Add(new LookupItem(historyItem));
         }
 
-        foreach (HistoryInfo historyItem in Singleton<HistoryService>.Instance.GetRecentPdfDocuments())
+        if (sources.HasFlag(LookupSource.PdfHistory))
         {
-            LookupItem newItem = new(historyItem);
-            ItemsDictionary.Add(newItem);
+            foreach (HistoryInfo historyItem in Singleton<HistoryService>.Instance.GetRecentPdfDocuments())
+                ItemsDictionary.Add(new LookupItem(historyItem));
         }
     }
 
@@ -1049,9 +1177,9 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private async Task WriteDataToCSV()
+    private async Task WriteDataToCSV(bool clearSearch = true)
     {
-        if (!string.IsNullOrWhiteSpace(SearchBar.TextBox.Text))
+        if (clearSearch && !string.IsNullOrWhiteSpace(SearchBar.TextBox.Text))
             SearchBar.TextBox.Clear();
 
         StringBuilder csvContents = new();
@@ -1078,17 +1206,6 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
     {
         // Can't do this here because it will close the app before the text can be inserted
         // WindowUtilities.ShouldShutDown();
-    }
-
-    private async void SearchHistory_Click(object sender, RoutedEventArgs e)
-    {
-        DefaultSettings.LookupSearchHistory = SearchHistory.IsChecked is true;
-
-        lookupItems.Clear();
-        ItemsDictionary.Clear();
-        MainDataGrid.ItemsSource = null;
-
-        await LoadDataGridContent(DefaultSettings.LookupFileLocation);
     }
 
     private void DeleteItem_Click(object sender, RoutedEventArgs e)
