@@ -634,6 +634,42 @@ namespace Text_Grab.Properties {
                 this["LookupSearchHistory"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LookupSources {
+            get {
+                return ((string)(this["LookupSources"]));
+            }
+            set {
+                this["LookupSources"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Window")]
+        public string LookupWindowStyle {
+            get {
+                return ((string)(this["LookupWindowStyle"]));
+            }
+            set {
+                this["LookupWindowStyle"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LookupAutoSave {
+            get {
+                return ((bool)(this["LookupAutoSave"]));
+            }
+            set {
+                this["LookupAutoSave"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

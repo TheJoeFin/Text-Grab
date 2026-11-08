@@ -155,6 +155,15 @@
     <Setting Name="LookupSearchHistory" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="LookupSources" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="LookupWindowStyle" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Window</Value>
+    </Setting>
+    <Setting Name="LookupAutoSave" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="DefaultWebSearch" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
