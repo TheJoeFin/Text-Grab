@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using Text_Grab.Services;
 using Text_Grab.Views;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.DataTransfer;
@@ -78,7 +79,7 @@ public static class ShareTargetUtilities
 
         foreach (IStorageItem item in items)
         {
-            if (item is StorageFile file && IoUtilities.IsImageFileExtension(Path.GetExtension(file.Path)))
+            if (item is StorageFile file && IoUtilities.IsVisualDocumentFile(file.Path))
             {
                 GrabFrame gf = new(file.Path);
                 gf.Show();
@@ -99,6 +100,8 @@ public static class ShareTargetUtilities
                     etw.AddThisText(text);
                     etw.Show();
                     etw.Activate();
+                    if (!string.IsNullOrWhiteSpace(file.Path))
+                        Singleton<HistoryService>.Instance.RecordRecentFile(file.Path, OpenContentKind.TextFile);
                     return true;
                 }
                 catch (Exception ex)
@@ -129,7 +132,7 @@ public static class ShareTargetUtilities
             await fileStream.WriteAsync(buffer);
         }
 
-        GrabFrame gf = new(tempPath);
+        GrabFrame gf = new(tempPath, recordRecentFile: false);
         gf.Show();
         gf.Activate();
         return true;

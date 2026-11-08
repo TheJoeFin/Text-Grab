@@ -219,7 +219,7 @@
                         InputGestureText="Ctrl + O" />
                     <MenuItem x:Name="OpenRecentMenuItem" Header="Recent" />
                     <MenuItem x:Name="OpenRecentGrabsMenuItem" Header="Recent Grabs" />
-                    <MenuItem x:Name="OpenRecentPdfsMenuItem" Header="Recent PDFs" />
+                    <MenuItem x:Name="OpenRecentPdfsMenuItem" Header="Recent Files" />
                     <MenuItem
                         x:Name="SaveFileMenuItem"
                         AutomationProperties.AutomationId="EditText.Menu.Save"
@@ -909,6 +909,8 @@
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                    CheckBox.Checked="MarkdownTaskListCheckBox_Changed"
+                    CheckBox.Unchecked="MarkdownTaskListCheckBox_Changed"
                     ContextMenu="{StaticResource MarkdownContextMenu}"
                     FontFamily="{Binding ElementName=PassedTextControl, Path=FontFamily, Mode=OneWay}"
                     FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
@@ -1455,28 +1457,29 @@
                 </Grid.ContextMenu>
             </Grid>
         </ScrollViewer>
-        <StackPanel
+        <Grid
             x:Name="LoadingStack"
             Grid.RowSpan="4"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
+            Panel.ZIndex="900"
             AutomationProperties.AutomationId="EditText.LoadingStatus"
-            Orientation="Vertical"
+            Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
             Visibility="Collapsed">
-            <ui:ProgressRing
-                x:Name="ProgressRing"
-                Width="60"
-                Height="60"
-                IsIndeterminate="True" />
-            <TextBlock
-                x:Name="ProgressText"
-                Margin="0,12,0,0"
-                AutomationProperties.AutomationId="EditText.ProgressText"
-                FontSize="16"
-                FontWeight="Bold"
-                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                Text="Working..." />
-        </StackPanel>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ui:ProgressRing
+                    x:Name="ProgressRing"
+                    Width="60"
+                    Height="60"
+                    IsIndeterminate="True" />
+                <TextBlock
+                    x:Name="ProgressText"
+                    Margin="0,12,0,0"
+                    AutomationProperties.AutomationId="EditText.ProgressText"
+                    FontSize="16"
+                    FontWeight="Bold"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="Working..." />
+            </StackPanel>
+        </Grid>
         <!--  Non-blocking, cancellable status shown while transcribing audio; text streams into the editor beneath it.  -->
         <Border
             x:Name="TranscriptionStatusBar"

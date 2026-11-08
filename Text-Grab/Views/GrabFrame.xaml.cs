@@ -216,7 +216,7 @@ public partial class GrabFrame : Window
     /// Creates a GrabFrame and loads the specified image or PDF file.
     /// </summary>
     /// <param name="imagePath">The path to the file to load.</param>
-    public GrabFrame(string imagePath)
+    public GrabFrame(string imagePath, bool recordRecentFile = true)
     {
         StandardInitialize();
 
@@ -250,7 +250,7 @@ public partial class GrabFrame : Window
             return;
         }
 
-        Loaded += async (s, e) => await TryLoadDocumentFromPath(absolutePath);
+        Loaded += async (s, e) => await TryLoadDocumentFromPath(absolutePath, recordRecentFile);
     }
 
     public GrabFrame(HistoryInfo historyInfo, string sourcePath)
@@ -308,7 +308,7 @@ public partial class GrabFrame : Window
         if (!string.IsNullOrEmpty(template.SourceImagePath) && File.Exists(template.SourceImagePath))
         {
             isStaticImageSource = true;
-            await TryLoadDocumentFromPath(template.SourceImagePath);
+            await TryLoadDocumentFromPath(template.SourceImagePath, recordRecentFile: false);
             reDrawTimer.Stop();
         }
         else
@@ -4039,7 +4039,7 @@ public partial class GrabFrame : Window
         if (capturedImagePath is null)
             return;
 
-        await TryLoadDocumentFromPath(capturedImagePath);
+        await TryLoadDocumentFromPath(capturedImagePath, recordRecentFile: false);
 
         reDrawTimer.Start();
     }
@@ -4112,6 +4112,7 @@ public partial class GrabFrame : Window
         GrabFrame grabFrame = new(historyInfo);
         grabFrame.Show();
         grabFrame.Activate();
+        Singleton<HistoryService>.Instance.RecordRecentFile(dlg.FileName, OpenContentKind.Image);
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -5351,18 +5352,18 @@ public partial class GrabFrame : Window
         UpdateFrameText();
     }
 
-    private async Task TryLoadDocumentFromPath(string path)
+    private async Task TryLoadDocumentFromPath(string path, bool recordRecentFile = true)
     {
         if (IoUtilities.IsPdfFileExtension(Path.GetExtension(path)))
         {
-            await TryLoadPdfFromPath(path);
+            await TryLoadPdfFromPath(path, recordRecentFile);
             return;
         }
 
-        await TryLoadImageFromPath(path);
+        await TryLoadImageFromPath(path, recordRecentFile);
     }
 
-    private async Task TryLoadImageFromPath(string path)
+    private async Task TryLoadImageFromPath(string path, bool recordRecentFile)
     {
         Uri fileURI = new(path);
         try
@@ -5405,10 +5406,13 @@ public partial class GrabFrame : Window
                 Content = "Not an image",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
+            return;
         }
+        if (recordRecentFile)
+            Singleton<HistoryService>.Instance.RecordRecentFile(path, OpenContentKind.Image);
     }
 
-    private async Task TryLoadPdfFromPath(string path)
+    private async Task TryLoadPdfFromPath(string path, bool recordRecentFile)
     {
         try
         {
@@ -5433,7 +5437,10 @@ public partial class GrabFrame : Window
                 Content = $"Failed to open PDF.{Environment.NewLine}{ex.Message}",
                 CloseButtonText = "OK"
             }.ShowDialogAsync();
+            return;
         }
+        if (recordRecentFile)
+            Singleton<HistoryService>.Instance.RecordRecentFile(path, OpenContentKind.PdfDocument);
     }
 
     private void TryToAlphaMenuItem_Click(object sender, RoutedEventArgs e)

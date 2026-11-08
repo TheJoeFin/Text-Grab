@@ -8,7 +8,7 @@ namespace Text_Grab.Utilities;
 
 public class FileOpenUtilities
 {
-    public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, ILanguage? language = null)
+    public static async Task<(string TextContent, OpenContentKind SourceKindOfContent)?> GetContentFromPath(string pathOfFileToOpen, bool isMultipleFiles = false, ILanguage? language = null)
     {
         StringBuilder stringBuilder = new();
         OpenContentKind openContentKind = IoUtilities.GetOpenContentKindForPath(pathOfFileToOpen);
@@ -30,13 +30,15 @@ public class FileOpenUtilities
                     Content = $"Failed to read {pathOfFileToOpen}",
                     CloseButtonText = "OK"
                 }.ShowDialogAsync();
+                return null;
             }
         }
         else
         {
             // Continue with along trying to open a text file.
             openContentKind = OpenContentKind.TextFile;
-            await TryToOpenTextFile(pathOfFileToOpen, isMultipleFiles, stringBuilder);
+            if (!await TryToOpenTextFile(pathOfFileToOpen, isMultipleFiles, stringBuilder))
+                return null;
         }
 
         if (isMultipleFiles)
@@ -48,7 +50,7 @@ public class FileOpenUtilities
         return (stringBuilder.ToString(), openContentKind);
     }
 
-    public static async Task TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
+    public static async Task<bool> TryToOpenTextFile(string pathOfFileToOpen, bool isMultipleFiles, StringBuilder stringBuilder)
     {
         try
         {
@@ -57,10 +59,12 @@ public class FileOpenUtilities
             string s = await sr.ReadToEndAsync();
 
             stringBuilder.Append(s);
+            return true;
         }
         catch (System.Exception ex)
         {
             System.Windows.Forms.MessageBox.Show($"Failed to open file. {ex.Message}");
+            return false;
         }
     }
 }

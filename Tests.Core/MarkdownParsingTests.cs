@@ -53,6 +53,10 @@ public class MarkdownParsingTests
     [InlineData("1. item")]
     [InlineData("[link](https://example.com)")]
     [InlineData("```csharp\nConsole.WriteLine(\"hi\");\n```")]
+    [InlineData("<p align=\"center\">Text Grab</p>")]
+    [InlineData("<H1>Heading</H1>")]
+    [InlineData("<img src='sample.png' />")]
+    [InlineData("Before <strong>bold</strong><br>after")]
     public void MarkdownLikeText_IsDetectedForPasteParsing(string text)
     {
         Assert.True(MarkdownDocumentUtilities.LooksLikeMarkdown(text));
@@ -62,6 +66,8 @@ public class MarkdownParsingTests
     [InlineData("Just a normal sentence.")]
     [InlineData("2026.04 release notes")]
     [InlineData("email me at joe@example.com")]
+    [InlineData("Use <placeholder> here")]
+    [InlineData("a < b > c")]
     public void PlainText_IsNotDetectedAsMarkdown(string text)
     {
         Assert.False(MarkdownDocumentUtilities.LooksLikeMarkdown(text));

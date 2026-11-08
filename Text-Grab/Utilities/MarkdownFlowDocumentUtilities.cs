@@ -1,14 +1,27 @@
+using Markdig.Extensions.AutoIdentifiers;
+using Markdig.Extensions.Footnotes;
+using Markdig.Extensions.Mathematics;
 using Markdig.Extensions.TaskLists;
 using Markdig.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using Text_Grab.Controls;
 using MarkdigBlock = Markdig.Syntax.Block;
 using MarkdigInline = Markdig.Syntax.Inlines.Inline;
 using MarkdigTable = Markdig.Extensions.Tables.Table;
@@ -32,13 +45,16 @@ namespace Text_Grab.Utilities;
 /// <see cref="MarkdownDocumentUtilities.GetCodeBlockText"/>, etc.) stayed on the original type name
 /// and are exposed <c>internal</c> for this class to reach.
 /// </summary>
-public static class MarkdownFlowDocumentUtilities
+public static partial class MarkdownFlowDocumentUtilities
 {
     private enum MarkdownBlockRole
     {
         None,
         CodeBlock,
-        ThematicBreak
+        ThematicBreak,
+        FootnoteList,
+        FootnoteBacklinks,
+        MathBlock
     }
 
     private enum MarkdownInlineRole
@@ -46,7 +62,9 @@ public static class MarkdownFlowDocumentUtilities
         None,
         CodeSpan,
         LiteralMarkdown,
-        TaskListMarker
+        TaskListMarker,
+        FootnoteReference,
+        FootnoteBacklink
     }
 
     private sealed record MarkdownTheme(
@@ -58,9 +76,10 @@ public static class MarkdownFlowDocumentUtilities
         Brush CodeBackgroundBrush,
         FontFamily BaseFontFamily,
         FontFamily CodeFontFamily,
-        double BaseFontSize);
+        double BaseFontSize,
+        bool IsLightTheme);
 
-    public static FlowDocument CreateFlowDocument(string? markdownText, FontFamily fontFamily, double fontSize)
+    public static FlowDocument CreateFlowDocument(string? markdownText, FontFamily fontFamily, double fontSize, string? markdownFilePath = null)
     {
         string safeMarkdown = markdownText ?? string.Empty;
         FlowDocument document = new()
@@ -71,8 +90,17 @@ public static class MarkdownFlowDocumentUtilities
         };
 
         MarkdownDocument markdownDocument = Markdig.Markdown.Parse(safeMarkdown, MarkdownDocumentUtilities.MarkdownPipeline);
-        foreach (MarkdigBlock block in markdownDocument)
-            AppendBlock(document.Blocks, block, safeMarkdown, quoteDepth: 0);
+        IEnumerable<MarkdigBlock> sourceBlocks = markdownDocument
+            .SelectMany(block => block is LinkReferenceDefinitionGroup definitions ? definitions.Cast<MarkdigBlock>() : new[] { block })
+            .Where(block => block is not FootnoteGroup)
+            .OrderBy(block => block.Span.Start);
+        foreach (MarkdigBlock block in sourceBlocks)
+            AppendBlock(document.Blocks, block, safeMarkdown, quoteDepth: 0, markdownFilePath);
+
+        foreach (FootnoteGroup footnotes in markdownDocument.OfType<FootnoteGroup>())
+            AppendBlock(document.Blocks, footnotes, safeMarkdown, quoteDepth: 0, markdownFilePath);
+        ConnectFootnotes(document);
+        InitializeExtendedInlines(document);
 
         if (document.Blocks.Count == 0)
             document.Blocks.Add(new Paragraph());
@@ -131,7 +159,7 @@ public static class MarkdownFlowDocumentUtilities
 
     /// <summary>
     /// Walks a document built by <see cref="CreateFlowDocument"/> and collects the raw-to-rendered
-    /// offset mapping recorded on each tagged Paragraph and Run during construction, in document order.
+    /// offset mapping recorded on each tagged Paragraph and Run during construction, in source order.
     /// </summary>
     public static MarkdownOffsetMap BuildOffsetMap(FlowDocument document)
     {
@@ -142,7 +170,8 @@ public static class MarkdownFlowDocumentUtilities
         foreach (WpfBlock block in document.Blocks)
             CollectOffsetMappings(block, blocks, runs);
 
-        return new MarkdownOffsetMap(blocks, runs);
+        // Footnotes are displayed at the end even when their definitions occur earlier in the source.
+        return new MarkdownOffsetMap(blocks.OrderBy(block => block.RawStart).ToArray(), runs.OrderBy(run => run.RawStart).ToArray());
     }
 
     /// <summary>
@@ -278,7 +307,12 @@ public static class MarkdownFlowDocumentUtilities
                 if (blockRawStart >= 0)
                 {
                     int blockRawEnd = GetRawSpanEnd(paragraph);
-                    int paragraphRenderedLength = new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text.Length;
+                    TextPointer renderedEnd = paragraph.ContentEnd;
+                    for (WpfInline? trailing = paragraph.Inlines.LastInline;
+                        trailing is not null && GetInlineRole(trailing) == MarkdownInlineRole.FootnoteBacklink;
+                        trailing = trailing.PreviousInline)
+                        renderedEnd = trailing.ElementStart;
+                    int paragraphRenderedLength = new TextRange(paragraph.ContentStart, renderedEnd).Text.Length;
                     if (paragraphRenderedLength > 0)
                         blocks.Add(new MarkdownOffsetMapping(blockRawStart, blockRawEnd, paragraph, 0, paragraphRenderedLength));
                 }
@@ -307,14 +341,15 @@ public static class MarkdownFlowDocumentUtilities
     {
         switch (inline)
         {
-            case Run run:
-                int rawStart = GetRawSpanStart(run);
+            case Run:
+            case InlineUIContainer:
+                int rawStart = GetRawSpanStart(inline);
                 if (rawStart < 0)
                     break;
 
-                int rawEnd = GetRawSpanEnd(run);
-                int renderedStart = new TextRange(owningParagraph.ContentStart, run.ContentStart).Text.Length;
-                int renderedEnd = new TextRange(owningParagraph.ContentStart, run.ContentEnd).Text.Length;
+                int rawEnd = GetRawSpanEnd(inline);
+                int renderedStart = new TextRange(owningParagraph.ContentStart, inline.ContentStart).Text.Length;
+                int renderedEnd = new TextRange(owningParagraph.ContentStart, inline.ContentEnd).Text.Length;
                 if (renderedEnd > renderedStart)
                     runs.Add(new MarkdownOffsetMapping(rawStart, rawEnd, owningParagraph, renderedStart, renderedEnd));
                 break;
@@ -342,7 +377,7 @@ public static class MarkdownFlowDocumentUtilities
             ApplyBlockTheme(block, theme);
     }
 
-    private static void AppendBlock(BlockCollection blocks, MarkdigBlock block, string source, int quoteDepth)
+    private static void AppendBlock(BlockCollection blocks, MarkdigBlock block, string source, int quoteDepth, string? markdownFilePath)
     {
         switch (block)
         {
@@ -355,8 +390,11 @@ public static class MarkdownFlowDocumentUtilities
                 SetHeadingLevel(headingParagraph, Math.Clamp(headingBlock.Level, 1, 6));
                 SetQuoteDepth(headingParagraph, quoteDepth);
                 SetRawSpan(headingParagraph, headingBlock.Span.Start, headingBlock.Span.End + 1);
-                AppendInlineContainer(headingParagraph.Inlines, headingBlock.Inline, source);
+                AppendInlineContainer(headingParagraph.Inlines, headingBlock.Inline, source, markdownFilePath);
                 blocks.Add(headingParagraph);
+                break;
+
+            case ParagraphBlock { Inline.FirstChild: FootnoteLink { IsBackLink: true } }:
                 break;
 
             case ParagraphBlock paragraphBlock:
@@ -366,13 +404,13 @@ public static class MarkdownFlowDocumentUtilities
                 };
                 SetQuoteDepth(paragraph, quoteDepth);
                 SetRawSpan(paragraph, paragraphBlock.Span.Start, paragraphBlock.Span.End + 1);
-                AppendInlineContainer(paragraph.Inlines, paragraphBlock.Inline, source);
+                AppendInlineContainer(paragraph.Inlines, paragraphBlock.Inline, source, markdownFilePath);
                 blocks.Add(paragraph);
                 break;
 
             case QuoteBlock quoteBlock:
                 foreach (MarkdigBlock child in quoteBlock)
-                    AppendBlock(blocks, child, source, quoteDepth + 1);
+                    AppendBlock(blocks, child, source, quoteDepth + 1, markdownFilePath);
                 break;
 
             case ListBlock listBlock:
@@ -388,7 +426,7 @@ public static class MarkdownFlowDocumentUtilities
                 {
                     ListItem listItem = new();
                     foreach (MarkdigBlock child in itemBlock)
-                        AppendBlock(listItem.Blocks, child, source, quoteDepth: 0);
+                        AppendBlock(listItem.Blocks, child, source, quoteDepth: 0, markdownFilePath);
 
                     if (listItem.Blocks.Count == 0)
                         listItem.Blocks.Add(new Paragraph());
@@ -399,8 +437,28 @@ public static class MarkdownFlowDocumentUtilities
                 blocks.Add(list);
                 break;
 
+            case MathBlock mathBlock:
+                blocks.Add(CreateMathParagraph(mathBlock, quoteDepth));
+                break;
+
             case FencedCodeBlock fencedCodeBlock:
-                blocks.Add(CreateCodeParagraph(fencedCodeBlock, fencedCodeBlock.Info, source, quoteDepth));
+                Paragraph codeParagraph = CreateCodeParagraph(fencedCodeBlock, fencedCodeBlock.Info, source, quoteDepth);
+                if (string.Equals(fencedCodeBlock.Info, "mermaid", StringComparison.OrdinalIgnoreCase))
+                {
+                    MermaidDiagram diagram = new(MarkdownDocumentUtilities.GetCodeBlockText(fencedCodeBlock));
+                    diagram.SetBinding(FrameworkElement.MaxWidthProperty, new Binding(nameof(FrameworkElement.ActualWidth))
+                    {
+                        RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(RichTextBox), 1),
+                        Converter = new ImageWidthConverter(),
+                        FallbackValue = 640d
+                    });
+                    InlineUIContainer container = new(diagram);
+                    SetRawSpan(container, fencedCodeBlock.Span.Start, fencedCodeBlock.Span.End + 1);
+                    codeParagraph.Inlines.Clear();
+                    codeParagraph.Inlines.Add(container);
+                }
+
+                blocks.Add(codeParagraph);
                 break;
 
             case CodeBlock codeBlock:
@@ -422,7 +480,42 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case MarkdigTable table:
-                blocks.Add(CreateTable(table, source, quoteDepth));
+                blocks.Add(CreateTable(table, source, quoteDepth, markdownFilePath));
+                break;
+
+            case HtmlBlock htmlBlock when TryAppendHtmlBlocks(blocks, htmlBlock, source, quoteDepth, markdownFilePath):
+                break;
+
+            case LinkReferenceDefinitionGroup definitions:
+                foreach (MarkdigBlock definition in definitions)
+                    AppendBlock(blocks, definition, source, quoteDepth, markdownFilePath);
+                break;
+
+            case HeadingLinkReferenceDefinition:
+                break;
+
+            case FootnoteLinkReferenceDefinition { Footnote.Links.Count: > 0 }:
+                break;
+
+            case LinkReferenceDefinition definition:
+                int start = definition.Span.Start;
+                int end = definition is FootnoteLinkReferenceDefinition footnoteDefinition
+                    ? Math.Max(definition.Span.End, footnoteDefinition.Footnote.Span.End)
+                    : definition.Span.End;
+                if (start < 0 || end < start || end >= source.Length)
+                {
+                    Debug.WriteLine($"Markdown reference definition has an invalid source span: {start}..{end}.");
+                    break;
+                }
+
+                blocks.Add(CreateLiteralParagraph(source.Substring(start, end - start + 1), quoteDepth, start, end + 1));
+                break;
+
+            case FootnoteGroup footnotes when footnotes.Count > 0:
+                blocks.Add(CreateFootnoteList(footnotes, source, markdownFilePath));
+                break;
+
+            case FootnoteGroup:
                 break;
 
             default:
@@ -512,7 +605,7 @@ public static class MarkdownFlowDocumentUtilities
         return paragraph;
     }
 
-    private static WpfTable CreateTable(MarkdigTable table, string source, int quoteDepth)
+    private static WpfTable CreateTable(MarkdigTable table, string source, int quoteDepth, string? markdownFilePath)
     {
         WpfTable flowTable = new()
         {
@@ -543,7 +636,7 @@ public static class MarkdownFlowDocumentUtilities
                 SetIsTableHeader(flowCell, row.IsHeader);
 
                 foreach (MarkdigBlock child in cell)
-                    AppendBlock(flowCell.Blocks, child, source, quoteDepth: 0);
+                    AppendBlock(flowCell.Blocks, child, source, quoteDepth: 0, markdownFilePath);
 
                 if (flowCell.Blocks.Count == 0)
                     flowCell.Blocks.Add(new Paragraph());
@@ -555,16 +648,23 @@ public static class MarkdownFlowDocumentUtilities
         return flowTable;
     }
 
-    private static void AppendInlineContainer(InlineCollection inlines, ContainerInline? container, string source)
+    private static void AppendInlineContainer(InlineCollection inlines, ContainerInline? container, string source, string? markdownFilePath)
     {
         if (container is null)
             return;
 
         for (MarkdigInline? inline = container.FirstChild; inline is not null; inline = inline.NextSibling)
-            AppendInline(inlines, inline, source);
+        {
+            if (inline is HtmlInline html && TryAppendHtmlInline(inlines, html, source, markdownFilePath, out MarkdigInline last))
+            {
+                inline = last;
+                continue;
+            }
+            AppendInline(inlines, inline, source, markdownFilePath);
+        }
     }
 
-    private static void AppendInline(InlineCollection inlines, MarkdigInline inline, string source)
+    private static void AppendInline(InlineCollection inlines, MarkdigInline inline, string source, string? markdownFilePath)
     {
         switch (inline)
         {
@@ -596,11 +696,34 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case TaskList taskList:
-                Run taskListRun = new(taskList.Checked ? "\u2611" : "\u2610");
-                SetInlineRole(taskListRun, MarkdownInlineRole.TaskListMarker);
-                SetTaskListMarkerChecked(taskListRun, taskList.Checked);
-                SetRawSpan(taskListRun, taskList.Span.Start, taskList.Span.End + 1);
-                inlines.Add(taskListRun);
+                CheckBox taskListCheckBox = new() { IsChecked = taskList.Checked, VerticalAlignment = VerticalAlignment.Center };
+                SetInlineRole(taskListCheckBox, MarkdownInlineRole.TaskListMarker);
+                int labelStart = taskList.Span.End + 1;
+                int labelEnd = source.IndexOfAny(['\r', '\n'], labelStart);
+                if (labelEnd < 0)
+                    labelEnd = source.Length;
+                AutomationProperties.SetName(taskListCheckBox, source[labelStart..labelEnd].Trim());
+                InlineUIContainer taskListContainer = new(taskListCheckBox) { BaselineAlignment = BaselineAlignment.Center };
+                SetInlineRole(taskListContainer, MarkdownInlineRole.TaskListMarker);
+                SetRawSpan(taskListContainer, taskList.Span.Start, taskList.Span.End + 1);
+                inlines.Add(taskListContainer);
+                break;
+
+            case FootnoteLink footnoteLink:
+                if (!footnoteLink.IsBackLink)
+                    inlines.Add(CreateFootnoteReference(footnoteLink, source));
+                break;
+
+            case MathInline mathInline:
+                inlines.Add(CreateMathInline(mathInline.Content.ToString(), MarkdownDocumentUtilities.GetSourceSlice(source, mathInline),
+                    mathInline.DelimiterCount > 1, mathInline.Span.Start, mathInline.Span.End + 1));
+                break;
+
+            case EmphasisInline emphasisInline when emphasisInline.DelimiterChar is not ('*' or '_'):
+                Span extendedEmphasis = new();
+                extendedEmphasis.SetValue(EmphasisDelimiterProperty, new string(emphasisInline.DelimiterChar, emphasisInline.DelimiterCount));
+                AppendInlineContainer(extendedEmphasis.Inlines, emphasisInline, source, markdownFilePath);
+                inlines.Add(extendedEmphasis);
                 break;
 
             case EmphasisInline emphasisInline:
@@ -608,7 +731,7 @@ public static class MarkdownFlowDocumentUtilities
                     ? new Bold()
                     : new Italic();
 
-                AppendInlineContainer(emphasisSpan.Inlines, emphasisInline, source);
+                AppendInlineContainer(emphasisSpan.Inlines, emphasisInline, source, markdownFilePath);
                 if (emphasisInline.DelimiterCount >= 3)
                     inlines.Add(new Italic(emphasisSpan));
                 else
@@ -624,7 +747,7 @@ public static class MarkdownFlowDocumentUtilities
                     hyperlink.NavigateUri = navigateUri;
                 }
 
-                AppendInlineContainer(hyperlink.Inlines, linkInline, source);
+                AppendInlineContainer(hyperlink.Inlines, linkInline, source, markdownFilePath);
                 if (hyperlink.Inlines.FirstInline is null)
                 {
                     Run hyperlinkFallbackRun = new(linkInline.Url ?? string.Empty);
@@ -636,10 +759,7 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case LinkInline linkInline:
-                Run literalImageRun = new(MarkdownDocumentUtilities.GetSourceSlice(source, linkInline));
-                SetInlineRole(literalImageRun, MarkdownInlineRole.LiteralMarkdown);
-                SetRawSpan(literalImageRun, linkInline.Span.Start, linkInline.Span.End + 1);
-                inlines.Add(literalImageRun);
+                inlines.Add(CreateImageInline(linkInline, source, markdownFilePath));
                 break;
 
             case HtmlInline htmlInline:
@@ -651,7 +771,7 @@ public static class MarkdownFlowDocumentUtilities
 
             case ContainerInline containerInline:
                 Span containerSpan = new();
-                AppendInlineContainer(containerSpan.Inlines, containerInline, source);
+                AppendInlineContainer(containerSpan.Inlines, containerInline, source, markdownFilePath);
                 inlines.Add(containerSpan);
                 break;
 
@@ -664,12 +784,172 @@ public static class MarkdownFlowDocumentUtilities
         }
     }
 
+    private static Span CreateImageInline(LinkInline link, string source, string? markdownFilePath)
+    {
+        string url = (link.GetDynamicUrl is not null ? link.GetDynamicUrl() : link.Url) ?? string.Empty;
+        Span altSpan = new();
+        AppendInlineContainer(altSpan.Inlines, link, source, markdownFilePath);
+        string altMarkdown = SerializeInlines(altSpan.Inlines, preserveLiteralMarkdown: false);
+        string altText = new TextRange(altSpan.ContentStart, altSpan.ContentEnd).Text;
+        string imageMarkdown = MarkdownDocumentUtilities.GetSourceSlice(source, link);
+        if (link.Reference is not null)
+        {
+            string title = string.IsNullOrEmpty(link.Title) ? string.Empty
+                : $" \"{link.Title.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+            imageMarkdown = $"![{altMarkdown}]({MarkdownDocumentUtilities.EscapeLinkDestination(url)}{title})";
+        }
+
+        return CreateImageInline(url, altText, link.Title, imageMarkdown, link.Span.Start, link.Span.End + 1, markdownFilePath);
+    }
+
+    private static Span CreateImageInline(string url, string altText, string? title, string imageMarkdown,
+        int rawStart, int rawEnd, string? markdownFilePath, double width = double.NaN, double height = double.NaN)
+    {
+        Span imageSpan = new();
+        Run fallback = new(imageMarkdown);
+        SetInlineRole(fallback, MarkdownInlineRole.LiteralMarkdown);
+        SetRawSpan(fallback, rawStart, rawEnd);
+        imageSpan.Inlines.Add(fallback);
+        bool loadFailed = false;
+        Border? imageHost = null;
+
+        void ShowFailure(Exception exception)
+        {
+            loadFailed = true;
+            Debug.WriteLine($"Markdown image could not be loaded: {exception.Message}");
+            imageSpan.ToolTip = exception.Message;
+            if (imageHost is not null)
+            {
+                // Do not mutate the text tree on download failure: the editor's live
+                // Markdown promotion would otherwise reparse the fallback and retry it.
+                imageHost.Child = new TextBlock { Text = imageMarkdown, TextWrapping = TextWrapping.Wrap };
+                return;
+            }
+
+            imageSpan.Inlines.Clear();
+            imageSpan.Inlines.Add(fallback);
+        }
+
+        try
+        {
+            Uri imageUri = ResolveImageUri(url, markdownFilePath);
+            bool useLoader = SvgImageLoader.ShouldLoadWithLoader(imageUri);
+            BitmapImage? bitmap = null;
+            if (!useLoader)
+            {
+                bitmap = new();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = imageUri;
+                bitmap.DownloadFailed += (_, args) => ShowFailure(args.ErrorException);
+                bitmap.DecodeFailed += (_, args) => ShowFailure(args.ErrorException);
+                bitmap.EndInit();
+                if (loadFailed)
+                    return imageSpan;
+            }
+
+            Image image = new()
+            {
+                Source = bitmap,
+                Stretch = Stretch.Uniform,
+                StretchDirection = StretchDirection.DownOnly,
+                MaxHeight = 480,
+                Width = width,
+                Height = height,
+                ToolTip = string.IsNullOrEmpty(title) ? altText : title
+            };
+            AutomationProperties.SetName(image, altText);
+            imageHost = new Border { Child = image };
+            imageHost.SetBinding(FrameworkElement.MaxWidthProperty, new Binding(nameof(FrameworkElement.ActualWidth))
+            {
+                RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(RichTextBox), 1),
+                Converter = new ImageWidthConverter(),
+                FallbackValue = 640d
+            });
+            image.SetBinding(FrameworkElement.MaxWidthProperty, new Binding(nameof(FrameworkElement.MaxWidth)) { Source = imageHost });
+            InlineUIContainer imageContainer = new(imageHost) { BaselineAlignment = BaselineAlignment.Center };
+            imageContainer.SetValue(ImageMarkdownProperty, imageMarkdown);
+            SetRawSpan(imageContainer, rawStart, rawEnd);
+            imageSpan.Inlines.Clear();
+            imageSpan.Inlines.Add(imageContainer);
+            if (useLoader)
+                _ = LoadImageSourceAsync(imageUri, image, ShowFailure);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or ArgumentException or UriFormatException or NotSupportedException or InvalidOperationException
+            or System.Net.WebException or System.Runtime.InteropServices.COMException)
+        {
+            ShowFailure(exception);
+        }
+
+        return imageSpan;
+    }
+
+    private static async Task LoadImageSourceAsync(Uri imageUri, Image image, Action<Exception> showFailure)
+    {
+        Dispatcher dispatcher = image.Dispatcher;
+        try
+        {
+            BitmapSource source = await SvgImageLoader.LoadAsync(imageUri).ConfigureAwait(false);
+            await dispatcher.InvokeAsync(() => image.Source = source);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // This runs unobserved, so every failure has to surface as the visible fallback.
+            try
+            {
+                await dispatcher.InvokeAsync(() => showFailure(exception));
+            }
+            catch (Exception dispatchException) when (dispatchException is TaskCanceledException or InvalidOperationException)
+            {
+                Debug.WriteLine($"Markdown image failure could not be shown: {dispatchException.Message}");
+            }
+        }
+    }
+
+    private static Uri ResolveImageUri(string url, string? markdownFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            throw new ArgumentException("The Markdown image has no destination.");
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
+        {
+            if (string.IsNullOrWhiteSpace(markdownFilePath))
+                throw new ArgumentException("Save or open the Markdown file to resolve relative image paths.");
+
+            // Explicit file URIs treat percent-escaped Markdown destinations as URI paths,
+            // unlike implicit Windows-path URIs, which escape the percent sign again.
+            Uri documentUri = new(new Uri(Path.GetFullPath(markdownFilePath)).AbsoluteUri);
+            uri = new Uri(documentUri, url);
+        }
+
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps && !uri.IsFile)
+            throw new NotSupportedException("Only local files and HTTP or HTTPS Markdown images are supported.");
+        if (uri.IsUnc)
+            throw new NotSupportedException("Network-share Markdown images are not loaded automatically.");
+
+        return uri;
+    }
+
+    private sealed class ImageWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is double width && width > 0 ? Math.Clamp(width - 96, 32, 640) : 640d;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     private static void WriteBlock(StringBuilder builder, WpfBlock block, int listDepth, bool preserveLiteralMarkdown)
     {
         switch (block)
         {
             case Paragraph paragraph:
                 WriteParagraph(builder, paragraph, preserveLiteralMarkdown);
+                break;
+
+            case WpfList list when GetBlockRole(list) == MarkdownBlockRole.FootnoteList:
+                WriteFootnotes(builder, list, preserveLiteralMarkdown);
                 break;
 
             case WpfList list:
@@ -690,6 +970,13 @@ public static class MarkdownFlowDocumentUtilities
     {
         string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(paragraph));
 
+        if (paragraph.GetValue(HtmlOpeningProperty) is string opening && opening.Length > 0)
+        {
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(
+                opening + SerializeHtmlInlines(paragraph.Inlines) + (string)paragraph.GetValue(HtmlClosingProperty), quotePrefix));
+            return;
+        }
+
         if (GetBlockRole(paragraph) == MarkdownBlockRole.ThematicBreak)
         {
             builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix("---", quotePrefix));
@@ -699,7 +986,8 @@ public static class MarkdownFlowDocumentUtilities
         if (GetBlockRole(paragraph) == MarkdownBlockRole.CodeBlock)
         {
             string codeInfo = GetCodeFenceInfo(paragraph);
-            string codeText = MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text);
+            string codeText = MarkdownDocumentUtilities.NormalizeDocumentText(
+                string.Concat(paragraph.Inlines.Select(GetCodeInlineText)));
             string fencedBlock = string.IsNullOrWhiteSpace(codeInfo)
                 ? $"```{Environment.NewLine}{codeText}{Environment.NewLine}```"
                 : $"```{codeInfo}{Environment.NewLine}{codeText}{Environment.NewLine}```";
@@ -714,6 +1002,15 @@ public static class MarkdownFlowDocumentUtilities
 
         builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(content, quotePrefix));
     }
+
+    private static string GetCodeInlineText(WpfInline inline) => inline switch
+    {
+        Run run => run.Text,
+        LineBreak => "\n",
+        Span span => string.Concat(span.Inlines.Select(GetCodeInlineText)),
+        InlineUIContainer { Child: MermaidDiagram diagram } => diagram.Source,
+        _ => new TextRange(inline.ContentStart, inline.ContentEnd).Text
+    };
 
     private static void WriteList(StringBuilder builder, WpfList list, int listDepth, bool preserveLiteralMarkdown)
     {
@@ -783,33 +1080,56 @@ public static class MarkdownFlowDocumentUtilities
 
     private static string SerializeTableCell(WpfTableCell cell)
     {
-        string rawText = MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(cell.ContentStart, cell.ContentEnd).Text);
-        return rawText
-            .Replace("|", "\\|", StringComparison.Ordinal)
+        string rawText = string.Join("\n", cell.Blocks.Select(block => block is Paragraph paragraph
+            ? SerializeInlines(paragraph.Inlines, preserveLiteralMarkdown: false, isTableCell: true)
+            : SerializeLiteralText(block, preserveLiteralMarkdown: false)));
+        // Literal pipes are already escaped by the inline serializer; code and preserved markup must stay intact.
+        return MarkdownDocumentUtilities.NormalizeNewlines(rawText)
             .Replace("\n", "<br />", StringComparison.Ordinal);
     }
 
-    private static string SerializeInlines(InlineCollection inlines, bool preserveLiteralMarkdown)
+    private static string SerializeInlines(InlineCollection inlines, bool preserveLiteralMarkdown, bool isTableCell = false)
     {
         StringBuilder builder = new();
         foreach (WpfInline inline in inlines)
-            WriteInline(builder, inline, preserveLiteralMarkdown);
+            WriteInline(builder, inline, preserveLiteralMarkdown, isTableCell);
 
         return builder.ToString();
     }
 
-    private static void WriteInline(StringBuilder builder, WpfInline inline, bool preserveLiteralMarkdown)
+    private static void WriteInline(StringBuilder builder, WpfInline inline, bool preserveLiteralMarkdown, bool isTableCell = false)
     {
+        if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown, isTableCell))
+            return;
+
+        if (inline.GetValue(HtmlOpeningProperty) is string opening && opening.Length > 0)
+        {
+            builder.Append(opening);
+            if (inline is Span htmlSpan)
+                builder.Append(SerializeHtmlInlines(htmlSpan.Inlines, isTableCell));
+            builder.Append((string)inline.GetValue(HtmlClosingProperty));
+            return;
+        }
+
+        if (inline.GetValue(ImageMarkdownProperty) is string imageMarkdown && imageMarkdown.Length > 0)
+        {
+            builder.Append(imageMarkdown);
+            return;
+        }
+
         switch (inline)
         {
             case LineBreak:
-                builder.Append($"  {Environment.NewLine}");
+                builder.Append(isTableCell ? "<br />" : $"  {Environment.NewLine}");
+                break;
+
+            case InlineUIContainer { Child: CheckBox checkBox } when GetInlineRole(inline) == MarkdownInlineRole.TaskListMarker:
+                builder.Append(checkBox.IsChecked == true ? "[x]" : "[ ]");
                 break;
 
             case Run run:
                 builder.Append(GetInlineRole(run) switch
                 {
-                    MarkdownInlineRole.TaskListMarker => GetTaskListMarkerChecked(run) ? "[x]" : "[ ]",
                     MarkdownInlineRole.CodeSpan => $"`{MarkdownDocumentUtilities.NormalizeDocumentText(run.Text)}`",
                     MarkdownInlineRole.LiteralMarkdown => run.Text,
                     _ when preserveLiteralMarkdown => run.Text,
@@ -818,20 +1138,20 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case Hyperlink hyperlink:
-                string linkText = SerializeInlines(hyperlink.Inlines, preserveLiteralMarkdown);
+                string linkText = SerializeInlines(hyperlink.Inlines, preserveLiteralMarkdown, isTableCell);
                 string linkTarget = hyperlink.NavigateUri?.OriginalString ?? linkText;
                 builder.Append($"[{linkText}]({MarkdownDocumentUtilities.EscapeLinkDestination(linkTarget)})");
                 break;
 
             case Bold bold:
                 builder.Append("**");
-                builder.Append(SerializeInlines(bold.Inlines, preserveLiteralMarkdown));
+                builder.Append(SerializeInlines(bold.Inlines, preserveLiteralMarkdown, isTableCell));
                 builder.Append("**");
                 break;
 
             case Italic italic:
                 builder.Append('*');
-                builder.Append(SerializeInlines(italic.Inlines, preserveLiteralMarkdown));
+                builder.Append(SerializeInlines(italic.Inlines, preserveLiteralMarkdown, isTableCell));
                 builder.Append('*');
                 break;
 
@@ -842,7 +1162,7 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case Span span:
-                builder.Append(SerializeInlines(span.Inlines, preserveLiteralMarkdown));
+                builder.Append(SerializeInlines(span.Inlines, preserveLiteralMarkdown, isTableCell));
                 break;
 
             default:
@@ -896,6 +1216,8 @@ public static class MarkdownFlowDocumentUtilities
 
             case WpfList list:
                 list.Foreground = theme.ForegroundBrush;
+                if (GetBlockRole(list) == MarkdownBlockRole.FootnoteList)
+                    list.BorderBrush = theme.BorderBrush;
                 list.Margin = GetQuoteDepth(list) > 0
                     ? new Thickness(18 * GetQuoteDepth(list), 4, 0, 4)
                     : list.Margin;
@@ -938,9 +1260,19 @@ public static class MarkdownFlowDocumentUtilities
     {
         switch (inline)
         {
+            case InlineUIContainer { Child: MathFormula formula } container:
+                formula.ApplyTheme(theme.ForegroundBrush, container.FontSize);
+                break;
+
+            case InlineUIContainer { Child: MermaidDiagram diagram }:
+                diagram.ApplyTheme(theme.IsLightTheme);
+                break;
+
             case Hyperlink hyperlink:
                 hyperlink.Foreground = theme.AccentBrush;
                 hyperlink.TextDecorations = TextDecorations.Underline;
+                if (GetInlineRole(hyperlink) == MarkdownInlineRole.FootnoteReference)
+                    hyperlink.FontSize = theme.BaseFontSize * 0.75;
                 foreach (WpfInline child in hyperlink.Inlines)
                     ApplyInlineTheme(child, theme);
                 break;
@@ -951,6 +1283,7 @@ public static class MarkdownFlowDocumentUtilities
                 break;
 
             case Span span:
+                ApplyExtendedEmphasisStyle(span, theme.IsLightTheme);
                 foreach (WpfInline child in span.Inlines)
                     ApplyInlineTheme(child, theme);
                 break;
@@ -975,7 +1308,8 @@ public static class MarkdownFlowDocumentUtilities
             codeBackground,
             baseFontFamily,
             new FontFamily("Consolas"),
-            baseFontSize);
+            baseFontSize,
+            isLightTheme);
     }
 
     private static Brush FindBrush(FrameworkElement resourceHost, string resourceKey, Color fallback)
@@ -994,6 +1328,9 @@ public static class MarkdownFlowDocumentUtilities
         return preserveLiteralMarkdown ? text : MarkdownDocumentUtilities.EscapeMarkdownText(text);
     }
 
+    private static readonly DependencyProperty ImageMarkdownProperty =
+        DependencyProperty.RegisterAttached("ImageMarkdown", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(string.Empty));
+
     private static readonly DependencyProperty QuoteDepthProperty =
         DependencyProperty.RegisterAttached("QuoteDepth", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(0));
 
@@ -1005,9 +1342,6 @@ public static class MarkdownFlowDocumentUtilities
 
     private static readonly DependencyProperty InlineRoleProperty =
         DependencyProperty.RegisterAttached("InlineRole", typeof(MarkdownInlineRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownInlineRole.None));
-
-    private static readonly DependencyProperty TaskListMarkerCheckedProperty =
-        DependencyProperty.RegisterAttached("TaskListMarkerChecked", typeof(bool), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(false));
 
     private static readonly DependencyProperty CodeFenceInfoProperty =
         DependencyProperty.RegisterAttached("CodeFenceInfo", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(string.Empty));
@@ -1046,8 +1380,8 @@ public static class MarkdownFlowDocumentUtilities
     private static MarkdownBlockRole GetBlockRole(DependencyObject element) => (MarkdownBlockRole)element.GetValue(BlockRoleProperty);
     private static void SetInlineRole(DependencyObject element, MarkdownInlineRole value) => element.SetValue(InlineRoleProperty, value);
     private static MarkdownInlineRole GetInlineRole(DependencyObject element) => (MarkdownInlineRole)element.GetValue(InlineRoleProperty);
-    private static void SetTaskListMarkerChecked(DependencyObject element, bool value) => element.SetValue(TaskListMarkerCheckedProperty, value);
-    private static bool GetTaskListMarkerChecked(DependencyObject element) => (bool)element.GetValue(TaskListMarkerCheckedProperty);
+    public static bool IsTaskListCheckBox(DependencyObject element) =>
+        element is CheckBox && GetInlineRole(element) == MarkdownInlineRole.TaskListMarker;
     private static void SetCodeFenceInfo(DependencyObject element, string value) => element.SetValue(CodeFenceInfoProperty, value);
     private static string GetCodeFenceInfo(DependencyObject element) => (string)element.GetValue(CodeFenceInfoProperty);
     private static void SetIsTableHeader(DependencyObject element, bool value) => element.SetValue(IsTableHeaderProperty, value);

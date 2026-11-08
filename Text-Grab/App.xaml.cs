@@ -529,7 +529,10 @@ public partial class App : System.Windows.Application
 
         if (isQuiet)
         {
-            (string pathContent, _) = await FileOpenUtilities.GetContentFromPath(possiblePath);
+            var result = await FileOpenUtilities.GetContentFromPath(possiblePath);
+            if (result is not (string pathContent, OpenContentKind kind))
+                return false;
+            Singleton<HistoryService>.Instance.RecordRecentFile(possiblePath, kind);
             OutputUtilities.HandleTextFromOcr(
                 pathContent,
                 false,
@@ -544,9 +547,10 @@ public partial class App : System.Windows.Application
         else
         {
             EditTextWindow manipulateTextWindow = new();
-            manipulateTextWindow.OpenPath(possiblePath);
+            Task openTask = manipulateTextWindow.OpenPath(possiblePath);
             manipulateTextWindow.Show();
             manipulateTextWindow.Activate();
+            await openTask;
         }
         return true;
     }
@@ -561,6 +565,8 @@ public partial class App : System.Windows.Application
 
         if (historyInfo is null)
             return false;
+
+        Singleton<HistoryService>.Instance.RecordRecentFile(path, OpenContentKind.Image);
 
         if (isQuiet)
         {

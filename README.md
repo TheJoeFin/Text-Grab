@@ -102,6 +102,22 @@ Grab Frame uses the same OCR engine as Full-Screen Mode, so you get the same str
 
 Use the Edit Text Window to turn OCR results into clean, usable content. You can work in plain text, spreadsheet-style, or markdown mode depending on what you need. Grab text with Full-Screen Mode or Grab Frame, then keep refining it without leaving Text Grab.
 
+Markdown mode displays inline images (`![alt text](images/photo.png)`), including images in lists, quotes, links, and tables. Relative image paths resolve from the opened Markdown file's folder; absolute local paths and HTTP/HTTPS images are also supported. Web images load asynchronously. Images keep their Markdown destinations and titles when saved (reference images are saved as inline image syntax). Missing or unsupported images show their Markdown syntax instead. Network-share images and custom URI schemes are not loaded automatically.
+
+Markdown task-list checkboxes (`- [ ]` and `- [x]`) can be toggled in the editor; their state is saved in the Markdown document.
+
+Fenced `mermaid` blocks render as diagrams using a native .NET renderer, without a browser, JavaScript, or network access. Flowcharts, sequence diagrams, class diagrams, and other diagram types supported by Mermaider are displayed as images and adapt to the app's light/dark theme. Diagram source is preserved when saving; switch to plain text mode to edit it. Invalid, unsupported, or oversized diagrams show an error and their source instead. Rendering is bounded to 50,000 source characters, 500 diagram elements, and a three-second layout budget.
+
+Markdown mode also renders strikethrough (`~~deleted~~`), highlighting (`==marked==`), inserted/underlined text (`++inserted++`), subscript (`H~2~O`), and superscript (`x^2^`). These can contain nested formatting and retain their syntax and edits when saved. Highlights and script sizes adapt to the document's theme and font size.
+
+Markdown tables preserve cell formatting and literal pipes when saved. Line breaks and additional paragraphs inside a cell are saved as `<br />` without creating extra rows or columns.
+
+Inline math (`$x^2$`) and display math (lines fenced with `$$`) render natively using WPF-Math, without a WebView, browser, or network access. Switch to plain text mode to edit formula source. Unsupported or invalid LaTeX shows an error and its source rather than a blank area; source survives saving. Formulas are limited to 4,000 source characters, 32 nested groups, and an 8,192-unit drawing size.
+
+Footnotes render as superscript references and a numbered list of formatted notes at the end of the document. Ctrl+click a reference to jump to its note, or a return link to go back; repeated references have separate return links. Saving preserves footnote labels, formatting, and edits, including multiline definitions. Unreferenced definitions and unresolved references remain visible as Markdown source. Link-reference definitions are also preserved without duplicating document content.
+
+Basic HTML is also rendered: paragraphs and headings (`p`, `h1`–`h6`) with `align`, links (`a`), images (`img`) with numeric width/height, line breaks (`br`), and inline `span`, `b`/`strong`, and `i`/`em` tags. HTML entities are decoded and layout whitespace is collapsed. HTML tags and attributes are retained when saving, including linked images. Unsupported or unbalanced HTML remains visible as source; CSS, scripts, and full web-page layouts are not rendered. HTML images use the same path resolution and loading restrictions as Markdown images.
+
 Inside the Edit Text Window, you get tools that help you quickly fix, extract, and structure text.
 
 **Clean OCR output**

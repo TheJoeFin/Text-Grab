@@ -70,6 +70,11 @@ public static partial class MarkdownDocumentUtilities
             .Replace("`", "\\`", StringComparison.Ordinal)
             .Replace("*", "\\*", StringComparison.Ordinal)
             .Replace("_", "\\_", StringComparison.Ordinal)
+            .Replace("~", "\\~", StringComparison.Ordinal)
+            .Replace("^", "\\^", StringComparison.Ordinal)
+            .Replace("=", "\\=", StringComparison.Ordinal)
+            .Replace("+", "\\+", StringComparison.Ordinal)
+            .Replace("$", "\\$", StringComparison.Ordinal)
             .Replace("[", "\\[", StringComparison.Ordinal)
             .Replace("]", "\\]", StringComparison.Ordinal)
             .Replace("|", "\\|", StringComparison.Ordinal);
@@ -171,6 +176,6 @@ public static partial class MarkdownDocumentUtilities
     [GeneratedRegex(@"(^|\s)\[( |x|X)\](\s|$)|(\*\*|__)(?=\S).+?\4|(?<!\*)\*(?=\S).+?(?<=\S)\*|(?<!_)_(?=\S).+?(?<=\S)_|`[^`\r\n]+`|\[[^\]\r\n]+\]\([^)]+\)", RegexOptions.Compiled)]
     private static partial Regex LiveInlinePromotion();
 
-    [GeneratedRegex(@"(^|\n)\s{0,3}(#{1,6}\s|>+\s|[-+*]\s|\d+[.)]\s|```|~~~|---\s*$|___\s*$|\*\*\*\s*$)|\[[^\]]+\]\([^)]+\)|!\[[^\]]*\]\([^)]+\)|(^|\n)\|.+\|\s*$", RegexOptions.Multiline | RegexOptions.Compiled)]
+    [GeneratedRegex(@"(^|\n)\s{0,3}(#{1,6}\s|>+\s|[-+*]\s|\d+[.)]\s|```|~~~|---\s*$|___\s*$|\*\*\*\s*$)|\[[^\]]+\]\([^)]+\)|!\[[^\]]*\]\([^)]+\)|(^|\n)\|.+\|\s*$|(?i:<(?:p|h[1-6]|a|img|br|span|b|strong|i|em)(?:\s[^<>]*|/?)>)", RegexOptions.Multiline | RegexOptions.Compiled)]
     private static partial Regex MarkdownPattern();
 }

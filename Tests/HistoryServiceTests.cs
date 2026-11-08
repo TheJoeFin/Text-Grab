@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -124,6 +125,127 @@ public class HistoryServiceTests
         Assert.Equal(4, newerPdf.SourcePageIndex);
         Assert.True(historyService.HasAnyRecentGrabs());
         Assert.Same(olderGrab, HistoryFileUtilities.GetMostRecentGrab([olderGrab, newerPdf]));
+    }
+
+    [WpfFact]
+    public void RecentFiles_PersistsDeduplicatesAndIncludesLegacyPdfs()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-recent-files-{Guid.NewGuid():N}");
+        AutomationProfile profile = AutomationProfile.TryCreate(
+            ["Text-Grab.exe"],
+            name => name == AutomationProfile.ProfileEnvironmentVariable ? root : null)
+            ?? throw new InvalidOperationException("Failed to create automation profile.");
+        bool originalUseHistory = AppUtilities.TextGrabSettings.UseHistory;
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(profile);
+        AppUtilities.TextGrabSettings.UseHistory = true;
+
+        try
+        {
+            using HistoryService service = new();
+            SetPrivateField(service, "HistoryWithImage", new List<HistoryInfo>
+            {
+                new()
+                {
+                    ID = "legacy-pdf",
+                    SourcePath = @"C:\documents\legacy.pdf",
+                    SourceContentKind = OpenContentKind.PdfDocument,
+                    CaptureDateTime = DateTimeOffset.UtcNow.AddDays(-1),
+                }
+            });
+            SetPrivateField(service, "_imageHistoryLoaded", true);
+
+            service.RecordRecentFile(@"C:\documents\notes.txt", OpenContentKind.TextFile);
+            service.RecordRecentFile(@"C:\documents\readme.md", OpenContentKind.TextFile);
+            service.RecordRecentFile(@"C:\DOCUMENTS\NOTES.TXT", OpenContentKind.TextFile);
+            SetPrivateField(service, "_hasPendingWrite", true);
+            service.WriteHistory();
+
+            List<HistoryInfo> recent = service.GetRecentFiles();
+            Assert.Equal(3, recent.Count);
+            Assert.Equal(@"C:\DOCUMENTS\NOTES.TXT", recent[0].SourcePath);
+            Assert.Equal(@"C:\documents\readme.md", recent[1].SourcePath);
+            Assert.Equal("legacy-pdf", recent[2].ID);
+
+            service.ReleaseLoadedHistories();
+            List<HistoryInfo> reloaded = service.GetRecentFiles();
+            Assert.Equal(3, reloaded.Count);
+            Assert.Equal(@"C:\DOCUMENTS\NOTES.TXT", reloaded[0].SourcePath);
+            Assert.Equal(@"C:\documents\readme.md", reloaded[1].SourcePath);
+            Assert.Equal("legacy-pdf", reloaded[2].ID);
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.UseHistory = originalUseHistory;
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [WpfFact]
+    public void RecentFiles_RespectsHistorySettingAndRetainsTenMostRecent()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-recent-files-{Guid.NewGuid():N}");
+        AutomationProfile profile = AutomationProfile.TryCreate(
+            ["Text-Grab.exe"],
+            name => name == AutomationProfile.ProfileEnvironmentVariable ? root : null)
+            ?? throw new InvalidOperationException("Failed to create automation profile.");
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(profile);
+        bool originalUseHistory = AppUtilities.TextGrabSettings.UseHistory;
+        using HistoryService service = new();
+        SetPrivateField(service, "HistoryWithImage", new List<HistoryInfo>());
+        SetPrivateField(service, "_imageHistoryLoaded", true);
+
+        try
+        {
+            AppUtilities.TextGrabSettings.UseHistory = false;
+            service.RecordRecentFile(@"C:\documents\ignored.txt", OpenContentKind.TextFile);
+            Assert.Empty(service.GetRecentFiles());
+
+            AppUtilities.TextGrabSettings.UseHistory = true;
+            for (int i = 0; i < 12; i++)
+                service.RecordRecentFile($@"C:\documents\file{i}.txt", OpenContentKind.TextFile);
+
+            List<HistoryInfo> recent = service.GetRecentFiles();
+            Assert.Equal(10, recent.Count);
+            Assert.Equal(@"C:\documents\file11.txt", recent[0].SourcePath);
+            Assert.DoesNotContain(recent, item => item.SourcePath.EndsWith("file0.txt", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(recent, item => item.SourcePath.EndsWith("file1.txt", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.UseHistory = originalUseHistory;
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [WpfFact]
+    public void RecentFiles_UpdatesAcrossHistoryServiceInstances()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-recent-files-{Guid.NewGuid():N}");
+        AutomationProfile profile = AutomationProfile.TryCreate(
+            ["Text-Grab.exe"],
+            name => name == AutomationProfile.ProfileEnvironmentVariable ? root : null)
+            ?? throw new InvalidOperationException("Failed to create automation profile.");
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(profile);
+        bool originalUseHistory = AppUtilities.TextGrabSettings.UseHistory;
+        AppUtilities.TextGrabSettings.UseHistory = true;
+        try
+        {
+            using HistoryService first = new();
+            using HistoryService second = new();
+            Assert.Empty(first.GetRecentFiles());
+            second.RecordRecentFile(@"C:\documents\opened.pdf", OpenContentKind.PdfDocument);
+            Assert.Equal(@"C:\documents\opened.pdf", Assert.Single(first.GetRecentFiles()).SourcePath);
+            first.RecordRecentFile(@"C:\documents\notes.md", OpenContentKind.TextFile);
+            Assert.Equal(2, second.GetRecentFiles().Count);
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.UseHistory = originalUseHistory;
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
