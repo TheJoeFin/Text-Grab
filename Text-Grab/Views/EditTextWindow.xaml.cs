@@ -6916,21 +6916,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (Keyboard.Modifiers == ModifierKeys.Control)
             return; // let zoom handler take it
 
-        try
-        {
-            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv)
-            {
-                // Roughly match WPF default: 3 lines per notch; use a small pixel offset
-                double delta = -e.Delta; // positive means scroll down
-                double lines = delta / 120.0 * 3.0;
-
-                // Estimate line height from font size; 1em ~ FontSize pixels, add padding
-                double lineHeight = Math.Max(12, PassedTextControl.FontSize * 1.35);
-                mainSv.ScrollToVerticalOffset(mainSv.VerticalOffset + (lines * lineHeight));
-                e.Handled = true;
-            }
-        }
-        catch { /* no-op */ }
+        // Drive the main pane with the same smooth scrolling; the calc pane mirrors it via ScrollChanged
+        if (SmoothScrollBehavior.ScrollBy(PassedTextControl, e.Delta))
+            e.Handled = true;
     }
 
     private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
