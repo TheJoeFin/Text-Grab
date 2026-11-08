@@ -867,7 +867,16 @@ public partial class FullscreenGrab
 
     private FullscreenCaptureResult CreateWindowSelectionResult(WindowSelectionCandidate candidate)
     {
-        BitmapSource? capturedImage = ComposeCapturedImageFromFullscreenBackgrounds(candidate.Bounds);
+        // Capture the window itself (Windows.Graphics.Capture) so windows overlapping it don't
+        // bleed into the result (#688); fall back to cropping the screen backdrop.
+        BitmapSource? capturedImage = null;
+        using (Bitmap? windowBitmap = WindowGraphicsCapture.TryCaptureWindow(candidate.Handle))
+        {
+            if (windowBitmap is not null)
+                capturedImage = ImageMethods.BitmapToImageSource(windowBitmap);
+        }
+
+        capturedImage ??= ComposeCapturedImageFromFullscreenBackgrounds(candidate.Bounds);
         return new FullscreenCaptureResult(
             FsgSelectionStyle.Window,
             candidate.Bounds,

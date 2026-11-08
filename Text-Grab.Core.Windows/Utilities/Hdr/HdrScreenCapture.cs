@@ -45,7 +45,7 @@ public static class HdrScreenCapture
     // intervals, so this still leaves ample margin.
     private const int FrameTimeoutMilliseconds = 250;
 
-    private static readonly object _captureLock = new();
+    internal static readonly object _captureLock = new();
 
     // The D3D11 device, its immediate context, and the WinRT device projection are expensive to
     // create, so they are built once and reused across captures. A failed capture disposes them via
@@ -211,7 +211,7 @@ public static class HdrScreenCapture
     /// under <see cref="_captureLock"/>, so the shared immediate context is only ever touched by one
     /// capture at a time. Returns false if a device could not be created.
     /// </summary>
-    private static bool TryGetSharedDevice(out ID3D11Device device, out ID3D11DeviceContext context, out IDirect3DDevice winrtDevice)
+    internal static bool TryGetSharedDevice(out ID3D11Device device, out ID3D11DeviceContext context, out IDirect3DDevice winrtDevice)
     {
         if (_sharedDevice is not null && _sharedContext is not null && _sharedWinRtDevice is not null)
         {
@@ -262,7 +262,7 @@ public static class HdrScreenCapture
     /// Disposes and clears the cached device, context, and WinRT device so the next capture rebuilds
     /// a fresh device. Called after a capture failure, which also recovers from a lost device.
     /// </summary>
-    private static void DisposeSharedDevice()
+    internal static void DisposeSharedDevice()
     {
         _sharedWinRtDevice?.Dispose();
         _sharedWinRtDevice = null;
@@ -362,7 +362,7 @@ public static class HdrScreenCapture
         }
     }
 
-    private static ID3D11Texture2D GetTexture(IDirect3DSurface surface)
+    internal static ID3D11Texture2D GetTexture(IDirect3DSurface surface)
     {
         IDirect3DDxgiInterfaceAccess access = surface.As<IDirect3DDxgiInterfaceAccess>();
         Guid guid = ID3D11Texture2DGuid;
@@ -384,6 +384,28 @@ public static class HdrScreenCapture
         finally
         {
             Marshal.Release(graphicsDevice);
+        }
+    }
+
+    internal static GraphicsCaptureItem? CreateItemForWindow(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero)
+            return null;
+
+        IGraphicsCaptureItemInterop interop = ActivationFactory
+            .Get("Windows.Graphics.Capture.GraphicsCaptureItem")
+            .AsInterface<IGraphicsCaptureItemInterop>();
+
+        Guid guid = GraphicsCaptureItemGuid;
+        IntPtr itemPointer = interop.CreateForWindow(hwnd, ref guid);
+
+        try
+        {
+            return GraphicsCaptureItem.FromAbi(itemPointer);
+        }
+        finally
+        {
+            Marshal.Release(itemPointer);
         }
     }
 
@@ -409,7 +431,7 @@ public static class HdrScreenCapture
         }
     }
 
-    private static void TrySet(Action action)
+    internal static void TrySet(Action action)
     {
         try
         {
@@ -421,7 +443,7 @@ public static class HdrScreenCapture
         }
     }
 
-    private static volatile bool _borderlessGranted;
+    internal static volatile bool _borderlessGranted;
     private static int _borderlessRequestStarted;
 
     /// <summary>
@@ -459,7 +481,7 @@ public static class HdrScreenCapture
     /// already consented in a previous session the request completes silently and later captures
     /// drop the border automatically; otherwise the border stays until the user grants access.
     /// </summary>
-    private static void EnsureBorderlessRequestedOnce()
+    internal static void EnsureBorderlessRequestedOnce()
     {
         // Only silently re-activate for users who already granted access in a past session, so a
         // consent prompt never appears unexpectedly during a grab. First-time consent is explicit,
