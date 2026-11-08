@@ -263,6 +263,8 @@ public static partial class MarkdownFlowDocumentUtilities
         StringBuilder builder = new();
         foreach (System.Windows.Documents.Inline inline in inlines)
         {
+            if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown: false))
+                continue;
             if (inline is Run run && GetInlineRole(run) != MarkdownInlineRole.LiteralMarkdown)
                 builder.Append(WebUtility.HtmlEncode(run.Text));
             else if ((string)inline.GetValue(HtmlOpeningProperty) == string.Empty && inline is LineBreak)

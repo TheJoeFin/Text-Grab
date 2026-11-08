@@ -1,3 +1,6 @@
+using Markdig.Extensions.AutoIdentifiers;
+using Markdig.Extensions.Footnotes;
+using Markdig.Extensions.Mathematics;
 using Markdig.Extensions.TaskLists;
 using Markdig.Helpers;
 using Markdig.Syntax;
@@ -18,6 +21,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Text_Grab.Controls;
 using MarkdigBlock = Markdig.Syntax.Block;
 using MarkdigInline = Markdig.Syntax.Inlines.Inline;
 using MarkdigTable = Markdig.Extensions.Tables.Table;
@@ -67,7 +71,8 @@ public static partial class MarkdownFlowDocumentUtilities
         Brush CodeBackgroundBrush,
         FontFamily BaseFontFamily,
         FontFamily CodeFontFamily,
-        double BaseFontSize);
+        double BaseFontSize,
+        bool IsLightTheme);
 
     public static FlowDocument CreateFlowDocument(string? markdownText, FontFamily fontFamily, double fontSize, string? markdownFilePath = null)
     {
@@ -436,6 +441,38 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case HtmlBlock htmlBlock when TryAppendHtmlBlocks(blocks, htmlBlock, source, quoteDepth, markdownFilePath):
+                break;
+
+            case LinkReferenceDefinitionGroup definitions:
+                foreach (MarkdigBlock definition in definitions)
+                    AppendBlock(blocks, definition, source, quoteDepth, markdownFilePath);
+                break;
+
+            case HeadingLinkReferenceDefinition:
+                break;
+
+            case FootnoteLinkReferenceDefinition { Footnote.Links.Count: > 0 }:
+                break;
+
+            case LinkReferenceDefinition definition:
+                int start = definition.Span.Start;
+                int end = definition is FootnoteLinkReferenceDefinition footnoteDefinition
+                    ? Math.Max(definition.Span.End, footnoteDefinition.Footnote.Span.End)
+                    : definition.Span.End;
+                if (start < 0 || end < start || end >= source.Length)
+                {
+                    Debug.WriteLine($"Markdown reference definition has an invalid source span: {start}..{end}.");
+                    break;
+                }
+
+                blocks.Add(CreateLiteralParagraph(source.Substring(start, end - start + 1), quoteDepth, start, end + 1));
+                break;
+
+            case FootnoteGroup footnotes when footnotes.Count > 0:
+                blocks.Add(CreateFootnoteList(footnotes, source, markdownFilePath));
+                break;
+
+            case FootnoteGroup:
                 break;
 
             default:
@@ -895,6 +932,15 @@ public static partial class MarkdownFlowDocumentUtilities
         builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(content, quotePrefix));
     }
 
+    private static string GetCodeInlineText(WpfInline inline) => inline switch
+    {
+        Run run => run.Text,
+        LineBreak => "\n",
+        Span span => string.Concat(span.Inlines.Select(GetCodeInlineText)),
+        InlineUIContainer { Child: MermaidDiagram diagram } => diagram.Source,
+        _ => new TextRange(inline.ContentStart, inline.ContentEnd).Text
+    };
+
     private static void WriteList(StringBuilder builder, WpfList list, int listDepth, bool preserveLiteralMarkdown)
     {
         string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(list));
@@ -1135,9 +1181,19 @@ public static partial class MarkdownFlowDocumentUtilities
     {
         switch (inline)
         {
+            case InlineUIContainer { Child: MathFormula formula } container:
+                formula.ApplyTheme(theme.ForegroundBrush, container.FontSize);
+                break;
+
+            case InlineUIContainer { Child: MermaidDiagram diagram }:
+                diagram.ApplyTheme(theme.IsLightTheme);
+                break;
+
             case Hyperlink hyperlink:
                 hyperlink.Foreground = theme.AccentBrush;
                 hyperlink.TextDecorations = TextDecorations.Underline;
+                if (GetInlineRole(hyperlink) == MarkdownInlineRole.FootnoteReference)
+                    hyperlink.FontSize = theme.BaseFontSize * 0.75;
                 foreach (WpfInline child in hyperlink.Inlines)
                     ApplyInlineTheme(child, theme);
                 break;

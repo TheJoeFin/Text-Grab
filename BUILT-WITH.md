@@ -19,6 +19,7 @@ The same package inventory is also available from the app's **About → Licenses
 | Magick.NET.SystemDrawing | App | Apache-2.0 | [Open](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | [Project](https://github.com/dlemstra/Magick.NET) | — |
 | Magick.NET.SystemWindowsMedia | App | Apache-2.0 | [Open](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | [Project](https://github.com/dlemstra/Magick.NET) | — |
 | Markdig | App | BSD-2-Clause | [Open](ThirdPartyNotices/licenses/Markdig-license.txt) | [Project](https://github.com/xoofx/markdig) | Bundled to satisfy BSD-2-Clause binary redistribution notice requirements. |
+| Mermaider | App | MIT | [Open](ThirdPartyNotices/licenses/Mermaider-license.txt) | [Project](https://github.com/nullean/mermaider) | Native Mermaid diagram rendering, including its Sugiyama layout engine. |
 | Microsoft.Recognizers.Text.Choice | App | MIT | [Open](https://github.com/microsoft/Recognizers-Text/blob/master/LICENSE.md) | [Project](https://github.com/microsoft/Recognizers-Text) | Culture-aware entity recognizers. |
 | Microsoft.Recognizers.Text.DateTime | App | MIT | [Open](https://github.com/microsoft/Recognizers-Text/blob/master/LICENSE.md) | [Project](https://github.com/microsoft/Recognizers-Text) | Culture-aware entity recognizers. |
 | Microsoft.Recognizers.Text.Number | App | MIT | [Open](https://github.com/microsoft/Recognizers-Text/blob/master/LICENSE.md) | [Project](https://github.com/microsoft/Recognizers-Text) | Culture-aware entity recognizers. |
@@ -37,6 +38,7 @@ The same package inventory is also available from the app's **About → Licenses
 | Vortice.DXGI | App | MIT | [Open](https://github.com/amerkoleci/Vortice.Windows/blob/main/LICENSE) | [Project](https://github.com/amerkoleci/Vortice.Windows) | DXGI interop for HDR-aware screen capture. |
 | WPF-UI | App | MIT | [Open](https://github.com/lepoco/wpfui/blob/main/LICENSE) | [Project](https://github.com/lepoco/wpfui) | — |
 | WPF-UI.Tray | App | MIT | [Open](https://github.com/lepoco/wpfui/blob/main/LICENSE) | [Project](https://github.com/lepoco/wpfui) | — |
+| WpfMath | App | MIT; Knuth; OFL-1.1 | [Open](ThirdPartyNotices/licenses/WpfMath-license.txt) | [Project](https://github.com/ForNeVeR/xaml-math) | Native math rendering; includes XAML-Math shared code and font notices. |
 | ZXing.Net | App | Apache-2.0 | [Open](https://github.com/micjahn/ZXing.Net/blob/master/COPYING) | [Project](https://github.com/micjahn/ZXing.Net) | — |
 | ZXing.Net.Bindings.Windows.Compatibility | App | Apache-2.0 | [Open](https://github.com/micjahn/ZXing.Net/blob/master/COPYING) | [Project](https://github.com/micjahn/ZXing.Net) | — |
 | BenchmarkDotNet | Tests | MIT | [Open](https://github.com/dotnet/BenchmarkDotNet/blob/master/LICENSE.md) | [Project](https://github.com/dotnet/BenchmarkDotNet) | Test-only dependency. |
