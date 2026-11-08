@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -151,6 +155,95 @@ public partial class HistoryService : IDisposable
         EnsureImageHistoryLoaded();
         TouchHistoryCache();
         return [.. HistoryWithImage.Where(history => history.IsPdfDocument)];
+    }
+
+    public List<HistoryInfo> GetRecentFiles()
+    {
+        List<HistoryInfo> recentFiles = WithRecentFilesLock(() => HistoryFileUtilities.LoadHistoryBlocking("RecentFiles").HistoryItems);
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
+        return [.. recentFiles.Concat(HistoryWithImage.Where(history => history.IsPdfDocument))
+            .Where(history => !string.IsNullOrWhiteSpace(history.SourcePath))
+            .OrderByDescending(history => history.CaptureDateTime)
+            .DistinctBy(history => history.SourcePath, StringComparer.OrdinalIgnoreCase)
+            .Take(10)];
+    }
+
+    public void RecordRecentFile(string path, OpenContentKind kind)
+    {
+        if (!DefaultSettings.UseHistory)
+            return;
+
+        string fullPath = Path.GetFullPath(path);
+        WithRecentFilesLock(() =>
+        {
+            List<HistoryInfo> recentFiles = HistoryFileUtilities.LoadHistoryBlocking("RecentFiles").HistoryItems;
+            recentFiles.RemoveAll(history => string.Equals(history.SourcePath, fullPath, StringComparison.OrdinalIgnoreCase));
+            recentFiles.Insert(0, new HistoryInfo
+            {
+                ID = Guid.NewGuid().ToString(),
+                SourcePath = fullPath,
+                SourceContentKind = kind,
+                CaptureDateTime = DateTimeOffset.Now,
+            });
+            string json = JsonSerializer.Serialize(recentFiles.OrderByDescending(history => history.CaptureDateTime).Take(10));
+            bool saved = Task.Run(() => FileUtilities.SaveTextFile(json, "RecentFiles.json", FileStorageKind.WithHistory)).GetAwaiter().GetResult();
+            if (!saved)
+                throw new IOException("Failed to save recent files history.");
+            return true;
+        });
+    }
+
+    private static T WithRecentFilesLock<T>(Func<T> action)
+    {
+        string historyPath = Task.Run(FileUtilities.GetPathToHistory).GetAwaiter().GetResult();
+        string pathHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(historyPath).ToUpperInvariant())));
+        using Mutex mutex = new(false, $"Local\\TextGrabRecentFiles-{pathHash}");
+        bool acquired = false;
+        try
+        {
+            try
+            {
+                acquired = mutex.WaitOne(TimeSpan.FromSeconds(10));
+            }
+            catch (AbandonedMutexException)
+            {
+                acquired = true;
+            }
+            if (!acquired)
+                throw new TimeoutException("Timed out waiting for recent files history.");
+            return action();
+        }
+        finally
+        {
+            if (acquired)
+                mutex.ReleaseMutex();
+        }
+    }
+
+    public void PopulateMenuItemWithRecentFiles(MenuItem menu, EditTextWindow window)
+    {
+        menu.Items.Clear();
+        foreach (HistoryInfo history in GetRecentFiles())
+        {
+            MenuItem item = new()
+            {
+                Header = $"{history.CaptureDateTime.Humanize().Trim()} | {Path.GetFileName(history.SourcePath)}",
+                ToolTip = history.SourcePath,
+            };
+            if (history.IsPdfDocument && !string.IsNullOrWhiteSpace(history.ImagePath))
+            {
+                item.Tag = history.ID;
+                item.Click += RecentGrabMenuItem_Click;
+            }
+            else
+            {
+                string path = history.SourcePath;
+                item.Click += async (_, _) => await window.OpenPath(path);
+            }
+            menu.Items.Add(item);
+        }
+        menu.IsEnabled = menu.Items.Count > 0;
     }
 
     public bool HasAnyRecentGrabs()

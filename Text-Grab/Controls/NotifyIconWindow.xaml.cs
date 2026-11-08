@@ -244,7 +244,7 @@ public partial class NotifyIconWindow : Window
             encoder.Save(fileStream);
         }
 
-        GrabFrame grabFrame = new(tempPath);
+        GrabFrame grabFrame = new(tempPath, recordRecentFile: false);
         grabFrame.Show();
         grabFrame.Activate();
     }

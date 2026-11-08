@@ -2561,8 +2561,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
     }
 
-    internal async void OpenPath(string pathOfFileToOpen, bool isMultipleFiles = false)
+    internal async Task OpenPath(string pathOfFileToOpen, bool isMultipleFiles = false)
     {
+        if (GrabFrameFileUtilities.IsGrabFrameFile(pathOfFileToOpen))
+        {
+            if (!await App.TryToOpenFilePathAsync(pathOfFileToOpen))
+                System.Windows.MessageBox.Show($"Failed to open Grab Frame file:\n{pathOfFileToOpen}");
+            return;
+        }
+
         // Audio files are transcribed on-device rather than opened as text. Routing this here means
         // CLI arguments, File > Open, and drag/drop all reach the same transcription path.
         if (AudioTranscriptionUtilities.IsAudioFile(pathOfFileToOpen))
@@ -2572,42 +2579,52 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        ResetSpreadsheetUndoHistory();
-        (string TextContent, OpenContentKind KindOpened) = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
-        bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
-
-        OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
-
-        if (KindOpened == OpenContentKind.TextFile)
-        {
-            EtwEditorMode targetMode = isMultipleFiles
-                ? EtwEditorMode.Text
-                : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
-
-            if (IsLoaded)
-                SetEditorMode(targetMode);
-            else
-                editorMode = targetMode;
-        }
-
-        isLoadingOpenedFile = true;
+        SetToLoading("Loading file...");
         try
         {
-            PassedTextControl.Text = TextContent;
-
-            if (!IsLoaded)
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Render);
+            var result = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
+            if (_isClosed || result is not (string TextContent, OpenContentKind KindOpened))
                 return;
 
-            if (editorMode == EtwEditorMode.Spreadsheet)
-                RefreshSpreadsheetFromText();
-            else if (editorMode == EtwEditorMode.Markdown)
-                RefreshMarkdownFromText();
+            ResetSpreadsheetUndoHistory();
+            bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
+            OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
+
+            if (KindOpened == OpenContentKind.TextFile)
+            {
+                EtwEditorMode targetMode = isMultipleFiles
+                    ? EtwEditorMode.Text
+                    : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
+
+                if (IsLoaded)
+                    SetEditorMode(targetMode);
+                else
+                    editorMode = targetMode;
+            }
+
+            isLoadingOpenedFile = true;
+            try
+            {
+                PassedTextControl.Text = TextContent;
+
+                if (IsLoaded && editorMode == EtwEditorMode.Spreadsheet)
+                    RefreshSpreadsheetFromText();
+                else if (IsLoaded && editorMode == EtwEditorMode.Markdown)
+                    RefreshMarkdownFromText();
+            }
+            finally
+            {
+                isLoadingOpenedFile = false;
+                SyncTextFromActiveEditor();
+                SetOpenedFileState(shouldTrackOpenedFile ? pathOfFileToOpen : null);
+            }
+            Singleton<HistoryService>.Instance.RecordRecentFile(pathOfFileToOpen, KindOpened);
         }
         finally
         {
-            isLoadingOpenedFile = false;
-            SyncTextFromActiveEditor();
-            SetOpenedFileState(shouldTrackOpenedFile ? pathOfFileToOpen : null);
+            if (!_isClosed)
+                SetToLoaded();
         }
     }
 
@@ -3019,7 +3036,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             bool openAsMultiple = existingFiles.Count > 1;
             foreach (string possibleFilePath in otherFiles)
-                OpenPath(possibleFilePath, openAsMultiple);
+                await OpenPath(possibleFilePath, openAsMultiple);
 
             if (audioFiles.Count > 0)
             {
@@ -3118,6 +3135,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     audioFile, hotWords, statusProgress, segmentProgress,
                     includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription,
                     clipProgress: clipProgress, cancellationToken);
+
+                Singleton<HistoryService>.Instance.RecordRecentFile(audioFile, OpenContentKind.TextFile);
 
                 if (string.IsNullOrWhiteSpace(transcription))
                     AppendTranscriptionText("(no speech recognized)");
@@ -3678,7 +3697,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (capturedImagePath is null)
             return;
 
-        OpenPath(capturedImagePath);
+        await OpenPath(capturedImagePath);
     }
 
     private void ManageGrabTemplates_Click(object sender, RoutedEventArgs e)
@@ -4308,7 +4327,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         LoadRecentTextHistory();
         await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
-        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentPdfs(OpenRecentPdfsMenuItem);
+        Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentFiles(OpenRecentPdfsMenuItem, this);
     }
 
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
@@ -4474,7 +4493,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         });
     }
 
-    private void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
     {
         // Create OpenFileDialog 
         Microsoft.Win32.OpenFileDialog dlg = new()
@@ -4488,7 +4507,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         bool? result = dlg.ShowDialog();
 
         if (result is true && File.Exists(dlg.FileName))
-            OpenPath(dlg.FileName);
+            await OpenPath(dlg.FileName);
     }
 
     private void OpenGrabFrame_Click(object sender, RoutedEventArgs e)
@@ -5200,6 +5219,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             : 0;
         File.WriteAllText(targetFilePath, fileText);
         SetOpenedFileState(targetFilePath);
+        Singleton<HistoryService>.Instance.RecordRecentFile(targetFilePath, OpenContentKind.TextFile);
         if (refreshImagePaths)
             ReloadMarkdownDocumentAndRestoreCaret(markdownCaretOffset);
         return true;
