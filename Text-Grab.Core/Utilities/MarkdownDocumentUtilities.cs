@@ -70,6 +70,11 @@ public static partial class MarkdownDocumentUtilities
             .Replace("`", "\\`", StringComparison.Ordinal)
             .Replace("*", "\\*", StringComparison.Ordinal)
             .Replace("_", "\\_", StringComparison.Ordinal)
+            .Replace("~", "\\~", StringComparison.Ordinal)
+            .Replace("^", "\\^", StringComparison.Ordinal)
+            .Replace("=", "\\=", StringComparison.Ordinal)
+            .Replace("+", "\\+", StringComparison.Ordinal)
+            .Replace("$", "\\$", StringComparison.Ordinal)
             .Replace("[", "\\[", StringComparison.Ordinal)
             .Replace("]", "\\]", StringComparison.Ordinal)
             .Replace("|", "\\|", StringComparison.Ordinal);

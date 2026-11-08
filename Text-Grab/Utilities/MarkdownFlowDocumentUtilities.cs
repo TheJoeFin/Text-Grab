@@ -51,7 +51,10 @@ public static partial class MarkdownFlowDocumentUtilities
     {
         None,
         CodeBlock,
-        ThematicBreak
+        ThematicBreak,
+        FootnoteList,
+        FootnoteBacklinks,
+        MathBlock
     }
 
     private enum MarkdownInlineRole
@@ -59,7 +62,9 @@ public static partial class MarkdownFlowDocumentUtilities
         None,
         CodeSpan,
         LiteralMarkdown,
-        TaskListMarker
+        TaskListMarker,
+        FootnoteReference,
+        FootnoteBacklink
     }
 
     private sealed record MarkdownTheme(
@@ -85,8 +90,17 @@ public static partial class MarkdownFlowDocumentUtilities
         };
 
         MarkdownDocument markdownDocument = Markdig.Markdown.Parse(safeMarkdown, MarkdownDocumentUtilities.MarkdownPipeline);
-        foreach (MarkdigBlock block in markdownDocument)
+        IEnumerable<MarkdigBlock> sourceBlocks = markdownDocument
+            .SelectMany(block => block is LinkReferenceDefinitionGroup definitions ? definitions.Cast<MarkdigBlock>() : new[] { block })
+            .Where(block => block is not FootnoteGroup)
+            .OrderBy(block => block.Span.Start);
+        foreach (MarkdigBlock block in sourceBlocks)
             AppendBlock(document.Blocks, block, safeMarkdown, quoteDepth: 0, markdownFilePath);
+
+        foreach (FootnoteGroup footnotes in markdownDocument.OfType<FootnoteGroup>())
+            AppendBlock(document.Blocks, footnotes, safeMarkdown, quoteDepth: 0, markdownFilePath);
+        ConnectFootnotes(document);
+        InitializeExtendedInlines(document);
 
         if (document.Blocks.Count == 0)
             document.Blocks.Add(new Paragraph());
@@ -145,7 +159,7 @@ public static partial class MarkdownFlowDocumentUtilities
 
     /// <summary>
     /// Walks a document built by <see cref="CreateFlowDocument"/> and collects the raw-to-rendered
-    /// offset mapping recorded on each tagged Paragraph and Run during construction, in document order.
+    /// offset mapping recorded on each tagged Paragraph and Run during construction, in source order.
     /// </summary>
     public static MarkdownOffsetMap BuildOffsetMap(FlowDocument document)
     {
@@ -156,7 +170,8 @@ public static partial class MarkdownFlowDocumentUtilities
         foreach (WpfBlock block in document.Blocks)
             CollectOffsetMappings(block, blocks, runs);
 
-        return new MarkdownOffsetMap(blocks, runs);
+        // Footnotes are displayed at the end even when their definitions occur earlier in the source.
+        return new MarkdownOffsetMap(blocks.OrderBy(block => block.RawStart).ToArray(), runs.OrderBy(run => run.RawStart).ToArray());
     }
 
     /// <summary>
@@ -292,7 +307,12 @@ public static partial class MarkdownFlowDocumentUtilities
                 if (blockRawStart >= 0)
                 {
                     int blockRawEnd = GetRawSpanEnd(paragraph);
-                    int paragraphRenderedLength = new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text.Length;
+                    TextPointer renderedEnd = paragraph.ContentEnd;
+                    for (WpfInline? trailing = paragraph.Inlines.LastInline;
+                        trailing is not null && GetInlineRole(trailing) == MarkdownInlineRole.FootnoteBacklink;
+                        trailing = trailing.PreviousInline)
+                        renderedEnd = trailing.ElementStart;
+                    int paragraphRenderedLength = new TextRange(paragraph.ContentStart, renderedEnd).Text.Length;
                     if (paragraphRenderedLength > 0)
                         blocks.Add(new MarkdownOffsetMapping(blockRawStart, blockRawEnd, paragraph, 0, paragraphRenderedLength));
                 }
@@ -374,6 +394,9 @@ public static partial class MarkdownFlowDocumentUtilities
                 blocks.Add(headingParagraph);
                 break;
 
+            case ParagraphBlock { Inline.FirstChild: FootnoteLink { IsBackLink: true } }:
+                break;
+
             case ParagraphBlock paragraphBlock:
                 Paragraph paragraph = new()
                 {
@@ -414,8 +437,28 @@ public static partial class MarkdownFlowDocumentUtilities
                 blocks.Add(list);
                 break;
 
+            case MathBlock mathBlock:
+                blocks.Add(CreateMathParagraph(mathBlock, quoteDepth));
+                break;
+
             case FencedCodeBlock fencedCodeBlock:
-                blocks.Add(CreateCodeParagraph(fencedCodeBlock, fencedCodeBlock.Info, source, quoteDepth));
+                Paragraph codeParagraph = CreateCodeParagraph(fencedCodeBlock, fencedCodeBlock.Info, source, quoteDepth);
+                if (string.Equals(fencedCodeBlock.Info, "mermaid", StringComparison.OrdinalIgnoreCase))
+                {
+                    MermaidDiagram diagram = new(MarkdownDocumentUtilities.GetCodeBlockText(fencedCodeBlock));
+                    diagram.SetBinding(FrameworkElement.MaxWidthProperty, new Binding(nameof(FrameworkElement.ActualWidth))
+                    {
+                        RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(RichTextBox), 1),
+                        Converter = new ImageWidthConverter(),
+                        FallbackValue = 640d
+                    });
+                    InlineUIContainer container = new(diagram);
+                    SetRawSpan(container, fencedCodeBlock.Span.Start, fencedCodeBlock.Span.End + 1);
+                    codeParagraph.Inlines.Clear();
+                    codeParagraph.Inlines.Add(container);
+                }
+
+                blocks.Add(codeParagraph);
                 break;
 
             case CodeBlock codeBlock:
@@ -660,6 +703,23 @@ public static partial class MarkdownFlowDocumentUtilities
                 inlines.Add(taskListRun);
                 break;
 
+            case FootnoteLink footnoteLink:
+                if (!footnoteLink.IsBackLink)
+                    inlines.Add(CreateFootnoteReference(footnoteLink, source));
+                break;
+
+            case MathInline mathInline:
+                inlines.Add(CreateMathInline(mathInline.Content.ToString(), MarkdownDocumentUtilities.GetSourceSlice(source, mathInline),
+                    mathInline.DelimiterCount > 1, mathInline.Span.Start, mathInline.Span.End + 1));
+                break;
+
+            case EmphasisInline emphasisInline when emphasisInline.DelimiterChar is not ('*' or '_'):
+                Span extendedEmphasis = new();
+                extendedEmphasis.SetValue(EmphasisDelimiterProperty, new string(emphasisInline.DelimiterChar, emphasisInline.DelimiterCount));
+                AppendInlineContainer(extendedEmphasis.Inlines, emphasisInline, source, markdownFilePath);
+                inlines.Add(extendedEmphasis);
+                break;
+
             case EmphasisInline emphasisInline:
                 Span emphasisSpan = emphasisInline.DelimiterCount >= 2
                     ? new Bold()
@@ -882,6 +942,10 @@ public static partial class MarkdownFlowDocumentUtilities
                 WriteParagraph(builder, paragraph, preserveLiteralMarkdown);
                 break;
 
+            case WpfList list when GetBlockRole(list) == MarkdownBlockRole.FootnoteList:
+                WriteFootnotes(builder, list, preserveLiteralMarkdown);
+                break;
+
             case WpfList list:
                 WriteList(builder, list, listDepth, preserveLiteralMarkdown);
                 break;
@@ -916,7 +980,8 @@ public static partial class MarkdownFlowDocumentUtilities
         if (GetBlockRole(paragraph) == MarkdownBlockRole.CodeBlock)
         {
             string codeInfo = GetCodeFenceInfo(paragraph);
-            string codeText = MarkdownDocumentUtilities.NormalizeDocumentText(new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text);
+            string codeText = MarkdownDocumentUtilities.NormalizeDocumentText(
+                string.Concat(paragraph.Inlines.Select(GetCodeInlineText)));
             string fencedBlock = string.IsNullOrWhiteSpace(codeInfo)
                 ? $"```{Environment.NewLine}{codeText}{Environment.NewLine}```"
                 : $"```{codeInfo}{Environment.NewLine}{codeText}{Environment.NewLine}```";
@@ -1028,6 +1093,9 @@ public static partial class MarkdownFlowDocumentUtilities
 
     private static void WriteInline(StringBuilder builder, WpfInline inline, bool preserveLiteralMarkdown)
     {
+        if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown))
+            return;
+
         if (inline.GetValue(HtmlOpeningProperty) is string opening && opening.Length > 0)
         {
             builder.Append(opening);
@@ -1139,6 +1207,8 @@ public static partial class MarkdownFlowDocumentUtilities
 
             case WpfList list:
                 list.Foreground = theme.ForegroundBrush;
+                if (GetBlockRole(list) == MarkdownBlockRole.FootnoteList)
+                    list.BorderBrush = theme.BorderBrush;
                 list.Margin = GetQuoteDepth(list) > 0
                     ? new Thickness(18 * GetQuoteDepth(list), 4, 0, 4)
                     : list.Margin;
@@ -1204,6 +1274,7 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case Span span:
+                ApplyExtendedEmphasisStyle(span, theme.IsLightTheme);
                 foreach (WpfInline child in span.Inlines)
                     ApplyInlineTheme(child, theme);
                 break;
@@ -1228,7 +1299,8 @@ public static partial class MarkdownFlowDocumentUtilities
             codeBackground,
             baseFontFamily,
             new FontFamily("Consolas"),
-            baseFontSize);
+            baseFontSize,
+            isLightTheme);
     }
 
     private static Brush FindBrush(FrameworkElement resourceHost, string resourceKey, Color fallback)

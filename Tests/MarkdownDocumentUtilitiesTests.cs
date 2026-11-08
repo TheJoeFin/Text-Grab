@@ -10,6 +10,48 @@ namespace Tests;
 
 public class MarkdownDocumentUtilitiesTests
 {
+    [WpfTheory]
+    [InlineData("\n", false)]
+    [InlineData("\r\n", false)]
+    [InlineData("\n", true)]
+    [InlineData("\r\n", true)]
+    public void FootnotesAndReferenceDefinitionsDoNotRepeatTheDocument(string newline, bool preserveLiteralMarkdown)
+    {
+        string markdown = string.Join(newline,
+            "# Unique heading", "", "Before[^note] and again[^note].", "",
+            "[site][target]", "", "[^note]: First **literal** note paragraph.", "",
+            "    Second note paragraph.", "", "[^unused]: Unreferenced note.", "",
+            "[target]: https://example.com \"Reference title\"", "", "## Unique ending", "", "After.");
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+
+        Assert.Equal(8, document.Blocks.Count);
+        Assert.Equal("Unique heading", new TextRange(document.Blocks.FirstBlock.ContentStart, document.Blocks.FirstBlock.ContentEnd).Text.Trim());
+        Block ending = document.Blocks.ElementAt(document.Blocks.Count - 2);
+        Assert.Equal("After.", new TextRange(ending.ContentStart, ending.ContentEnd).Text.Trim());
+        System.Windows.Documents.List footnotes = Assert.IsType<System.Windows.Documents.List>(document.Blocks.LastBlock);
+        ListItem note = Assert.Single(footnotes.ListItems);
+        Paragraph body = Assert.IsType<Paragraph>(note.Blocks.FirstBlock);
+        Assert.Single(body.Inlines.OfType<Bold>());
+        string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown);
+        Assert.Equal(1, saved.Split("# Unique heading", StringSplitOptions.None).Length - 1);
+        Assert.Equal(3, saved.Split("[^note]", StringSplitOptions.None).Length - 1);
+        Assert.Contains("[^note]: First **literal** note paragraph.", saved);
+        Assert.Contains("    Second note paragraph.", saved);
+        Assert.Contains("[^unused]: Unreferenced note.", saved);
+        Assert.Contains("[target]: https://example.com \"Reference title\"", saved);
+        Assert.Contains("[site](https://example.com)", saved);
+        Assert.True(saved.IndexOf("[^unused]:", StringComparison.Ordinal) < saved.IndexOf("[target]:", StringComparison.Ordinal));
+        Assert.True(saved.IndexOf("After.", StringComparison.Ordinal) < saved.IndexOf("[^note]:", StringComparison.Ordinal));
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+        Assert.Equal(map.Blocks.OrderBy(block => block.RawStart), map.Blocks);
+        foreach (string token in new[] { "Before", "literal", "Second", "Unique ending", "After" })
+            Assert.Equal(token, MapAndSlice(document, map, markdown.IndexOf(token, StringComparison.Ordinal), token.Length));
+        Assert.Equal("1.\tFirst", MapAndSlice(document, map, markdown.IndexOf("First", StringComparison.Ordinal), "First".Length));
+
+        FlowDocument reloaded = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16);
+        Assert.Equal(saved, MarkdownFlowDocumentUtilities.SerializeToMarkdown(reloaded, preserveLiteralMarkdown));
+    }
+
     [WpfFact]
     public void Html_ReadmeLayoutRendersAlignedHeadingsAndLinkedImages()
     {
