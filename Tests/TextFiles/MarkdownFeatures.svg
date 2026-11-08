@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100">
+  <rect x="2" y="2" width="296" height="96" rx="12" fill="#e6f4f1" stroke="#308e98" stroke-width="3"/>
+  <circle cx="48" cy="50" r="24" fill="#308e98"/>
+  <path d="M36 50 L45 59 L61 40" fill="none" stroke="#ffffff" stroke-width="5"/>
+  <text x="88" y="46" font-family="Segoe UI" font-size="20" fill="#202024">Local SVG fixture</text>
+  <text x="88" y="70" font-family="Segoe UI" font-size="14" fill="#38575b">Text Grab Markdown</text>
+</svg>
