@@ -102,6 +102,8 @@ Grab Frame uses the same OCR engine as Full-Screen Mode, so you get the same str
 
 Use the Edit Text Window to turn OCR results into clean, usable content. You can work in plain text, spreadsheet-style, or markdown mode depending on what you need. Grab text with Full-Screen Mode or Grab Frame, then keep refining it without leaving Text Grab.
 
+Markdown mode displays inline images (`![alt text](images/photo.png)`), including images in lists, quotes, links, and tables. Relative image paths resolve from the opened Markdown file's folder; absolute local paths and HTTP/HTTPS images are also supported. Web images load asynchronously. Images keep their Markdown destinations and titles when saved (reference images are saved as inline image syntax). Missing or unsupported images show their Markdown syntax instead. Network-share images and custom URI schemes are not loaded automatically.
+
 Inside the Edit Text Window, you get tools that help you quickly fix, extract, and structure text.
 
 **Clean OCR output**

@@ -1,11 +1,153 @@
+using System.IO;
+using System.Windows.Automation;
+using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Text_Grab.Utilities;
 
 namespace Tests;
 
 public class MarkdownDocumentUtilitiesTests
 {
+    private static IEnumerable<Image> GetImages(BlockCollection blocks)
+    {
+        foreach (Block block in blocks)
+        {
+            IEnumerable<Image> images = block switch
+            {
+                Paragraph paragraph => GetImages(paragraph.Inlines),
+                System.Windows.Documents.List list => list.ListItems.SelectMany(item => GetImages(item.Blocks)),
+                Table table => table.RowGroups.SelectMany(group => group.Rows)
+                    .SelectMany(row => row.Cells).SelectMany(cell => GetImages(cell.Blocks)),
+                _ => []
+            };
+            foreach (Image image in images)
+                yield return image;
+        }
+    }
+
+    private static IEnumerable<Image> GetImages(InlineCollection inlines)
+    {
+        foreach (Inline inline in inlines)
+        {
+            if (inline is InlineUIContainer { Child: Border { Child: Image image } })
+                yield return image;
+            else if (inline is Span span)
+                foreach (Image child in GetImages(span.Inlines))
+                    yield return child;
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("Before ![sample](font_sample.png \"OCR sample\") after")]
+    [InlineData("# ![sample](font_sample.png \"OCR sample\")")]
+    [InlineData("- ![sample](font_sample.png \"OCR sample\")")]
+    [InlineData("> ![sample](font_sample.png \"OCR sample\")")]
+    [InlineData("**![sample](font_sample.png \"OCR sample\")**")]
+    [InlineData("[![sample](font_sample.png \"OCR sample\")](https://example.com)")]
+    [InlineData("| Image |\n| --- |\n| ![sample](font_sample.png \"OCR sample\") |")]
+    public void Markdown_ImagesRenderAndRoundTripInContainers(string markdown)
+    {
+        string imagePath = Path.GetFullPath(@"Images\font_sample.png");
+        string documentPath = Path.Combine(Path.GetDirectoryName(imagePath)!, "notes.md");
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16, documentPath);
+
+        Image image = Assert.Single(GetImages(document.Blocks));
+        BitmapImage bitmap = Assert.IsType<BitmapImage>(image.Source);
+        Assert.Equal(imagePath, bitmap.UriSource.LocalPath);
+        Assert.True(bitmap.PixelWidth > 0);
+        Assert.True(bitmap.PixelHeight > 0);
+        Assert.Equal("sample", AutomationProperties.GetName(image));
+        Assert.Equal("OCR sample", image.ToolTip);
+        Assert.Equal(Stretch.Uniform, image.Stretch);
+        Assert.Equal(StretchDirection.DownOnly, image.StretchDirection);
+        Assert.Equal(480, image.MaxHeight);
+        Assert.Equal(640, image.MaxWidth);
+
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
+        Assert.Equal(markdown.Replace("\n", Environment.NewLine, StringComparison.Ordinal), serialized);
+        Assert.Single(GetImages(MarkdownFlowDocumentUtilities.CreateFlowDocument(serialized, new FontFamily("Segoe UI"), 16, documentPath).Blocks));
+    }
+
+    [WpfFact]
+    public void Markdown_ReferenceImagesKeepDestinationAltAndTitleWhenSaved()
+    {
+        const string markdown = "![sample][photo]\n\n[photo]: font_sample.png \"OCR sample\"";
+        string documentPath = Path.GetFullPath(@"Images\notes.md");
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16, documentPath);
+
+        Image image = Assert.Single(GetImages(document.Blocks));
+        Assert.Equal("sample", AutomationProperties.GetName(image));
+        Assert.Equal("OCR sample", image.ToolTip);
+        string serialized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
+        Assert.Contains("![sample](font_sample.png \"OCR sample\")", serialized);
+        Assert.Single(GetImages(MarkdownFlowDocumentUtilities.CreateFlowDocument(serialized, new FontFamily("Segoe UI"), 16, documentPath).Blocks));
+    }
+
+    [WpfFact]
+    public void Markdown_LocalImagesResolveEscapedParentPathsAndReleaseTheFile()
+    {
+        DirectoryInfo directory = Directory.CreateTempSubdirectory("TextGrabMarkdown-");
+        string imagePath = Path.Combine(directory.FullName, "sample image.png");
+        try
+        {
+            File.Copy(Path.GetFullPath(@"Images\font_sample.png"), imagePath);
+            string documentPath = Path.Combine(directory.FullName, "notes", "document.md");
+            const string markdown = "![sample](../sample%20image.png)";
+            FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16, documentPath);
+            BitmapImage bitmap = Assert.IsType<BitmapImage>(Assert.Single(GetImages(document.Blocks)).Source);
+            Assert.Equal(imagePath, bitmap.UriSource.LocalPath);
+            using FileStream exclusive = File.Open(imagePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            Assert.Equal(BitmapCacheOption.OnLoad, bitmap.CacheOption);
+            Assert.Equal(markdown, MarkdownFlowDocumentUtilities.SerializeToMarkdown(document));
+        }
+        finally
+        {
+            File.Delete(imagePath);
+            directory.Delete();
+        }
+    }
+
+    [WpfFact]
+    public void Markdown_AbsoluteFileImagesWorkWithoutAnOpenedDocument()
+    {
+        string imagePath = Path.GetFullPath(@"Images\font_sample.png");
+        string markdown = $"![sample]({new Uri(imagePath).AbsoluteUri})";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        Assert.Equal(imagePath, Assert.IsType<BitmapImage>(Assert.Single(GetImages(document.Blocks)).Source).UriSource.LocalPath);
+        Assert.Equal(markdown, MarkdownFlowDocumentUtilities.SerializeToMarkdown(document));
+    }
+
+    [WpfTheory]
+    [InlineData("![missing](not-present.png)", true)]
+    [InlineData("![unsaved](font_sample.png)", false)]
+    [InlineData("![unsupported](ftp://example.com/image.png)", true)]
+    [InlineData("![unsupported](ms-settings:display)", true)]
+    [InlineData("![network](file://example.invalid/share/image.png)", true)]
+    [InlineData("![invalid](<http://[invalid>)", true)]
+    public void Markdown_ImageFailuresRemainVisibleAndPreserveMarkdown(string markdown, bool hasDocumentPath)
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16,
+            hasDocumentPath ? Path.GetFullPath(@"Images\notes.md") : null);
+        Assert.Empty(GetImages(document.Blocks));
+        Assert.Equal(markdown, MarkdownFlowDocumentUtilities.GetDocumentPlainText(document));
+        Assert.Equal(markdown, MarkdownFlowDocumentUtilities.SerializeToMarkdown(document));
+        Span span = Assert.IsType<Span>(Assert.Single(Assert.IsType<Paragraph>(Assert.Single(document.Blocks)).Inlines));
+        Assert.IsType<string>(span.ToolTip);
+    }
+
+    [WpfFact]
+    public void Markdown_OffsetsAfterImagesStillSelectSurroundingText()
+    {
+        const string markdown = "before ![sample](font_sample.png) after **last**";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16, Path.GetFullPath(@"Images\notes.md"));
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+        Assert.Single(GetImages(document.Blocks));
+        foreach (string token in new[] { "before", "after", "last" })
+            Assert.Equal(token, MapAndSlice(document, map, markdown.IndexOf(token, StringComparison.Ordinal), token.Length));
+    }
+
     [WpfFact]
     public void Markdown_NonWebLinkTargetsRemainIntactForEditing()
     {

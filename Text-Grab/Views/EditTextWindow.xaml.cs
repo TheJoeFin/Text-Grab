@@ -1013,7 +1013,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         MarkdownEditorControl.Document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
             markdownText,
             MarkdownEditorControl.FontFamily,
-            MarkdownEditorControl.FontSize);
+            MarkdownEditorControl.FontSize,
+            OpenedFilePath);
         markdownOffsetMap = MarkdownFlowDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
         markdownOffsetMapSourceText = markdownText ?? string.Empty;
         ApplyMarkdownTheme();
@@ -2574,6 +2575,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ResetSpreadsheetUndoHistory();
         (string TextContent, OpenContentKind KindOpened) = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
         bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
+
+        OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
 
         if (KindOpened == OpenContentKind.TextFile)
         {
@@ -4771,7 +4774,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 MarkdownFlowDocumentUtilities.CreateFlowDocument(
                     pastedText,
                     MarkdownEditorControl.FontFamily,
-                    MarkdownEditorControl.FontSize)).Length
+                    MarkdownEditorControl.FontSize,
+                    OpenedFilePath)).Length
             : pastedText.Length;
 
         MarkdownEditorControl.Selection.Text = pastedText;
@@ -5179,8 +5183,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             targetFilePath = dialog.FileName;
         }
 
+        bool refreshImagePaths = editorMode == EtwEditorMode.Markdown
+            && !string.Equals(OpenedFilePath, targetFilePath, StringComparison.OrdinalIgnoreCase);
+        int markdownCaretOffset = refreshImagePaths
+            ? GetMarkdownPlainTextOffset(MarkdownEditorControl.CaretPosition)
+            : 0;
         File.WriteAllText(targetFilePath, fileText);
         SetOpenedFileState(targetFilePath);
+        if (refreshImagePaths)
+            ReloadMarkdownDocumentAndRestoreCaret(markdownCaretOffset);
         return true;
     }
 
