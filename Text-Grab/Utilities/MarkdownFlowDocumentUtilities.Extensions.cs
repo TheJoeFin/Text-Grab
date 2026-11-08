@@ -83,7 +83,7 @@ public static partial class MarkdownFlowDocumentUtilities
         return container;
     }
 
-    private static bool TryWriteExtendedInline(StringBuilder builder, Inline inline, bool preserveLiteralMarkdown)
+    private static bool TryWriteExtendedInline(StringBuilder builder, Inline inline, bool preserveLiteralMarkdown, bool isTableCell = false)
     {
         if (inline is InlineUIContainer { Child: MathFormula formula })
         {
@@ -93,7 +93,7 @@ public static partial class MarkdownFlowDocumentUtilities
         if (inline is Span span && (string)span.GetValue(EmphasisDelimiterProperty) is { Length: > 0 } delimiter)
         {
             builder.Append(delimiter);
-            builder.Append(SerializeInlines(span.Inlines, preserveLiteralMarkdown));
+            builder.Append(SerializeInlines(span.Inlines, preserveLiteralMarkdown, isTableCell));
             builder.Append(delimiter);
             return true;
         }

@@ -1081,32 +1081,32 @@ public static partial class MarkdownFlowDocumentUtilities
     private static string SerializeTableCell(WpfTableCell cell)
     {
         string rawText = string.Join("\n", cell.Blocks.Select(block => block is Paragraph paragraph
-            ? SerializeInlines(paragraph.Inlines, preserveLiteralMarkdown: false)
+            ? SerializeInlines(paragraph.Inlines, preserveLiteralMarkdown: false, isTableCell: true)
             : SerializeLiteralText(block, preserveLiteralMarkdown: false)));
-        return rawText
-            .Replace("|", "\\|", StringComparison.Ordinal)
+        // Literal pipes are already escaped by the inline serializer; code and preserved markup must stay intact.
+        return MarkdownDocumentUtilities.NormalizeNewlines(rawText)
             .Replace("\n", "<br />", StringComparison.Ordinal);
     }
 
-    private static string SerializeInlines(InlineCollection inlines, bool preserveLiteralMarkdown)
+    private static string SerializeInlines(InlineCollection inlines, bool preserveLiteralMarkdown, bool isTableCell = false)
     {
         StringBuilder builder = new();
         foreach (WpfInline inline in inlines)
-            WriteInline(builder, inline, preserveLiteralMarkdown);
+            WriteInline(builder, inline, preserveLiteralMarkdown, isTableCell);
 
         return builder.ToString();
     }
 
-    private static void WriteInline(StringBuilder builder, WpfInline inline, bool preserveLiteralMarkdown)
+    private static void WriteInline(StringBuilder builder, WpfInline inline, bool preserveLiteralMarkdown, bool isTableCell = false)
     {
-        if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown))
+        if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown, isTableCell))
             return;
 
         if (inline.GetValue(HtmlOpeningProperty) is string opening && opening.Length > 0)
         {
             builder.Append(opening);
             if (inline is Span htmlSpan)
-                builder.Append(SerializeHtmlInlines(htmlSpan.Inlines));
+                builder.Append(SerializeHtmlInlines(htmlSpan.Inlines, isTableCell));
             builder.Append((string)inline.GetValue(HtmlClosingProperty));
             return;
         }
@@ -1120,7 +1120,7 @@ public static partial class MarkdownFlowDocumentUtilities
         switch (inline)
         {
             case LineBreak:
-                builder.Append($"  {Environment.NewLine}");
+                builder.Append(isTableCell ? "<br />" : $"  {Environment.NewLine}");
                 break;
 
             case InlineUIContainer { Child: CheckBox checkBox } when GetInlineRole(inline) == MarkdownInlineRole.TaskListMarker:
@@ -1138,20 +1138,20 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case Hyperlink hyperlink:
-                string linkText = SerializeInlines(hyperlink.Inlines, preserveLiteralMarkdown);
+                string linkText = SerializeInlines(hyperlink.Inlines, preserveLiteralMarkdown, isTableCell);
                 string linkTarget = hyperlink.NavigateUri?.OriginalString ?? linkText;
                 builder.Append($"[{linkText}]({MarkdownDocumentUtilities.EscapeLinkDestination(linkTarget)})");
                 break;
 
             case Bold bold:
                 builder.Append("**");
-                builder.Append(SerializeInlines(bold.Inlines, preserveLiteralMarkdown));
+                builder.Append(SerializeInlines(bold.Inlines, preserveLiteralMarkdown, isTableCell));
                 builder.Append("**");
                 break;
 
             case Italic italic:
                 builder.Append('*');
-                builder.Append(SerializeInlines(italic.Inlines, preserveLiteralMarkdown));
+                builder.Append(SerializeInlines(italic.Inlines, preserveLiteralMarkdown, isTableCell));
                 builder.Append('*');
                 break;
 
@@ -1162,7 +1162,7 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case Span span:
-                builder.Append(SerializeInlines(span.Inlines, preserveLiteralMarkdown));
+                builder.Append(SerializeInlines(span.Inlines, preserveLiteralMarkdown, isTableCell));
                 break;
 
             default:

@@ -258,12 +258,12 @@ public static partial class MarkdownFlowDocumentUtilities
         element.SetValue(HtmlClosingProperty, node.Closing);
     }
 
-    private static string SerializeHtmlInlines(InlineCollection inlines)
+    private static string SerializeHtmlInlines(InlineCollection inlines, bool isTableCell = false)
     {
         StringBuilder builder = new();
         foreach (System.Windows.Documents.Inline inline in inlines)
         {
-            if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown: false))
+            if (TryWriteFootnoteInline(builder, inline) || TryWriteExtendedInline(builder, inline, preserveLiteralMarkdown: false, isTableCell))
                 continue;
             if (inline is Run run && GetInlineRole(run) != MarkdownInlineRole.LiteralMarkdown)
                 builder.Append(WebUtility.HtmlEncode(run.Text));
@@ -271,7 +271,7 @@ public static partial class MarkdownFlowDocumentUtilities
                 builder.Append("<br />");
             else if (inline is Span span && (string)span.GetValue(HtmlOpeningProperty) == string.Empty)
             {
-                string content = SerializeHtmlInlines(span.Inlines);
+                string content = SerializeHtmlInlines(span.Inlines, isTableCell);
                 builder.Append(span switch
                 {
                     Bold => "<strong>" + content + "</strong>",
@@ -281,7 +281,7 @@ public static partial class MarkdownFlowDocumentUtilities
                 });
             }
             else
-                WriteInline(builder, inline, preserveLiteralMarkdown: false);
+                WriteInline(builder, inline, preserveLiteralMarkdown: false, isTableCell);
         }
         return builder.ToString();
     }

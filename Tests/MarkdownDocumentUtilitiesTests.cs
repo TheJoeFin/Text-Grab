@@ -355,6 +355,146 @@ Console.WriteLine("hi");
         Assert.Contains("| Beta | 99 |", serialized);
     }
 
+    [WpfTheory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Markdown_TablePipesAndBackslashesSurviveRepeatedSaves(int backslashCount)
+    {
+        string cellMarkdown = "left" + new string('\\', backslashCount * 2) + "\\|right";
+        string expectedText = "left" + new string('\\', backslashCount) + "|right";
+        string markdown = $"| {cellMarkdown} | Other |\n| --- | --- |\n| **{cellMarkdown}** | unchanged |";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+
+        foreach (bool preserveLiteralMarkdown in new[] { false, true })
+        {
+            FlowDocument current = document;
+            string? previousSaved = null;
+            for (int pass = 0; pass < 3; pass++)
+            {
+                string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(current, preserveLiteralMarkdown);
+                if (previousSaved is not null)
+                    Assert.Equal(previousSaved, saved);
+                current = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16);
+                Table table = Assert.IsType<Table>(Assert.Single(current.Blocks));
+                TableRowGroup group = Assert.Single(table.RowGroups);
+                Assert.Equal(2, group.Rows.Count);
+                Assert.All(group.Rows, row => Assert.Equal(2, row.Cells.Count));
+                Assert.All(group.Rows, row => Assert.Equal(expectedText,
+                    new TextRange(row.Cells[0].ContentStart, row.Cells[0].ContentEnd).Text.TrimEnd('\r', '\n')));
+                Paragraph paragraph = Assert.IsType<Paragraph>(Assert.Single(group.Rows[1].Cells[0].Blocks));
+                Assert.Single(paragraph.Inlines.OfType<Bold>());
+                Assert.Equal("unchanged", new TextRange(group.Rows[1].Cells[1].ContentStart, group.Rows[1].Cells[1].ContentEnd).Text.Trim());
+                previousSaved = saved;
+            }
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("`left|right`")]
+    [InlineData("`left\\|right`")]
+    [InlineData("`left\\\\|right`")]
+    [InlineData("`left\\\\\\|right`")]
+    [InlineData("[left\\|right](https://example.com/a%7Cb)")]
+    [InlineData("[left](https://example.com/a|b)")]
+    [InlineData("![left](missing|image.png)")]
+    [InlineData("[![left](missing|image.png)](https://example.com/a|b)")]
+    [InlineData("~~left\\|right~~")]
+    public void Markdown_TableFormattedPipesSurviveRepeatedSaves(string cellMarkdown)
+    {
+        string markdown = $"| Header | Other |\n| --- | --- |\n| {cellMarkdown} | unchanged |";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        string expectedText = MarkdownFlowDocumentUtilities.GetDocumentPlainText(document);
+        string? previousSaved = null;
+        for (int pass = 0; pass < 3; pass++)
+        {
+            string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
+            Assert.Contains($"| {cellMarkdown} | unchanged |", saved);
+            if (previousSaved is not null)
+                Assert.Equal(previousSaved, saved);
+            document = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16);
+            Table table = Assert.IsType<Table>(Assert.Single(document.Blocks));
+            Assert.Equal(2, Assert.Single(table.RowGroups).Rows.Count);
+            Assert.All(table.RowGroups[0].Rows, row => Assert.Equal(2, row.Cells.Count));
+            Assert.Equal(expectedText, MarkdownFlowDocumentUtilities.GetDocumentPlainText(document));
+            previousSaved = saved;
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    [InlineData("\r")]
+    public void Markdown_TableEditedLineBreaksAndParagraphsStayInsideTheCell(string newline)
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
+            "| Header | Other |\n| --- | --- |\n| first | unchanged |", new FontFamily("Segoe UI"), 16);
+        Table table = Assert.IsType<Table>(Assert.Single(document.Blocks));
+        TableCell cell = table.RowGroups[0].Rows[1].Cells[0];
+        Paragraph paragraph = Assert.IsType<Paragraph>(Assert.Single(cell.Blocks));
+        Bold bold = new(new Run("bold" + newline + "text"));
+        bold.Inlines.Add(new LineBreak());
+        bold.Inlines.Add(new Italic(new Run("nested")));
+        paragraph.Inlines.Add(bold);
+        paragraph.Inlines.Add(new LineBreak());
+        paragraph.Inlines.Add(new Run("last"));
+        cell.Blocks.Add(new Paragraph(new Run("another")));
+
+        string? previousSaved = null;
+        for (int pass = 0; pass < 3; pass++)
+        {
+            string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true);
+            Assert.Equal(3, saved.Split(Environment.NewLine, StringSplitOptions.None).Length);
+            Assert.Contains("**bold<br />text<br />*nested***<br />last<br />another", saved);
+            if (previousSaved is not null)
+                Assert.Equal(previousSaved, saved);
+            document = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16);
+            table = Assert.IsType<Table>(Assert.Single(document.Blocks));
+            Assert.Equal(2, Assert.Single(table.RowGroups).Rows.Count);
+            Assert.All(table.RowGroups[0].Rows, row => Assert.Equal(2, row.Cells.Count));
+            Assert.Equal("firstbold\ntext\nnested\nlast\nanother", new TextRange(table.RowGroups[0].Rows[1].Cells[0].ContentStart,
+                table.RowGroups[0].Rows[1].Cells[0].ContentEnd).Text.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n'));
+            Assert.Equal("unchanged", new TextRange(table.RowGroups[0].Rows[1].Cells[1].ContentStart,
+                table.RowGroups[0].Rows[1].Cells[1].ContentEnd).Text.Trim());
+            previousSaved = saved;
+        }
+    }
+
+    [WpfTheory]
+    [InlineData("~~first~~", "~~first<br />**second**~~")]
+    [InlineData("==first==", "==first<br />**second**==")]
+    [InlineData("++first++", "++first<br />**second**++")]
+    [InlineData("<span>first</span>", "<span>first<br /><strong>second</strong></span>")]
+    public void Markdown_TableNestedSpanLineBreaksPreserveFormatting(string cellMarkdown, string expectedMarkdown)
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
+            $"| Header | Other |\n| --- | --- |\n| {cellMarkdown} | unchanged |", new FontFamily("Segoe UI"), 16);
+        Table table = Assert.IsType<Table>(Assert.Single(document.Blocks));
+        Paragraph paragraph = Assert.IsType<Paragraph>(Assert.Single(table.RowGroups[0].Rows[1].Cells[0].Blocks));
+        Span span = Assert.Single(paragraph.Inlines.OfType<Span>());
+        span.Inlines.Add(new LineBreak());
+        span.Inlines.Add(new Bold(new Run("second")));
+
+        string? previousSaved = null;
+        for (int pass = 0; pass < 3; pass++)
+        {
+            string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true);
+            Assert.Contains($"| {expectedMarkdown} |", saved);
+            if (previousSaved is not null)
+                Assert.Equal(previousSaved, saved);
+            document = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16);
+            table = Assert.IsType<Table>(Assert.Single(document.Blocks));
+            Assert.Equal(2, Assert.Single(table.RowGroups).Rows.Count);
+            Assert.All(table.RowGroups[0].Rows, row => Assert.Equal(2, row.Cells.Count));
+            Assert.Equal("first\nsecond", new TextRange(table.RowGroups[0].Rows[1].Cells[0].ContentStart,
+                table.RowGroups[0].Rows[1].Cells[0].ContentEnd).Text.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n'));
+            Assert.Equal("unchanged", new TextRange(table.RowGroups[0].Rows[1].Cells[1].ContentStart,
+                table.RowGroups[0].Rows[1].Cells[1].ContentEnd).Text.Trim());
+            previousSaved = saved;
+        }
+    }
+
     [WpfFact]
     public void Markdown_TaskLists_RoundTrip_ToCheckboxMarkers()
     {

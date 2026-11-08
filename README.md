@@ -110,6 +110,8 @@ Fenced `mermaid` blocks render as diagrams using a native .NET renderer, without
 
 Markdown mode also renders strikethrough (`~~deleted~~`), highlighting (`==marked==`), inserted/underlined text (`++inserted++`), subscript (`H~2~O`), and superscript (`x^2^`). These can contain nested formatting and retain their syntax and edits when saved. Highlights and script sizes adapt to the document's theme and font size.
 
+Markdown tables preserve cell formatting and literal pipes when saved. Line breaks and additional paragraphs inside a cell are saved as `<br />` without creating extra rows or columns.
+
 Inline math (`$x^2$`) and display math (lines fenced with `$$`) render natively using WPF-Math, without a WebView, browser, or network access. Switch to plain text mode to edit formula source. Unsupported or invalid LaTeX shows an error and its source rather than a blank area; source survives saving. Formulas are limited to 4,000 source characters, 32 nested groups, and an 8,192-unit drawing size.
 
 Footnotes render as superscript references and a numbered list of formatted notes at the end of the document. Ctrl+click a reference to jump to its note, or a return link to go back; repeated references have separate return links. Saving preserves footnote labels, formatting, and edits, including multiline definitions. Unreferenced definitions and unresolved references remain visible as Markdown source. Link-reference definitions are also preserved without duplicating document content.
