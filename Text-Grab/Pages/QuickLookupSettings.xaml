@@ -45,10 +45,58 @@
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
 
         <controls:SettingsCard
-            Description="Append recent Edit Text Window sessions and Grab Frame captures to the bottom of the lookup grid."
-            HeaderText="Show history in lookup grid"
-            Icon="{ui:SymbolIcon History24}">
-            <ui:ToggleSwitch x:Name="LookupSearchHistoryCheckBox" AutomationProperties.AutomationId="Settings.QuickLookup.SearchHistoryToggle" Click="LookupSearchHistoryCheckBox_Click" />
+            Description="Window is a normal window. Popup has no title bar, stays out of the taskbar and Alt+Tab, and closes when it loses focus (like a command palette). Applies the next time Quick Lookup opens."
+            HeaderText="Style"
+            Icon="{ui:SymbolIcon WindowApps24}">
+            <ComboBox
+                x:Name="LookupStyleComboBox"
+                Width="160"
+                AutomationProperties.AutomationId="Settings.QuickLookup.Style"
+                SelectionChanged="LookupStyleComboBox_SelectionChanged">
+                <ComboBoxItem Content="Window" Tag="Window" />
+                <ComboBoxItem Content="Popup" Tag="Popup" />
+            </ComboBox>
+        </controls:SettingsCard>
+
+        <controls:SettingsExpander
+            Description="Choose which data Quick Lookup shows. This is also available from the filter button next to the search box."
+            HeaderText="Data shown in lookup grid"
+            Icon="{ui:SymbolIcon Filter24}"
+            IsExpanded="True">
+            <StackPanel x:Name="LookupSourcesPanel">
+                <CheckBox
+                    AutomationProperties.AutomationId="Settings.QuickLookup.Source.Data"
+                    Click="LookupSourceCheckBox_Click"
+                    Content="Lookup data"
+                    Tag="Data" />
+                <CheckBox
+                    AutomationProperties.AutomationId="Settings.QuickLookup.Source.EditHistory"
+                    Click="LookupSourceCheckBox_Click"
+                    Content="Edit Text Window history"
+                    Tag="EditHistory" />
+                <CheckBox
+                    AutomationProperties.AutomationId="Settings.QuickLookup.Source.GrabHistory"
+                    Click="LookupSourceCheckBox_Click"
+                    Content="Grab Frame history"
+                    Tag="GrabHistory" />
+                <CheckBox
+                    AutomationProperties.AutomationId="Settings.QuickLookup.Source.PdfHistory"
+                    Click="LookupSourceCheckBox_Click"
+                    Content="PDF history"
+                    Tag="PdfHistory" />
+                <CheckBox
+                    AutomationProperties.AutomationId="Settings.QuickLookup.Source.GrabTemplates"
+                    Click="LookupSourceCheckBox_Click"
+                    Content="Grab Templates"
+                    Tag="GrabTemplates" />
+            </StackPanel>
+        </controls:SettingsExpander>
+
+        <controls:SettingsCard
+            Description="Automatically save the lookup data file whenever rows are added, edited, deleted, or imported."
+            HeaderText="Auto save lookup data"
+            Icon="{ui:SymbolIcon Save24}">
+            <ui:ToggleSwitch x:Name="LookupAutoSaveCheckBox" AutomationProperties.AutomationId="Settings.QuickLookup.AutoSaveToggle" Click="LookupAutoSaveCheckBox_Click" />
         </controls:SettingsCard>
 
         <controls:SettingsExpander

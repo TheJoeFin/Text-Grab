@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.IO;
+using System.Linq;
+using Text_Grab.Models;
 using Microsoft.Win32;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
@@ -24,7 +26,13 @@ public partial class QuickLookupSettings : Page
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         LookupFileLocationTextBox.Text = DefaultSettings.LookupFileLocation;
-        LookupSearchHistoryCheckBox.IsChecked = DefaultSettings.LookupSearchHistory;
+        LookupStyleComboBox.SelectedIndex = LookupWindowStyleSetting.Get(DefaultSettings) == LookupWindowStyle.Popup ? 1 : 0;
+
+        LookupSource sources = LookupSourceSetting.Get(DefaultSettings);
+        foreach (CheckBox box in LookupSourcesPanel.Children.OfType<CheckBox>())
+            box.IsChecked = Enum.TryParse(box.Tag as string, out LookupSource source) && sources.HasFlag(source);
+
+        LookupAutoSaveCheckBox.IsChecked = DefaultSettings.LookupAutoSave;
 
         TryInsertCheckBox.IsChecked = DefaultSettings.TryInsert;
 
@@ -68,10 +76,30 @@ public partial class QuickLookupSettings : Page
         }
     }
 
-    private void LookupSearchHistoryCheckBox_Click(object sender, RoutedEventArgs e)
+    private void LookupStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_loaded) return;
-        DefaultSettings.LookupSearchHistory = LookupSearchHistoryCheckBox.IsChecked == true;
+        if (LookupStyleComboBox.SelectedItem is ComboBoxItem { Tag: string tag }
+            && Enum.TryParse(tag, out LookupWindowStyle style))
+            LookupWindowStyleSetting.Set(DefaultSettings, style);
+    }
+
+    private void LookupSourceCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+
+        LookupSource selected = LookupSource.None;
+        foreach (CheckBox box in LookupSourcesPanel.Children.OfType<CheckBox>())
+            if (box.IsChecked == true && Enum.TryParse(box.Tag as string, out LookupSource source))
+                selected |= source;
+
+        LookupSourceSetting.Set(DefaultSettings, selected);
+    }
+
+    private void LookupAutoSaveCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        DefaultSettings.LookupAutoSave = LookupAutoSaveCheckBox.IsChecked == true;
         DefaultSettings.Save();
     }
 
