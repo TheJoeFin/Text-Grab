@@ -28,6 +28,88 @@
                 <ResourceDictionary Source="/Styles/SelectionStyleComboBoxItemStyle.xaml" />
                 <ResourceDictionary Source="/Styles/SelectionStyleComboBoxStyle.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!--  Numbered "pick an instance" badges for Find on Screen. Own template so the implicit WPF-UI button padding can't squeeze the digits.  -->
+            <Style x:Key="FindOnScreenMarkerButtonStyle" TargetType="Button">
+                <Setter Property="Height" Value="26" />
+                <Setter Property="MinWidth" Value="26" />
+                <Setter Property="Padding" Value="6,0" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="Foreground" Value="Black" />
+                <Setter Property="BorderBrush" Value="Black" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border
+                                x:Name="border"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                                <ContentPresenter
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    RecognizesAccessKey="False" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="White" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Opacity" Value="0.75" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--  Find on Screen "Enter" keycap. Clicking it runs the same action as pressing Enter.  -->
+            <!--  Not focusable so clicking it leaves keyboard focus (and Enter) in the search box.  -->
+            <Style x:Key="FindOnScreenEnterKeyButtonStyle" TargetType="Button">
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="BorderThickness" Value="1,1,1,2" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border
+                                x:Name="key"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                                <ContentPresenter
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    RecognizesAccessKey="False" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="key" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                    <Setter TargetName="key" Property="BorderBrush" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <!--  Pressed: key drops 1px and its thick bottom edge flattens, like a real keypress.  -->
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="key" Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+                                    <Setter TargetName="key" Property="BorderThickness" Value="1" />
+                                    <Setter TargetName="key" Property="Margin" Value="0,1,0,0" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -151,6 +233,7 @@
         </Canvas>
         <Canvas x:Name="SelectionOutlineHost" AutomationProperties.AutomationId="FullscreenGrab.SelectionOutline" IsHitTestVisible="False" />
         <Canvas x:Name="TemplateOverlayHost" AutomationProperties.AutomationId="FullscreenGrab.TemplateOverlay" IsHitTestVisible="False" />
+        <Canvas x:Name="FindOnScreenOverlayHost" AutomationProperties.AutomationId="FullscreenGrab.FindOverlay" />
         <Border
             x:Name="TopButtonsStackPanel"
             AutomationProperties.AutomationId="FullscreenGrab.Toolbar"
@@ -172,11 +255,11 @@
                     Opacity="0.6"
                     RenderingBias="Performance" />
             </Border.Effect>
-            <StackPanel
+            <Grid
                 Margin="2,0"
                 HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Orientation="Horizontal">
+                VerticalAlignment="Top">
+                <StackPanel x:Name="CaptureToolbarOptions" Orientation="Horizontal">
                 <ComboBox
                     x:Name="SelectionStyleComboBox"
                     AutomationProperties.AutomationId="FullscreenGrab.SelectionStyle"
@@ -222,6 +305,18 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+                <Button
+                    x:Name="FindOnScreenLaunchButton"
+                    AutomationProperties.AutomationId="FullscreenGrab.FindOnScreenLaunch"
+                    AutomationProperties.Name="Find on screen"
+                    Width="34"
+                    Height="34"
+                    Margin="4,0,2,0"
+                    Click="FindOnScreenLaunchButton_Click"
+                    Style="{StaticResource SymbolButton}"
+                    ToolTip="(Ctrl+F) Find text on screen">
+                    <wpfui:SymbolIcon Symbol="Search24" />
+                </Button>
                 <ToggleButton
                     x:Name="FreezeToggleButton"
                     AutomationProperties.AutomationId="FullscreenGrab.FreezeToggle"
@@ -428,7 +523,105 @@
                     ToolTip="(Esc) Cancel">
                     <wpfui:SymbolIcon Symbol="Dismiss24" />
                 </Button>
-            </StackPanel>
+                </StackPanel>
+                <StackPanel
+                    x:Name="FindOnScreenToolbarOptions"
+                    d:Visibility="Collapsed"
+                    Orientation="Horizontal"
+                    Visibility="Collapsed">
+                    <Grid Width="280" Height="34">
+                        <TextBox
+                            x:Name="FindOnScreenTextBox"
+                            AutomationProperties.AutomationId="FullscreenGrab.FindOnScreenSearch"
+                            AutomationProperties.Name="Find text on screen"
+                            Padding="28,0,6,0"
+                            VerticalContentAlignment="Center"
+                            Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            GotFocus="FindOnScreenTextBox_GotFocus"
+                            LostFocus="FindOnScreenTextBox_LostFocus"
+                            Style="{StaticResource TextBoxStyle1}"
+                            TextChanged="FindOnScreenTextBox_TextChanged"
+                            ToolTip="(Ctrl+F) Find text on screen" />
+                        <wpfui:SymbolIcon
+                            Margin="8,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}"
+                            IsHitTestVisible="False"
+                            Symbol="Search24" />
+                        <TextBlock
+                            x:Name="FindOnScreenPlaceholder"
+                            Margin="30,0,6,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}"
+                            IsHitTestVisible="False"
+                            Opacity="0.55"
+                            Text="Find on screen" />
+                    </Grid>
+                    <TextBlock
+                        x:Name="FindOnScreenStatusText"
+                        MinWidth="88"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="FullscreenGrab.FindOnScreenStatus"
+                        Foreground="{wpfui:ThemeResource TextFillColorPrimaryBrush}" />
+                    <Button
+                        x:Name="FindOnScreenEnterKeyButton"
+                        Height="26"
+                        Margin="8,0,0,0"
+                        Padding="7,0,6,1"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="FullscreenGrab.FindOnScreenEnterKey"
+                        AutomationProperties.Name="Run Enter action"
+                        Click="FindOnScreenEnterKeyButton_Click"
+                        Style="{StaticResource FindOnScreenEnterKeyButtonStyle}"
+                        ToolTip="(Enter) Run the selected action">
+                        <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Text="Enter" />
+                            <wpfui:SymbolIcon
+                                Margin="4,1,0,0"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Symbol="ArrowEnterLeft24" />
+                        </StackPanel>
+                    </Button>
+                    <ComboBox
+                        x:Name="FindOnScreenEnterActionComboBox"
+                        Width="190"
+                        Height="34"
+                        Margin="6,0,0,0"
+                        Padding="10,0"
+                        VerticalContentAlignment="Center"
+                        AutomationProperties.AutomationId="FullscreenGrab.FindOnScreenEnterAction"
+                        AutomationProperties.Name="Action when Enter is pressed"
+                        SelectionChanged="FindOnScreenEnterActionComboBox_SelectionChanged"
+                        ToolTip="Action when Enter is pressed">
+                        <ComboBoxItem Content="Copy matches" Tag="CopyMatches" />
+                        <ComboBoxItem Content="Copy matched lines" Tag="CopyMatchedLines" />
+                        <ComboBoxItem Content="Click an instance" Tag="ClickInstance" />
+                        <ComboBoxItem Content="Grab matches region" Tag="GrabRegion" />
+                        <ComboBoxItem Content="Place Grab Frame" Tag="PlaceGrabFrame" />
+                    </ComboBox>
+                    <Button
+                        x:Name="FindOnScreenCloseButton"
+                        AutomationProperties.AutomationId="FullscreenGrab.FindOnScreenClose"
+                        AutomationProperties.Name="Close find on screen"
+                        Width="34"
+                        Height="34"
+                        Margin="6,0,0,0"
+                        Click="FindOnScreenCloseButton_Click"
+                        Style="{StaticResource SymbolButton}"
+                        ToolTip="Close search and restore capture options">
+                        <wpfui:SymbolIcon Symbol="Dismiss24" />
+                    </Button>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>

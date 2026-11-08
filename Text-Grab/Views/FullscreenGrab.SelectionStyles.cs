@@ -144,9 +144,14 @@ public partial class FullscreenGrab
             UpdateWindowSelectionHighlight();
     }
 
-    internal static bool ShouldKeepTopToolbarVisible(FsgSelectionStyle selectionStyle, bool isAwaitingAdjustAfterCommit)
+    internal static bool ShouldKeepTopToolbarVisible(
+        FsgSelectionStyle selectionStyle,
+        bool isAwaitingAdjustAfterCommit,
+        bool isFindOnScreenActive = false)
     {
-        return selectionStyle == FsgSelectionStyle.Window || isAwaitingAdjustAfterCommit;
+        return selectionStyle == FsgSelectionStyle.Window
+            || isAwaitingAdjustAfterCommit
+            || isFindOnScreenActive;
     }
 
     internal static bool ShouldCommitWindowSelection(WindowSelectionCandidate? pressedWindowCandidate, WindowSelectionCandidate? releasedWindowCandidate)
@@ -253,7 +258,8 @@ public partial class FullscreenGrab
 
     private void UpdateTopToolbarVisibility(bool isPointerOverSelectionSurface)
     {
-        if (ShouldKeepTopToolbarVisible(CurrentSelectionStyle, isAwaitingAdjustAfterCommit))
+        bool isFindOnScreenActive = IsFindOnScreenActive;
+        if (ShouldKeepTopToolbarVisible(CurrentSelectionStyle, isAwaitingAdjustAfterCommit, isFindOnScreenActive))
         {
             TopButtonsStackPanel.Visibility = Visibility.Visible;
             return;
@@ -937,12 +943,6 @@ public partial class FullscreenGrab
 
     private Rect GetHistoryPositionRect(FullscreenCaptureResult selection)
     {
-        if (selection.SelectionStyle is FsgSelectionStyle.Region or FsgSelectionStyle.AdjustAfter)
-        {
-            GetDpiAdjustedRegionOfSelectBorder(out _, out double posLeft, out double posTop);
-            return new Rect(posLeft, posTop, selectBorder.Width, selectBorder.Height);
-        }
-
         DpiScale dpi = VisualTreeHelper.GetDpi(this);
         return new Rect(
             selection.CaptureRegion.X / dpi.DpiScaleX,

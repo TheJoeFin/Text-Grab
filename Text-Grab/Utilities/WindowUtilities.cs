@@ -28,6 +28,40 @@ public static partial class WindowUtilities
                 mtw.AddThisText(textToAdd);
     }
 
+    internal static void ClickScreenPoint(Point screenPoint)
+    {
+        const int SmXVirtualScreen = 76;
+        const int SmYVirtualScreen = 77;
+        const int SmCxVirtualScreen = 78;
+        const int SmCyVirtualScreen = 79;
+
+        int virtualLeft = OSInterop.GetSystemMetrics(SmXVirtualScreen);
+        int virtualTop = OSInterop.GetSystemMetrics(SmYVirtualScreen);
+        int virtualWidth = OSInterop.GetSystemMetrics(SmCxVirtualScreen);
+        int virtualHeight = OSInterop.GetSystemMetrics(SmCyVirtualScreen);
+
+        if (virtualWidth <= 1 || virtualHeight <= 1)
+            throw new InvalidOperationException("No interactive screen is available.");
+
+        int normalizedX = (int)Math.Round((screenPoint.X - virtualLeft) * 65535d / (virtualWidth - 1));
+        int normalizedY = (int)Math.Round((screenPoint.Y - virtualTop) * 65535d / (virtualHeight - 1));
+
+        INPUT move = new() { Type = OSInterop.InputType.INPUT_MOUSE };
+        move.U.Mi.Dx = Math.Clamp(normalizedX, 0, 65535);
+        move.U.Mi.Dy = Math.Clamp(normalizedY, 0, 65535);
+        move.U.Mi.DwFlags = MOUSEEVENTF.MOVE | MOUSEEVENTF.ABSOLUTE | MOUSEEVENTF.VIRTUALDESK;
+
+        INPUT down = new() { Type = OSInterop.InputType.INPUT_MOUSE };
+        down.U.Mi.DwFlags = MOUSEEVENTF.LEFTDOWN;
+
+        INPUT up = new() { Type = OSInterop.InputType.INPUT_MOUSE };
+        up.U.Mi.DwFlags = MOUSEEVENTF.LEFTUP;
+
+        uint sent = SendInput(3, [move, down, up], INPUT.Size);
+        if (sent != 3)
+            throw new InvalidOperationException($"Could not send the mouse click. Sent {sent} of 3 input events.");
+    }
+
     public static void SetWindowPosition(Window passedWindow)
     {
         string storedPositionString = "";

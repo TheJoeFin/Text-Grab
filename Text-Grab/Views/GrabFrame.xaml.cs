@@ -4782,27 +4782,7 @@ public partial class GrabFrame : Window
         bool isSpaceJoining,
         bool isRightToLeft)
     {
-        IEnumerable<(string Text, double Left, int SourceIndex)> orderedItems = sourceItems
-            .Select((item, index) => (item.Text, item.Left, SourceIndex: index));
-        orderedItems = isRightToLeft
-            ? orderedItems.OrderByDescending(item => item.Left)
-            : orderedItems.OrderBy(item => item.Left);
-
-        string separator = isSpaceJoining ? " " : string.Empty;
-        StringBuilder text = new();
-        List<(int SourceIndex, int Start, int Length)> segments = [];
-
-        foreach ((string itemText, double _, int sourceIndex) in orderedItems)
-        {
-            if (text.Length > 0)
-                text.Append(separator);
-
-            int start = text.Length;
-            text.Append(itemText);
-            segments.Add((sourceIndex, start, itemText.Length));
-        }
-
-        return (text.ToString(), segments);
+        return TextSearchUtilities.BuildSearchText(sourceItems, isSpaceJoining, isRightToLeft);
     }
 
     internal static bool AreOnSameSearchLine(
@@ -4823,10 +4803,7 @@ public partial class GrabFrame : Window
 
     internal static bool SpansOverlap(int firstStart, int firstLength, int secondStart, int secondLength)
     {
-        return firstLength > 0
-            && secondLength > 0
-            && firstStart < secondStart + secondLength
-            && secondStart < firstStart + firstLength;
+        return TextSearchUtilities.SpansOverlap(firstStart, firstLength, secondStart, secondLength);
     }
 
     private void ResetGrabFrame()

@@ -120,6 +120,7 @@ public partial class FullscreenGrab : Window
         BackgroundImage.Source = ImageMethods.GetWindowBoundsImage(this);
         // Honor user preference for shaded overlay while selecting
         BackgroundBrush.Opacity = DefaultSettings.FsgShadeOverlay ? 0.2 : 0.0;
+        RefreshFindOnScreenSearch();
     }
 
     internal void KeyPressed(Key key, bool? isActive = null)
@@ -589,11 +590,55 @@ public partial class FullscreenGrab : Window
         else
         {
             DisposeBitmapSource(BackgroundImage);
+            RefreshFindOnScreenSearch();
         }
     }
 
     private void FullscreenGrab_KeyDown(object sender, KeyEventArgs e)
     {
+        if (KeyboardExtensions.IsCtrlDown() && e.Key == Key.F)
+        {
+            _ = OpenFindOnScreenAsync();
+            e.Handled = true;
+            return;
+        }
+
+        if (IsFindOnScreenActive)
+        {
+            if (isFindOnScreenInstancePickerActive
+                && TryGetFindOnScreenInstanceNumber(e.Key, out int instanceNumber))
+            {
+                PickFindOnScreenInstance(instanceNumber);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Enter && FindOnScreenTextBox.IsKeyboardFocusWithin)
+            {
+                _ = ExecuteFindOnScreenEnterActionAsync();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Escape
+                && FindOnScreenTextBox.IsKeyboardFocusWithin
+                && !string.IsNullOrEmpty(FindOnScreenTextBox.Text))
+            {
+                FindOnScreenTextBox.Clear();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Escape)
+            {
+                CloseFindOnScreen();
+                e.Handled = true;
+                return;
+            }
+
+            return;
+        }
+
         if (e.Key == Key.Enter && isAwaitingAdjustAfterCommit)
         {
             AcceptSelectionButton_Click(this, new RoutedEventArgs());
@@ -749,6 +794,7 @@ public partial class FullscreenGrab : Window
 
         CaptureLanguageUtilities.PersistSelectedLanguage(selectedLanguage);
         ApplySelectedLanguageState(selectedLanguage);
+        RefreshFindOnScreenSearch();
 
         int selection = languageCmbBox.SelectedIndex;
 
@@ -1180,6 +1226,7 @@ public partial class FullscreenGrab : Window
         LayoutUpdated -= FullscreenGrab_LayoutUpdated;
         windowSelectionTimer.Stop();
         windowSelectionTimer.Tick -= WindowSelectionTimer_Tick;
+        CleanupFindOnScreen();
 
         DisposeBitmapSource(BackgroundImage);
 

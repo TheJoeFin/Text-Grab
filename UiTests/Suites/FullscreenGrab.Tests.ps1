@@ -118,12 +118,24 @@ Register-UiTest -Suite 'FullscreenGrab' -Name 'toolbar-reveals-on-mouse-move-and
             'FullscreenGrab.SingleLineToggle',
             'FullscreenGrab.TableToggle',
             'FullscreenGrab.SelectionStyle',
+            'FullscreenGrab.FindOnScreenLaunch',
             'FullscreenGrab.CancelButton'
         )) {
             Wait-UiTestElement -Target $overlay -AutomationId $automationId -TimeoutSeconds $Context.TimeoutSeconds
         }
         # The capture mode is settable: switching to single-line OCR toggles it on.
         Invoke-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.SingleLineToggle'
+        Assert-UiTestWindow -ProcessId $overlay.ProcessId -WindowHandle $overlay.WindowHandle
+
+        # The compact launcher swaps the capture controls for the searchable OCR panel.
+        Invoke-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.FindOnScreenLaunch'
+        Wait-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.FindOnScreenSearch' -TimeoutSeconds $Context.TimeoutSeconds
+        Wait-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.FindOnScreenEnterAction' -TimeoutSeconds $Context.TimeoutSeconds
+        Wait-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.FindOnScreenClose' -TimeoutSeconds $Context.TimeoutSeconds
+
+        # Closing search restores the standard capture controls without dismissing the overlay.
+        Invoke-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.FindOnScreenClose'
+        Wait-UiTestElement -Target $overlay -AutomationId 'FullscreenGrab.FindOnScreenLaunch' -TimeoutSeconds $Context.TimeoutSeconds
         Assert-UiTestWindow -ProcessId $overlay.ProcessId -WindowHandle $overlay.WindowHandle
 
         Invoke-SystemIntegrationHelper -Arguments @('--escape') | Out-Null
