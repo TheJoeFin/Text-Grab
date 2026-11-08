@@ -26,6 +26,15 @@ public class FullscreenGrabSelectionStyleTests
         Assert.Equal(expected, shouldKeepVisible);
     }
 
+    [Fact]
+    public void ShouldKeepTopToolbarVisible_WhenFindOnScreenIsActive()
+    {
+        Assert.True(FullscreenGrab.ShouldKeepTopToolbarVisible(
+            FsgSelectionStyle.Region,
+            isAwaitingAdjustAfterCommit: false,
+            isFindOnScreenActive: true));
+    }
+
     [Theory]
     [InlineData(FsgSelectionStyle.Region, true)]
     [InlineData(FsgSelectionStyle.Window, false)]

@@ -144,9 +144,14 @@ public partial class FullscreenGrab
             UpdateWindowSelectionHighlight();
     }
 
-    internal static bool ShouldKeepTopToolbarVisible(FsgSelectionStyle selectionStyle, bool isAwaitingAdjustAfterCommit)
+    internal static bool ShouldKeepTopToolbarVisible(
+        FsgSelectionStyle selectionStyle,
+        bool isAwaitingAdjustAfterCommit,
+        bool isFindOnScreenActive = false)
     {
-        return selectionStyle == FsgSelectionStyle.Window || isAwaitingAdjustAfterCommit;
+        return selectionStyle == FsgSelectionStyle.Window
+            || isAwaitingAdjustAfterCommit
+            || isFindOnScreenActive;
     }
 
     internal static bool ShouldCommitWindowSelection(WindowSelectionCandidate? pressedWindowCandidate, WindowSelectionCandidate? releasedWindowCandidate)
@@ -253,7 +258,8 @@ public partial class FullscreenGrab
 
     private void UpdateTopToolbarVisibility(bool isPointerOverSelectionSurface)
     {
-        if (ShouldKeepTopToolbarVisible(CurrentSelectionStyle, isAwaitingAdjustAfterCommit))
+        bool isFindOnScreenActive = IsFindOnScreenActive;
+        if (ShouldKeepTopToolbarVisible(CurrentSelectionStyle, isAwaitingAdjustAfterCommit, isFindOnScreenActive))
         {
             TopButtonsStackPanel.Visibility = Visibility.Visible;
             return;
