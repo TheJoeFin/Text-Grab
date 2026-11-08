@@ -706,6 +706,18 @@ namespace Text_Grab.Properties {
                 this["FsgSelectionStyle"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("CopyMatches")]
+        public string FsgFindEnterAction {
+            get {
+                return ((string)(this["FsgFindEnterAction"]));
+            }
+            set {
+                this["FsgFindEnterAction"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

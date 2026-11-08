@@ -206,6 +206,7 @@ public static class DiagnosticsUtilities
             FSGMakeSingleLineToggle = s.FSGMakeSingleLineToggle,
             FsgDefaultMode = s.FsgDefaultMode ?? string.Empty,
             FsgSelectionStyle = s.FsgSelectionStyle ?? string.Empty,
+            FsgFindEnterAction = s.FsgFindEnterAction ?? string.Empty,
             FsgShadeOverlay = s.FsgShadeOverlay,
             FsgSendEtwToggle = s.FsgSendEtwToggle,
 
@@ -562,6 +563,7 @@ public class SettingsInfoModel
     public bool FSGMakeSingleLineToggle { get; set; }
     public string FsgDefaultMode { get; set; } = string.Empty;
     public string FsgSelectionStyle { get; set; } = string.Empty;
+    public string FsgFindEnterAction { get; set; } = string.Empty;
     public bool FsgShadeOverlay { get; set; }
     public bool FsgSendEtwToggle { get; set; }
 
