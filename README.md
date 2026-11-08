@@ -104,6 +104,8 @@ Use the Edit Text Window to turn OCR results into clean, usable content. You can
 
 Markdown mode displays inline images (`![alt text](images/photo.png)`), including images in lists, quotes, links, and tables. Relative image paths resolve from the opened Markdown file's folder; absolute local paths and HTTP/HTTPS images are also supported. Web images load asynchronously. Images keep their Markdown destinations and titles when saved (reference images are saved as inline image syntax). Missing or unsupported images show their Markdown syntax instead. Network-share images and custom URI schemes are not loaded automatically.
 
+Basic HTML is also rendered: paragraphs and headings (`p`, `h1`–`h6`) with `align`, links (`a`), images (`img`) with numeric width/height, line breaks (`br`), and inline `span`, `b`/`strong`, and `i`/`em` tags. HTML entities are decoded and layout whitespace is collapsed. HTML tags and attributes are retained when saving, including linked images. Unsupported or unbalanced HTML remains visible as source; CSS, scripts, and full web-page layouts are not rendered. HTML images use the same path resolution and loading restrictions as Markdown images.
+
 Inside the Edit Text Window, you get tools that help you quickly fix, extract, and structure text.
 
 **Clean OCR output**

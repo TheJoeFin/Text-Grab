@@ -26,9 +26,11 @@ public class MarkdownImageLoadingTests
     }
 
     [WpfTheory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task WebImagesLoadAsynchronouslyAndPreserveMarkdownOnSuccessOrFailure(bool success)
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task WebImagesLoadAsynchronouslyAndPreserveMarkdownOnSuccessOrFailure(bool success, bool html)
     {
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
         TcpListener listener = new(IPAddress.Loopback, 0);
@@ -58,7 +60,9 @@ public class MarkdownImageLoadingTests
         Task server = ServeImageAsync();
         try
         {
-            string markdown = $"before ![web sample](http://127.0.0.1:{port}/sample.png) after";
+            string imageSource = html ? $"<img src=\"http://127.0.0.1:{port}/sample.png\" alt=\"web sample\" width=\"128\" />"
+                : $"![web sample](http://127.0.0.1:{port}/sample.png)";
+            string markdown = $"before {imageSource} after";
             FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
             RichTextBox editor = new() { Document = document };
             int documentChanges = 0;
@@ -88,7 +92,7 @@ public class MarkdownImageLoadingTests
             }
             else
             {
-                Assert.Equal($"![web sample](http://127.0.0.1:{port}/sample.png)", Assert.IsType<TextBlock>(imageHost.Child).Text);
+                Assert.Equal(imageSource, Assert.IsType<TextBlock>(imageHost.Child).Text);
                 Assert.IsType<string>(imageSpan.ToolTip);
             }
 

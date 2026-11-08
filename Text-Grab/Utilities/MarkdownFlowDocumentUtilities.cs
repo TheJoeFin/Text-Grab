@@ -39,7 +39,7 @@ namespace Text_Grab.Utilities;
 /// <see cref="MarkdownDocumentUtilities.GetCodeBlockText"/>, etc.) stayed on the original type name
 /// and are exposed <c>internal</c> for this class to reach.
 /// </summary>
-public static class MarkdownFlowDocumentUtilities
+public static partial class MarkdownFlowDocumentUtilities
 {
     private enum MarkdownBlockRole
     {
@@ -433,6 +433,9 @@ public static class MarkdownFlowDocumentUtilities
                 blocks.Add(CreateTable(table, source, quoteDepth, markdownFilePath));
                 break;
 
+            case HtmlBlock htmlBlock when TryAppendHtmlBlocks(blocks, htmlBlock, source, quoteDepth, markdownFilePath):
+                break;
+
             default:
                 blocks.Add(CreateLiteralParagraph(MarkdownDocumentUtilities.GetSourceSlice(source, block), quoteDepth, block.Span.Start, block.Span.End + 1));
                 break;
@@ -569,7 +572,14 @@ public static class MarkdownFlowDocumentUtilities
             return;
 
         for (MarkdigInline? inline = container.FirstChild; inline is not null; inline = inline.NextSibling)
+        {
+            if (inline is HtmlInline html && TryAppendHtmlInline(inlines, html, source, markdownFilePath, out MarkdigInline last))
+            {
+                inline = last;
+                continue;
+            }
             AppendInline(inlines, inline, source, markdownFilePath);
+        }
     }
 
     private static void AppendInline(InlineCollection inlines, MarkdigInline inline, string source, string? markdownFilePath)
@@ -684,10 +694,16 @@ public static class MarkdownFlowDocumentUtilities
             imageMarkdown = $"![{altMarkdown}]({MarkdownDocumentUtilities.EscapeLinkDestination(url)}{title})";
         }
 
+        return CreateImageInline(url, altText, link.Title, imageMarkdown, link.Span.Start, link.Span.End + 1, markdownFilePath);
+    }
+
+    private static Span CreateImageInline(string url, string altText, string? title, string imageMarkdown,
+        int rawStart, int rawEnd, string? markdownFilePath, double width = double.NaN, double height = double.NaN)
+    {
         Span imageSpan = new();
         Run fallback = new(imageMarkdown);
         SetInlineRole(fallback, MarkdownInlineRole.LiteralMarkdown);
-        SetRawSpan(fallback, link.Span.Start, link.Span.End + 1);
+        SetRawSpan(fallback, rawStart, rawEnd);
         imageSpan.Inlines.Add(fallback);
         bool loadFailed = false;
         Border? imageHost = null;
@@ -728,7 +744,9 @@ public static class MarkdownFlowDocumentUtilities
                 Stretch = Stretch.Uniform,
                 StretchDirection = StretchDirection.DownOnly,
                 MaxHeight = 480,
-                ToolTip = string.IsNullOrEmpty(link.Title) ? altText : link.Title
+                Width = width,
+                Height = height,
+                ToolTip = string.IsNullOrEmpty(title) ? altText : title
             };
             AutomationProperties.SetName(image, altText);
             imageHost = new Border { Child = image };
@@ -741,7 +759,7 @@ public static class MarkdownFlowDocumentUtilities
             image.SetBinding(FrameworkElement.MaxWidthProperty, new Binding(nameof(FrameworkElement.MaxWidth)) { Source = imageHost });
             InlineUIContainer imageContainer = new(imageHost) { BaselineAlignment = BaselineAlignment.Center };
             imageContainer.SetValue(ImageMarkdownProperty, imageMarkdown);
-            SetRawSpan(imageContainer, link.Span.Start, link.Span.End + 1);
+            SetRawSpan(imageContainer, rawStart, rawEnd);
             imageSpan.Inlines.Clear();
             imageSpan.Inlines.Add(imageContainer);
         }
@@ -813,6 +831,13 @@ public static class MarkdownFlowDocumentUtilities
     private static void WriteParagraph(StringBuilder builder, Paragraph paragraph, bool preserveLiteralMarkdown)
     {
         string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(paragraph));
+
+        if (paragraph.GetValue(HtmlOpeningProperty) is string opening && opening.Length > 0)
+        {
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(
+                opening + SerializeHtmlInlines(paragraph.Inlines) + (string)paragraph.GetValue(HtmlClosingProperty), quotePrefix));
+            return;
+        }
 
         if (GetBlockRole(paragraph) == MarkdownBlockRole.ThematicBreak)
         {
@@ -926,6 +951,15 @@ public static class MarkdownFlowDocumentUtilities
 
     private static void WriteInline(StringBuilder builder, WpfInline inline, bool preserveLiteralMarkdown)
     {
+        if (inline.GetValue(HtmlOpeningProperty) is string opening && opening.Length > 0)
+        {
+            builder.Append(opening);
+            if (inline is Span htmlSpan)
+                builder.Append(SerializeHtmlInlines(htmlSpan.Inlines));
+            builder.Append((string)inline.GetValue(HtmlClosingProperty));
+            return;
+        }
+
         if (inline.GetValue(ImageMarkdownProperty) is string imageMarkdown && imageMarkdown.Length > 0)
         {
             builder.Append(imageMarkdown);

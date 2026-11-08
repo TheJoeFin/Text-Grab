@@ -10,6 +10,100 @@ namespace Tests;
 
 public class MarkdownDocumentUtilitiesTests
 {
+    [WpfFact]
+    public void Html_ReadmeLayoutRendersAlignedHeadingsAndLinkedImages()
+    {
+        const string html = """
+            <p align="center">
+              <img width="128" align="center" src="font_sample.png">
+            </p>
+            <h1 align="center">
+              Text Grab
+            </h1>
+            <p align="center">
+              Copy any text you can see.
+            </p>
+            <p align="center">
+              <a href="https://example.com/store?a=1&amp;b=2" target="_blank">
+                <img src="font_sample.png" width="200" alt="Store link" />
+              </a>
+            </p>
+            <p align="center">
+              <img src="font_sample.png" alt="Downloads" />
+              <img src="font_sample.png" alt="Release" />
+            </p>
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(html, new FontFamily("Segoe UI"), 16,
+            Path.GetFullPath(@"Images\notes.md"));
+
+        Paragraph[] paragraphs = document.Blocks.Cast<Paragraph>().ToArray();
+        Assert.Equal(5, paragraphs.Length);
+        Assert.All(paragraphs, paragraph => Assert.Equal(System.Windows.TextAlignment.Center, paragraph.TextAlignment));
+        Assert.Equal("Text Grab", new TextRange(paragraphs[1].ContentStart, paragraphs[1].ContentEnd).Text.Trim());
+        Assert.Equal(System.Windows.FontWeights.Bold, paragraphs[1].FontWeight);
+        Assert.Equal("Copy any text you can see.", new TextRange(paragraphs[2].ContentStart, paragraphs[2].ContentEnd).Text.Trim());
+        Image[] images = GetImages(document.Blocks).ToArray();
+        Assert.Equal(4, images.Length);
+        Assert.Equal(128, images[0].Width);
+        Assert.Equal(200, images[1].Width);
+        Assert.Equal("Store link", AutomationProperties.GetName(images[1]));
+        Assert.Equal(new[] { "Downloads", "Release" }, images.Skip(2).Select(AutomationProperties.GetName));
+        Hyperlink link = Assert.IsType<Hyperlink>(Assert.Single(paragraphs[3].Inlines));
+        Assert.Equal("https://example.com/store?a=1&b=2", link.NavigateUri.OriginalString);
+        Assert.Single(GetImages(link.Inlines));
+
+        string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
+        Assert.Contains("<h1 align=\"center\">Text Grab</h1>", saved);
+        Assert.Contains("target=\"_blank\"", saved);
+        Assert.Contains("<img width=\"128\" align=\"center\" src=\"font_sample.png\">", saved);
+        FlowDocument reloaded = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16,
+            Path.GetFullPath(@"Images\notes.md"));
+        Assert.Equal(5, reloaded.Blocks.Count);
+        Assert.Equal(4, GetImages(reloaded.Blocks).Count());
+        Assert.Equal(saved, MarkdownFlowDocumentUtilities.SerializeToMarkdown(reloaded));
+
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+        Assert.Equal("Text Grab", MapAndSlice(document, map, html.IndexOf("Text Grab", StringComparison.Ordinal), 9));
+        Run headingRun = Assert.IsType<Run>(paragraphs[1].Inlines.FirstInline);
+        headingRun.Text = "Updated";
+        Assert.Contains("<h1 align=\"center\">Updated Grab</h1>", MarkdownFlowDocumentUtilities.SerializeToMarkdown(document));
+    }
+
+    [WpfTheory]
+    [InlineData("Before <b>bold</b> and <i>italic</i><br/>after", "Before bold and italic\nafter")]
+    [InlineData("<p ALIGN='right'> A &amp; B &#60; C <strong>bold </strong>word</p>", "A & B < C bold word")]
+    public void Html_BasicFormattingDecodesEntitiesAndRoundTripsEdits(string html, string expectedText)
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(html, new FontFamily("Segoe UI"), 16);
+        Assert.Equal(expectedText, MarkdownFlowDocumentUtilities.GetDocumentPlainText(document).Replace("\r\n", "\n", StringComparison.Ordinal));
+        string saved = MarkdownFlowDocumentUtilities.SerializeToMarkdown(document);
+        FlowDocument reloaded = MarkdownFlowDocumentUtilities.CreateFlowDocument(saved, new FontFamily("Segoe UI"), 16);
+        Assert.Equal(MarkdownFlowDocumentUtilities.GetDocumentPlainText(document), MarkdownFlowDocumentUtilities.GetDocumentPlainText(reloaded));
+        Assert.Equal(saved, MarkdownFlowDocumentUtilities.SerializeToMarkdown(reloaded));
+    }
+
+    [WpfTheory]
+    [InlineData("<p><script>alert('hello')</script></p>")]
+    [InlineData("<p><b>Unclosed</p>")]
+    [InlineData("<div>Unsupported layout</div>")]
+    public void Html_UnsupportedOrUnbalancedBlocksRemainLiteral(string html)
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(html, new FontFamily("Segoe UI"), 16);
+        Assert.Equal(html, MarkdownFlowDocumentUtilities.GetDocumentPlainText(document));
+        Assert.Equal(html, MarkdownFlowDocumentUtilities.SerializeToMarkdown(document));
+    }
+
+    [WpfFact]
+    public void Html_MissingImagesPreserveOriginalTagAndShowTheFailure()
+    {
+        const string html = "<p><img src='missing.png' width='-1' alt='Missing'></p>";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(html, new FontFamily("Segoe UI"), 16);
+        Span image = Assert.IsType<Span>(Assert.Single(Assert.IsType<Paragraph>(Assert.Single(document.Blocks)).Inlines));
+        Assert.IsType<string>(image.ToolTip);
+        Assert.Empty(GetImages(document.Blocks));
+        Assert.Equal(html, MarkdownFlowDocumentUtilities.SerializeToMarkdown(document));
+    }
+
     private static IEnumerable<Image> GetImages(BlockCollection blocks)
     {
         foreach (Block block in blocks)
