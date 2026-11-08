@@ -104,6 +104,8 @@ Use the Edit Text Window to turn OCR results into clean, usable content. You can
 
 Markdown mode displays inline images (`![alt text](images/photo.png)`), including images in lists, quotes, links, and tables. Relative image paths resolve from the opened Markdown file's folder; absolute local paths and HTTP/HTTPS images are also supported. Web images load asynchronously. Images keep their Markdown destinations and titles when saved (reference images are saved as inline image syntax). Missing or unsupported images show their Markdown syntax instead. Network-share images and custom URI schemes are not loaded automatically.
 
+Markdown task-list checkboxes (`- [ ]` and `- [x]`) can be toggled in the editor; their state is saved in the Markdown document.
+
 Fenced `mermaid` blocks render as diagrams using a native .NET renderer, without a browser, JavaScript, or network access. Flowcharts, sequence diagrams, class diagrams, and other diagram types supported by Mermaider are displayed as images and adapt to the app's light/dark theme. Diagram source is preserved when saving; switch to plain text mode to edit it. Invalid, unsupported, or oversized diagrams show an error and their source instead. Rendering is bounded to 50,000 source characters, 500 diagram elements, and a three-second layout budget.
 
 Markdown mode also renders strikethrough (`~~deleted~~`), highlighting (`==marked==`), inserted/underlined text (`++inserted++`), subscript (`H~2~O`), and superscript (`x^2^`). These can contain nested formatting and retain their syntax and edits when saved. Highlights and script sizes adapt to the document's theme and font size.

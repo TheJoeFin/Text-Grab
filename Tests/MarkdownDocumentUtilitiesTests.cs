@@ -1,5 +1,7 @@
 using System.IO;
 using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -367,6 +369,54 @@ Console.WriteLine("hi");
 
         Assert.Contains("- [ ] open item", serialized);
         Assert.Contains("- [x] done item", serialized);
+    }
+
+    [WpfFact]
+    public void Markdown_TaskListCheckBoxes_ToggleAndSynchronizeThroughEditor()
+    {
+        const string markdown = "- [ ] open item\n- [x] done item";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        RichTextBox editor = new() { Document = document, IsDocumentEnabled = true };
+        string synchronized = markdown;
+        int changes = 0;
+        System.Windows.RoutedEventHandler sync = (_, e) =>
+        {
+            if (e.OriginalSource is System.Windows.DependencyObject source && MarkdownFlowDocumentUtilities.IsTaskListCheckBox(source))
+            {
+                synchronized = MarkdownFlowDocumentUtilities.SerializeToMarkdown(editor.Document, preserveLiteralMarkdown: true);
+                changes++;
+            }
+        };
+        editor.AddHandler(CheckBox.CheckedEvent, sync);
+        editor.AddHandler(CheckBox.UncheckedEvent, sync);
+
+        System.Windows.Documents.List list = Assert.IsType<System.Windows.Documents.List>(Assert.Single(document.Blocks));
+        CheckBox[] boxes = list.ListItems.Select(item =>
+        {
+            Paragraph paragraph = Assert.IsType<Paragraph>(item.Blocks.FirstBlock);
+            return Assert.IsType<CheckBox>(Assert.IsType<InlineUIContainer>(paragraph.Inlines.FirstInline).Child);
+        }).ToArray();
+        Assert.False(boxes[0].IsChecked);
+        Assert.True(boxes[1].IsChecked);
+        Assert.Equal("open item", AutomationProperties.GetName(boxes[0]));
+
+        ((IToggleProvider)new CheckBoxAutomationPeer(boxes[0])).Toggle();
+        ((IToggleProvider)new CheckBoxAutomationPeer(boxes[1])).Toggle();
+
+        Assert.Equal(2, changes);
+        Assert.Equal($"- [x] open item{Environment.NewLine}- [ ] done item", synchronized);
+        FlowDocument reloaded = MarkdownFlowDocumentUtilities.CreateFlowDocument(synchronized, new FontFamily("Segoe UI"), 16);
+        Assert.Equal(synchronized, MarkdownFlowDocumentUtilities.SerializeToMarkdown(reloaded, preserveLiteralMarkdown: true));
+    }
+
+    [WpfFact]
+    public void Markdown_TaskListCheckBox_DoesNotDisplaceTextMapping()
+    {
+        const string markdown = "- [ ] alpha beta gamma";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.MarkdownOffsetMap map = MarkdownFlowDocumentUtilities.BuildOffsetMap(document);
+
+        Assert.Equal("beta", MapAndSlice(document, map, markdown.IndexOf("beta", StringComparison.Ordinal), 4));
     }
 
     [WpfFact]

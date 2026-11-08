@@ -4729,6 +4729,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             DispatcherPriority.Background);
     }
 
+    private void MarkdownTaskListCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (isApplyingMarkdownDocument || e.OriginalSource is not DependencyObject source
+            || !MarkdownFlowDocumentUtilities.IsTaskListCheckBox(source))
+            return;
+
+        SyncMarkdownTextFromDocument();
+        UpdateLineAndColumnText();
+    }
+
     private void MarkdownEditorControl_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         if (editorMode != EtwEditorMode.Markdown || e.Text != " ")

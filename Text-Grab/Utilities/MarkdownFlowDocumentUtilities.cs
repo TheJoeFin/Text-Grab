@@ -696,11 +696,17 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case TaskList taskList:
-                Run taskListRun = new(taskList.Checked ? "\u2611" : "\u2610");
-                SetInlineRole(taskListRun, MarkdownInlineRole.TaskListMarker);
-                SetTaskListMarkerChecked(taskListRun, taskList.Checked);
-                SetRawSpan(taskListRun, taskList.Span.Start, taskList.Span.End + 1);
-                inlines.Add(taskListRun);
+                CheckBox taskListCheckBox = new() { IsChecked = taskList.Checked, VerticalAlignment = VerticalAlignment.Center };
+                SetInlineRole(taskListCheckBox, MarkdownInlineRole.TaskListMarker);
+                int labelStart = taskList.Span.End + 1;
+                int labelEnd = source.IndexOfAny(['\r', '\n'], labelStart);
+                if (labelEnd < 0)
+                    labelEnd = source.Length;
+                AutomationProperties.SetName(taskListCheckBox, source[labelStart..labelEnd].Trim());
+                InlineUIContainer taskListContainer = new(taskListCheckBox) { BaselineAlignment = BaselineAlignment.Center };
+                SetInlineRole(taskListContainer, MarkdownInlineRole.TaskListMarker);
+                SetRawSpan(taskListContainer, taskList.Span.Start, taskList.Span.End + 1);
+                inlines.Add(taskListContainer);
                 break;
 
             case FootnoteLink footnoteLink:
@@ -1117,10 +1123,13 @@ public static partial class MarkdownFlowDocumentUtilities
                 builder.Append($"  {Environment.NewLine}");
                 break;
 
+            case InlineUIContainer { Child: CheckBox checkBox } when GetInlineRole(inline) == MarkdownInlineRole.TaskListMarker:
+                builder.Append(checkBox.IsChecked == true ? "[x]" : "[ ]");
+                break;
+
             case Run run:
                 builder.Append(GetInlineRole(run) switch
                 {
-                    MarkdownInlineRole.TaskListMarker => GetTaskListMarkerChecked(run) ? "[x]" : "[ ]",
                     MarkdownInlineRole.CodeSpan => $"`{MarkdownDocumentUtilities.NormalizeDocumentText(run.Text)}`",
                     MarkdownInlineRole.LiteralMarkdown => run.Text,
                     _ when preserveLiteralMarkdown => run.Text,
@@ -1334,9 +1343,6 @@ public static partial class MarkdownFlowDocumentUtilities
     private static readonly DependencyProperty InlineRoleProperty =
         DependencyProperty.RegisterAttached("InlineRole", typeof(MarkdownInlineRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownInlineRole.None));
 
-    private static readonly DependencyProperty TaskListMarkerCheckedProperty =
-        DependencyProperty.RegisterAttached("TaskListMarkerChecked", typeof(bool), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(false));
-
     private static readonly DependencyProperty CodeFenceInfoProperty =
         DependencyProperty.RegisterAttached("CodeFenceInfo", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(string.Empty));
 
@@ -1374,8 +1380,8 @@ public static partial class MarkdownFlowDocumentUtilities
     private static MarkdownBlockRole GetBlockRole(DependencyObject element) => (MarkdownBlockRole)element.GetValue(BlockRoleProperty);
     private static void SetInlineRole(DependencyObject element, MarkdownInlineRole value) => element.SetValue(InlineRoleProperty, value);
     private static MarkdownInlineRole GetInlineRole(DependencyObject element) => (MarkdownInlineRole)element.GetValue(InlineRoleProperty);
-    private static void SetTaskListMarkerChecked(DependencyObject element, bool value) => element.SetValue(TaskListMarkerCheckedProperty, value);
-    private static bool GetTaskListMarkerChecked(DependencyObject element) => (bool)element.GetValue(TaskListMarkerCheckedProperty);
+    public static bool IsTaskListCheckBox(DependencyObject element) =>
+        element is CheckBox && GetInlineRole(element) == MarkdownInlineRole.TaskListMarker;
     private static void SetCodeFenceInfo(DependencyObject element, string value) => element.SetValue(CodeFenceInfoProperty, value);
     private static string GetCodeFenceInfo(DependencyObject element) => (string)element.GetValue(CodeFenceInfoProperty);
     private static void SetIsTableHeader(DependencyObject element, bool value) => element.SetValue(IsTableHeaderProperty, value);
