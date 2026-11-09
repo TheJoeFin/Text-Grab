@@ -493,6 +493,42 @@ namespace Text_Grab.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("DefaultLaunch")]
+        public string TrayLeftClickAction {
+            get {
+                return ((string)(this["TrayLeftClickAction"]));
+            }
+            set {
+                this["TrayLeftClickAction"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("20")]
+        public int TrayFlyoutItemCount {
+            get {
+                return ((int)(this["TrayFlyoutItemCount"]));
+            }
+            set {
+                this["TrayFlyoutItemCount"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("EditText,GrabFrames,Files")]
+        public string TrayFlyoutSources {
+            get {
+                return ((string)(this["TrayFlyoutSources"]));
+            }
+            set {
+                this["TrayFlyoutSources"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
         public string RenderingMode {
             get {

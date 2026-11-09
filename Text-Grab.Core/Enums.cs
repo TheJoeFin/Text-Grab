@@ -33,6 +33,24 @@ public enum TrayIconStyle
     Monochrome = 1,
 }
 
+public enum TrayLeftClickAction
+{
+    // Run the configured default launch mode (the historical behavior).
+    DefaultLaunch = 0,
+    // Show the tray flyout with launch buttons and recent items.
+    Flyout = 1,
+}
+
+[Flags]
+public enum TrayFlyoutSources
+{
+    None = 0,
+    EditText = 1,
+    GrabFrames = 2,
+    Files = 4,
+    All = EditText | GrabFrames | Files,
+}
+
 public enum RenderingMode
 {
     // Software rendering on Arm64 devices, hardware (GPU) rendering everywhere else.
