@@ -449,7 +449,7 @@ public static partial class MarkdownFlowDocumentUtilities
                     diagram.SetBinding(FrameworkElement.MaxWidthProperty, new Binding(nameof(FrameworkElement.ActualWidth))
                     {
                         RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(RichTextBox), 1),
-                        Converter = new ImageWidthConverter(),
+                        Converter = new DiagramWidthConverter(),
                         FallbackValue = 640d
                     });
                     InlineUIContainer container = new(diagram);
@@ -929,6 +929,16 @@ public static partial class MarkdownFlowDocumentUtilities
             throw new NotSupportedException("Network-share Markdown images are not loaded automatically.");
 
         return uri;
+    }
+
+    // Diagrams use the whole available width (images stay capped at 640) so wide ones are as legible as possible.
+    private sealed class DiagramWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            value is double width && width > 0 ? Math.Max(width - 96, 32) : 640d;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
     }
 
     private sealed class ImageWidthConverter : IValueConverter

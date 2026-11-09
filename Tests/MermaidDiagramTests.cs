@@ -34,7 +34,8 @@ public class MermaidDiagramTests
         Assert.Equal(Visibility.Collapsed, Assert.Single(diagram.Children.OfType<TextBlock>()).Visibility);
         Assert.True(CountPaintedPixels(bitmap) > 100);
         Assert.Equal(StretchDirection.DownOnly, image.StretchDirection);
-        Assert.Equal(480, image.MaxHeight);
+        // Diagrams scale to the available width only; a tall diagram is not squeezed to a fixed height.
+        Assert.True(double.IsPositiveInfinity(image.MaxHeight));
         Assert.Equal(markdown, MarkdownFlowDocumentUtilities.SerializeToMarkdown(document).Replace("\r\n", "\n", StringComparison.Ordinal));
     }
 
@@ -142,7 +143,7 @@ public class MermaidDiagramTests
         Assert.Equal(224, diagram.MaxWidth);
         Assert.InRange(diagram.ActualWidth, 1, 224);
         Assert.InRange(image.ActualWidth, 1, 224);
-        Assert.InRange(image.ActualHeight, 1, 480);
+        Assert.True(image.ActualHeight >= 1);
         Assert.Equal(bitmap.Width / bitmap.Height, image.ActualWidth / image.ActualHeight, 2);
     }
 
