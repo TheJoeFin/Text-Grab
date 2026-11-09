@@ -223,7 +223,7 @@ HTML layout, entities, numeric image dimensions, and linked images:
 Inline HTML among Markdown: before <strong>bold HTML</strong>, <em>italic HTML</em>,  
 <span>a span</span>, and <a href="https://example.com">a link</a><br/>after a break.
 
-## 10. Mermaid: all 24 diagram types
+## 10. Mermaid: all 24 diagram types, plus two long stress tests
 
 Each labeled example below should render a native image, not its source code.  
 No browser, JavaScript runtime, or network connection is needed for diagrams.  
@@ -526,6 +526,110 @@ treeView-beta
         Images/
             capture.png
         index.md
+```
+
+### 10.25 Long flowchart (wide stress test)
+
+Left-to-right pipeline with 28 stages, branches, and a retry loop. It is far wider than  
+the window, so it should shrink to fit; click it to zoom and pan in the full-window viewer.
+
+```mermaid
+flowchart LR
+  s01[Hotkey pressed] --> s02[Freeze screen]
+  s02 --> s03[Draw selection]
+  s03 --> s04{Region valid?}
+  s04 -->|No| s03
+  s04 -->|Yes| s05[Crop bitmap]
+  s05 --> s06[Detect language]
+  s06 --> s07{Engine available?}
+  s07 -->|Windows OCR| s08[Run Windows OCR]
+  s07 -->|Tesseract| s09[Run Tesseract]
+  s07 -->|Fallback| s10[Run legacy OCR]
+  s08 --> s11[Collect word boxes]
+  s09 --> s11
+  s10 --> s11
+  s11 --> s12[Merge lines]
+  s12 --> s13[Fix spacing]
+  s13 --> s14{Apply replacements?}
+  s14 -->|Yes| s15[Run find and replace]
+  s14 -->|No| s16[Skip replacements]
+  s15 --> s17[Normalize whitespace]
+  s16 --> s17
+  s17 --> s18{Copy to clipboard?}
+  s18 -->|Yes| s19[Write clipboard]
+  s18 -->|No| s20[Keep in memory]
+  s19 --> s21[Show toast]
+  s20 --> s21
+  s21 --> s22[Add to history]
+  s22 --> s23{Open editor?}
+  s23 -->|Yes| s24[Open Edit Text window]
+  s23 -->|No| s25[Return to tray]
+  s24 --> s26[Render Markdown]
+  s26 --> s27[Await user edits]
+  s27 --> s28[Save document]
+  s25 --> s28
+```
+
+### 10.26 Long sequence diagram (tall stress test)
+
+Six participants and 36 messages with loops, alternatives, and notes. It is much taller  
+than the window, so check scrolling past it, the full-window viewer, and saving as PNG or SVG.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Tray as Tray flyout
+  participant Grab as Grab engine
+  participant OCR as OCR service
+  participant Edit as Edit Text
+  participant Disk as File system
+  User->>Tray: Click tray icon
+  Tray->>Tray: Load recent items
+  Tray-->>User: Show flyout
+  User->>Tray: Choose Fullscreen
+  Tray->>Grab: Start fullscreen grab
+  Grab->>Grab: Capture every screen
+  Grab-->>User: Show selection overlay
+  loop Until a region is selected
+    User->>Grab: Drag selection
+    Grab-->>User: Update outline
+  end
+  User->>Grab: Release mouse
+  Grab->>OCR: Send cropped bitmap
+  Note over Grab,OCR: Runs off the UI thread
+  OCR->>OCR: Pick language
+  OCR->>OCR: Recognize words
+  alt Text found
+    OCR-->>Grab: Return lines and boxes
+    Grab->>Grab: Apply post processing
+    Grab->>Edit: Open with text
+    Edit-->>User: Show editable text
+  else Nothing found
+    OCR-->>Grab: Return empty result
+    Grab-->>User: Show no text toast
+  end
+  User->>Edit: Switch to Markdown mode
+  Edit->>Edit: Parse document
+  Edit->>Edit: Render diagrams
+  Edit-->>User: Show rendered view
+  User->>Edit: Click a diagram
+  Edit-->>User: Open full window viewer
+  User->>Edit: Zoom and pan
+  User->>Edit: Save as PNG
+  Edit->>Disk: Write PNG file
+  Disk-->>Edit: Confirm write
+  User->>Edit: Save document
+  Edit->>Disk: Write Markdown file
+  Disk-->>Edit: Confirm write
+  Edit->>Tray: Report new recent item
+  Tray-->>User: Item appears in flyout
+  opt User reopens later
+    User->>Tray: Pick the recent item
+    Tray->>Disk: Read Markdown file
+    Disk-->>Tray: Return contents
+    Tray->>Edit: Open document
+    Edit-->>User: Show document
+  end
 ```
 
 ## 11. Mermaid in containers and alternate fences
