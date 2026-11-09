@@ -230,16 +230,26 @@ public partial class App : System.Windows.Application
 
         _themeRegistryKey = key;
         _themeRegistryMonitor = new RegistryMonitor(key);
-        _themeRegistryMonitor.RegChanged += new EventHandler(SetTheme);
+        _themeRegistryMonitor.RegChanged += OnThemeRegistryChanged;
         _themeRegistryMonitor.Start();
         SetTheme();
+    }
+
+    // RegistryMonitor raises this on a background thread; theme changes must run on the UI thread.
+    private static void OnThemeRegistryChanged(object? sender, EventArgs e)
+    {
+        Dispatcher? dispatcher = Current?.Dispatcher;
+        if (dispatcher is null)
+            return;
+
+        dispatcher.BeginInvoke(() => SetTheme());
     }
 
     private static void StopWatchingTheme()
     {
         if (_themeRegistryMonitor is not null)
         {
-            _themeRegistryMonitor.RegChanged -= new EventHandler(SetTheme);
+            _themeRegistryMonitor.RegChanged -= OnThemeRegistryChanged;
             try { _themeRegistryMonitor.Dispose(); }
             catch (ObjectDisposedException) { }
             _themeRegistryMonitor = null;
