@@ -21,7 +21,21 @@ internal static class MermaidImageRenderer
     private static readonly SemaphoreSlim RenderSlots = new(2);
     private static readonly Regex VariableDeclaration = new(@"(?<name>--[\w-]+)\s*:\s*(?<value>[^;{}]+);?", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
+    // Long diagrams are shown scaled down to the window width (and zoomed in the viewer), so render them
+    // with more pixels than an ordinary image: 8192 px on a side, 16 MP (~64 MB) at most. Oversampling stays
+    // at 2x so the many ordinary-sized diagrams in a document keep a small memory footprint.
+    private const int MaxBitmapDimension = 8192;
+    private const long MaxBitmapPixels = 16_000_000;
+    private const int PreferredOversample = 2;
+
     internal static async Task<BitmapSource> RenderAsync(string source, bool isLightTheme, CancellationToken cancellationToken = default)
+        => (await RenderWithSvgAsync(source, isLightTheme, cancellationToken).ConfigureAwait(false)).Bitmap;
+
+    /// <summary>
+    /// Renders the diagram and returns both the bitmap and the portable SVG text (CSS variables resolved)
+    /// so the diagram can be exported without rendering it a second time.
+    /// </summary>
+    internal static async Task<(BitmapSource Bitmap, string Svg)> RenderWithSvgAsync(string source, bool isLightTheme, CancellationToken cancellationToken = default)
     {
         await RenderSlots.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -48,7 +62,11 @@ internal static class MermaidImageRenderer
                 }
             }, cancellationToken).ConfigureAwait(false);
 
-            return await Task.Run(() => SvgImageLoader.RenderSvg(PrepareSvg(output.ToArray())), cancellationToken).ConfigureAwait(false);
+            return await Task.Run(() =>
+            {
+                byte[] prepared = PrepareSvg(output.ToArray());
+                return (SvgImageLoader.RenderSvg(prepared, MaxBitmapDimension, MaxBitmapPixels, PreferredOversample), Encoding.UTF8.GetString(prepared));
+            }, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
