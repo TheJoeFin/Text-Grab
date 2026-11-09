@@ -39,21 +39,26 @@
                 CornerRadius="4"
                 SnapsToDevicePixels="True">
                 <ContentPresenter
+                    x:Name="presenter"
                     Margin="{TemplateBinding Padding}"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Focusable="False" />
             </Border>
             <ControlTemplate.Triggers>
+                <!--  The hover/pressed fills are dark teal in every theme, so the content turns white on them.  -->
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter TargetName="border" Property="Background" Value="{StaticResource FlyoutHoverBrush}" />
+                    <Setter TargetName="presenter" Property="TextElement.Foreground" Value="White" />
                 </Trigger>
                 <Trigger Property="IsKeyboardFocused" Value="True">
                     <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource FlyoutFocusRingBrush}" />
                     <Setter TargetName="border" Property="Background" Value="{StaticResource FlyoutHoverBrush}" />
+                    <Setter TargetName="presenter" Property="TextElement.Foreground" Value="White" />
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
                     <Setter TargetName="border" Property="Background" Value="{StaticResource FlyoutPressedBrush}" />
+                    <Setter TargetName="presenter" Property="TextElement.Foreground" Value="White" />
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter TargetName="border" Property="Opacity" Value="0.35" />
@@ -80,12 +85,14 @@
             BasedOn="{StaticResource FlyoutTealButton}"
             TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         </Style>
 
         <Style x:Key="FlyoutListItemStyle" TargetType="ListBoxItem">
             <Setter Property="Margin" Value="6,1" />
             <Setter Property="Padding" Value="8,6" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="AutomationProperties.AutomationId" Value="TrayFlyout.Item" />
             <Setter Property="Template">
@@ -121,6 +128,8 @@
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Bd" Property="Background" Value="{StaticResource DarkTeal}" />
                                 <Setter TargetName="AccentBar" Property="Visibility" Value="Visible" />
+                                <!--  Selected rows are dark teal in every theme, so their text must be light.  -->
+                                <Setter Property="Foreground" Value="White" />
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
@@ -148,15 +157,15 @@
                     Foreground="{StaticResource Teal}"
                     Symbol="{Binding Symbol}" />
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <!--  Both lines inherit the row's Foreground (white when selected); the subtitle is just dimmed.  -->
                     <TextBlock
                         FontSize="13"
-                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                         Text="{Binding Title}"
                         TextTrimming="CharacterEllipsis" />
                     <TextBlock
                         Margin="0,1,0,0"
                         FontSize="11"
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Opacity="0.72"
                         Text="{Binding Subtitle}"
                         TextTrimming="CharacterEllipsis" />
                 </StackPanel>
