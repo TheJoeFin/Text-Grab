@@ -183,6 +183,14 @@ public class ShortcutKeySet : IEquatable<ShortcutKeySet>
             Name = "Open Clipboard Content",
             Action = ShortcutKeyActions.OpenClipboardContent
         },
+        new()
+        {
+            Modifiers = {KeyModifiers.Windows, KeyModifiers.Shift},
+            NonModifierKey = Key.X,
+            IsEnabled = false,
+            Name = "Tray Flyout",
+            Action = ShortcutKeyActions.Flyout
+        },
     };
 }
 
@@ -198,4 +206,5 @@ public enum ShortcutKeyActions
     PreviousEditWindow = 7,
     PreviousGrabFrame = 8,
     OpenClipboardContent = 9,
+    Flyout = 10,
 }

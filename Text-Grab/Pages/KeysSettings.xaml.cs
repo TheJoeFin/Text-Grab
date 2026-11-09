@@ -139,6 +139,9 @@ public partial class KeysSettings : Page
                 case ShortcutKeyActions.OpenClipboardContent:
                     OccShortcutControl.KeySet = keySet;
                     break;
+                case ShortcutKeyActions.Flyout:
+                    FlyoutShortcutControl.KeySet = keySet;
+                    break;
                 default:
                     break;
             }

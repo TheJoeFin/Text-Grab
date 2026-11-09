@@ -24,6 +24,7 @@ public class UiAutomationContractTests
             ["Views\\FullscreenGrab.xaml"] = ["FullscreenGrabWindow", "FullscreenGrab.SelectionCanvas", "FullscreenGrab.Language", "FullscreenGrab.AcceptSelectionButton"],
             ["Views\\GrabFrame.xaml"] = ["GrabFrameWindow", "GrabFrame.ZoomSurface", "GrabFrame.WordBordersCanvas", "GrabFrame.GrabButton", "GrabFrame.Status"],
             ["Controls\\NotifyIconWindow.xaml"] = ["NotifyIconWindow", "NotifyIcon", "NotifyIcon.Menu.Settings", "NotifyIcon.Menu.Close"],
+            ["Controls\\TrayFlyoutWindow.xaml"] = ["TrayFlyoutWindow", "TrayFlyout.Search", "TrayFlyout.Items", "TrayFlyout.Fullscreen", "TrayFlyout.Clipboard"],
             ["Controls\\FindAndReplaceWindow.xaml"] = ["FindReplaceDialog", "FindReplace.Search", "FindReplace.Results"],
             ["Controls\\RegexEditorDialog.xaml"] = ["RegexEditorDialog", "RegexEditor.Pattern", "RegexEditor.Error"],
             ["Controls\\PatternMatchModeDialog.xaml"] = ["PatternMatchDialog", "PatternMatch.Indices", "PatternMatch.IndicesError"],

@@ -52,8 +52,16 @@ public partial class NotifyIconWindow : Window
     private void NotifyIcon_LeftClick(NotifyIcon sender, RoutedEventArgs e)
     {
         e.Handled = true;
-        RunAfterTrayIconInteraction(App.DefaultLaunch);
+
+        if (IsFlyoutLeftClick())
+            RunAfterTrayIconInteraction(() => TrayFlyoutController.Toggle(fromTrayIcon: true));
+        else
+            RunAfterTrayIconInteraction(App.DefaultLaunch);
     }
+
+    private bool IsFlyoutLeftClick()
+        => Enum.TryParse(DefaultSettings.TrayLeftClickAction, true, out TrayLeftClickAction action)
+            && action == TrayLeftClickAction.Flyout;
 
     private void RunAfterTrayIconInteraction(Action action)
     {
@@ -68,8 +76,19 @@ public partial class NotifyIconWindow : Window
         NotifyIcon.Visibility = Visibility.Visible;
 
         ApplyTrayIconStyle();
+        ApplyTooltip();
+    }
 
+    public void ApplyTooltip()
+    {
         string toolTipText = "Text Grab";
+
+        if (IsFlyoutLeftClick())
+        {
+            NotifyIcon.TooltipText = toolTipText + " - Quick Flyout";
+            return;
+        }
+
         TextGrabMode defaultLaunchSetting = Enum.Parse<TextGrabMode>(DefaultSettings.DefaultLaunch, true);
 
         switch (defaultLaunchSetting)
@@ -107,9 +126,7 @@ public partial class NotifyIconWindow : Window
 
     private void EditWindowMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        EditTextWindow etw = new();
-        etw.Show();
-        etw.Activate();
+        TrayActions.OpenEditTextWindow();
     }
 
     private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
@@ -119,14 +136,12 @@ public partial class NotifyIconWindow : Window
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        GrabFrame gf = new();
-        gf.Show();
-        gf.Activate();
+        TrayActions.OpenGrabFrame();
     }
 
     private void FullscreenGrabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        RunAfterTrayIconInteraction(() => WindowUtilities.LaunchFullScreenGrab());
+        RunAfterTrayIconInteraction(TrayActions.OpenFullscreenGrab);
     }
 
     private async void PreviousRegionMenuItem_Click(object sender, RoutedEventArgs e)
@@ -136,13 +151,12 @@ public partial class NotifyIconWindow : Window
 
     private void LookupMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        QuickSimpleLookup qsl = new();
-        qsl.Show();
+        TrayActions.OpenLookup();
     }
 
     private void LastGrabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
+        TrayActions.OpenLastGrabFrame();
     }
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -182,93 +196,16 @@ public partial class NotifyIconWindow : Window
 
     private void LastEditWindow_Click(object sender, RoutedEventArgs e)
     {
-        HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
-
-        if (historyInfo is null)
-        {
-            EditTextWindow etw = new();
-            etw.Show();
-            return;
-        }
-
-        EditTextWindow etwHistory = new(historyInfo);
-        etwHistory.Show();
-        etwHistory.Activate();
+        TrayActions.OpenLastEditTextWindow();
     }
 
     private void OpenClipboardImageGrabFrame_Click(object sender, RoutedEventArgs e)
     {
-        // Check for image file paths in clipboard first
-        if (Clipboard.ContainsFileDropList())
-        {
-            StringCollection files = Clipboard.GetFileDropList();
-            string? imagePath = files.Cast<string>().FirstOrDefault(IoUtilities.IsImageFile);
-
-            if (imagePath is not null)
-            {
-                GrabFrame gf = new(imagePath);
-                gf.Show();
-                gf.Activate();
-                return;
-            }
-        }
-
-        // Fall back to image content in clipboard (bitmap, base64, etc.)
-        (bool success, ImageSource? clipboardImage) = ClipboardUtilities.TryGetImageFromClipboard();
-
-        if (!success || clipboardImage is null)
-            return;
-
-        BitmapSource? bitmapSource = null;
-
-        if (clipboardImage is InteropBitmap interopBitmap)
-        {
-            System.Drawing.Bitmap bmp = ImageMethods.InteropBitmapToBitmap(interopBitmap);
-            bitmapSource = ImageMethods.BitmapToImageSource(bmp);
-            bmp.Dispose();
-        }
-        else if (clipboardImage is BitmapSource source)
-        {
-            bitmapSource = source;
-        }
-
-        if (bitmapSource is null)
-            return;
-
-        string tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
-
-        using (FileStream fileStream = new(tempPath, FileMode.Create))
-        {
-            PngBitmapEncoder encoder = new();
-            encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
-            encoder.Save(fileStream);
-        }
-
-        GrabFrame grabFrame = new(tempPath, recordRecentFile: false);
-        grabFrame.Show();
-        grabFrame.Activate();
+        TrayActions.TryOpenClipboardImageInGrabFrame();
     }
 
     private void ContextMenu_Opened(object sender, RoutedEventArgs e)
     {
-        bool hasClipboardImage = false;
-
-        try
-        {
-            if (Clipboard.ContainsFileDropList())
-            {
-                StringCollection files = Clipboard.GetFileDropList();
-                hasClipboardImage = files.Cast<string>().Any(IoUtilities.IsImageFile);
-            }
-
-            if (!hasClipboardImage)
-                hasClipboardImage = Clipboard.ContainsImage() || ClipboardUtilities.TryGetImageFromClipboard().Item1;
-        }
-        catch
-        {
-            hasClipboardImage = false;
-        }
-
-        OpenClipboardImageGrabFrame.IsEnabled = hasClipboardImage;
+        OpenClipboardImageGrabFrame.IsEnabled = TrayActions.ClipboardHasImage();
     }
 }

@@ -102,122 +102,39 @@ public static class NotifyIconUtilities
             case ShortcutKeyActions.Settings:
                 break;
             case ShortcutKeyActions.Fullscreen:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    WindowUtilities.LaunchFullScreenGrab();
-                }));
+                RunOnUiThread(TrayActions.OpenFullscreenGrab);
                 break;
             case ShortcutKeyActions.GrabFrame:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    GrabFrame gf = new();
-                    gf.Show();
-                }));
+                RunOnUiThread(TrayActions.OpenGrabFrame);
                 break;
             case ShortcutKeyActions.Lookup:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    QuickSimpleLookup qsl = new();
-                    qsl.Show();
-                }));
+                RunOnUiThread(TrayActions.OpenLookup);
                 break;
             case ShortcutKeyActions.EditWindow:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    EditTextWindow etw = new();
-                    etw.Show();
-                    etw.Activate();
-                }));
+                RunOnUiThread(TrayActions.OpenEditTextWindow);
                 break;
             case ShortcutKeyActions.PreviousRegionGrab:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    OcrSourceUtilities.GetCopyTextFromPreviousRegion();
-                }));
+                RunOnUiThread(TrayActions.CopyPreviousRegion);
                 break;
             case ShortcutKeyActions.PreviousEditWindow:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
-
-                    if (historyInfo is null)
-                    {
-                        EditTextWindow etw = new();
-                        etw.Show();
-                        return;
-                    }
-
-                    EditTextWindow etwHistory = new(historyInfo);
-                    etwHistory.Show();
-                }));
+                RunOnUiThread(TrayActions.OpenLastEditTextWindow);
                 break;
             case ShortcutKeyActions.PreviousGrabFrame:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    Singleton<HistoryService>.Instance.GetLastHistoryAsGrabFrame();
-                }));
+                RunOnUiThread(TrayActions.OpenLastGrabFrame);
                 break;
             case ShortcutKeyActions.OpenClipboardContent:
-                System.Windows.Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    if (System.Windows.Clipboard.ContainsText())
-                    {
-                        string text = System.Windows.Clipboard.GetText();
-                        EditTextWindow etw = new(text, false);
-                        etw.Show();
-                        etw.Activate();
-                        return;
-                    }
-
-                    if (System.Windows.Clipboard.ContainsFileDropList())
-                    {
-                        StringCollection files = System.Windows.Clipboard.GetFileDropList();
-                        string? imagePath = files.Cast<string?>().FirstOrDefault(f => f is not null && IoUtilities.IsImageFile(f!));
-                        if (imagePath is not null)
-                        {
-                            GrabFrame gf = new(imagePath);
-                            gf.Show();
-                            gf.Activate();
-                            return;
-                        }
-                    }
-
-                    (bool success, System.Windows.Media.ImageSource? clipboardImage) = ClipboardUtilities.TryGetImageFromClipboard();
-                    if (!success || clipboardImage is null)
-                        return;
-
-                    BitmapSource? bitmapSource = null;
-                    if (clipboardImage is System.Windows.Interop.InteropBitmap interopBitmap)
-                    {
-                        System.Drawing.Bitmap bmp = ImageMethods.InteropBitmapToBitmap(interopBitmap);
-                        bitmapSource = ImageMethods.BitmapToImageSource(bmp);
-                        bmp.Dispose();
-                    }
-                    else if (clipboardImage is BitmapSource source)
-                    {
-                        bitmapSource = source;
-                    }
-
-                    if (bitmapSource is null)
-                        return;
-
-                    string tempPath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), $"TextGrab_Clipboard_{Guid.NewGuid()}.png");
-                    using (FileStream fileStream = new(tempPath, FileMode.Create))
-                    {
-                        PngBitmapEncoder encoder = new();
-                        encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
-                        encoder.Save(fileStream);
-                    }
-
-                    GrabFrame grabFrame = new(tempPath, recordRecentFile: false);
-                    grabFrame.Show();
-                    grabFrame.Activate();
-                }));
+                RunOnUiThread(TrayActions.OpenClipboardContent);
+                break;
+            case ShortcutKeyActions.Flyout:
+                RunOnUiThread(() => TrayFlyoutController.Toggle(fromTrayIcon: false));
                 break;
             default:
                 break;
         }
     }
+
+    private static void RunOnUiThread(Action action)
+        => System.Windows.Application.Current.Dispatcher.Invoke(action);
 
     private static NotifyIconWindow CreateNotifyIconWindow()
     {
@@ -243,7 +160,9 @@ public static class NotifyIconUtilities
             return;
         }
 
-        GetExistingNotifyIconWindow()?.ApplyTrayIconStyle();
+        NotifyIconWindow? notifyIconWindow = GetExistingNotifyIconWindow();
+        notifyIconWindow?.ApplyTrayIconStyle();
+        notifyIconWindow?.ApplyTooltip();
     }
 
     private static NotifyIconWindow? GetExistingNotifyIconWindow()

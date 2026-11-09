@@ -98,6 +98,12 @@
                 KeySetChanged="ShortcutControl_KeySetChanged"
                 RecordingStarted="ShortcutControl_Recording"
                 ShortcutName="Open Clipboard Content" />
+            <controls:ShortcutControl
+                x:Name="FlyoutShortcutControl"
+                AutomationProperties.AutomationId="Settings.Shortcuts.TrayFlyout"
+                KeySetChanged="ShortcutControl_KeySetChanged"
+                RecordingStarted="ShortcutControl_Recording"
+                ShortcutName="Tray Flyout" />
         </StackPanel>
     </StackPanel>
 </Page>
