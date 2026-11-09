@@ -128,6 +128,65 @@
         </controls:SettingsExpander>
 
         <controls:SettingsExpander
+            Description="Choose what happens when you left-click the system tray icon. The flyout can also be opened with its own hotkey in Keyboard Shortcuts."
+            HeaderText="Tray icon left-click"
+            Icon="{ui:SymbolIcon WindowApps24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="TrayClickDefaultLaunchRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayLeftClick.DefaultLaunch"
+                    Checked="TrayLeftClickRdBtn_Checked"
+                    Content="Open the default launch window"
+                    GroupName="TrayLeftClickGroup"
+                    Tag="DefaultLaunch" />
+                <RadioButton
+                    x:Name="TrayClickFlyoutRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayLeftClick.Flyout"
+                    Checked="TrayLeftClickRdBtn_Checked"
+                    Content="Show the quick flyout"
+                    GroupName="TrayLeftClickGroup"
+                    Tag="Flyout" />
+                <TextBlock
+                    Margin="0,12,0,4"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Flyout recent items" />
+                <CheckBox
+                    x:Name="FlyoutEditTextChkBx"
+                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.EditText"
+                    Checked="FlyoutSource_Changed"
+                    Content="Edit Text windows"
+                    Unchecked="FlyoutSource_Changed" />
+                <CheckBox
+                    x:Name="FlyoutGrabFramesChkBx"
+                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.GrabFrames"
+                    Checked="FlyoutSource_Changed"
+                    Content="Grab Frames"
+                    Unchecked="FlyoutSource_Changed" />
+                <CheckBox
+                    x:Name="FlyoutFilesChkBx"
+                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.Files"
+                    Checked="FlyoutSource_Changed"
+                    Content="Files"
+                    Unchecked="FlyoutSource_Changed" />
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center"
+                        Text="Number of items" />
+                    <ui:NumberBox
+                        x:Name="FlyoutItemCountBox"
+                        Width="120"
+                        AutomationProperties.AutomationId="Settings.General.TrayFlyout.ItemCount"
+                        LargeChange="10"
+                        Maximum="100"
+                        Minimum="1"
+                        SmallChange="1"
+                        ValueChanged="FlyoutItemCountBox_ValueChanged" />
+                </StackPanel>
+            </StackPanel>
+        </controls:SettingsExpander>
+
+        <controls:SettingsExpander
             Description="Choose whether Text Grab draws its windows with the graphics card or the CPU. Restart Text Grab for a change to take effect."
             HeaderText="Rendering"
             Icon="{ui:SymbolIcon DeveloperBoard24}">

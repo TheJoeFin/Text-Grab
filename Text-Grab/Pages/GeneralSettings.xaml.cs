@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.ApplicationModel;
 using Wpf.Ui.Controls;
@@ -86,6 +87,17 @@ public partial class GeneralSettings : Page
                 ColorTrayIconRdBtn.IsChecked = true;
                 break;
         }
+
+        bool flyoutOnClick = Enum.TryParse(DefaultSettings.TrayLeftClickAction, true, out TrayLeftClickAction leftClick)
+            && leftClick == TrayLeftClickAction.Flyout;
+        TrayClickFlyoutRdBtn.IsChecked = flyoutOnClick;
+        TrayClickDefaultLaunchRdBtn.IsChecked = !flyoutOnClick;
+
+        TrayFlyoutSources flyoutSources = TrayFlyoutItemProvider.ParseSources(DefaultSettings.TrayFlyoutSources);
+        FlyoutEditTextChkBx.IsChecked = flyoutSources.HasFlag(TrayFlyoutSources.EditText);
+        FlyoutGrabFramesChkBx.IsChecked = flyoutSources.HasFlag(TrayFlyoutSources.GrabFrames);
+        FlyoutFilesChkBx.IsChecked = flyoutSources.HasFlag(TrayFlyoutSources.Files);
+        FlyoutItemCountBox.Value = TrayFlyoutItemProvider.ClampItemCount(DefaultSettings.TrayFlyoutItemCount);
 
         RenderingMode renderingMode = RenderingUtilities.ParseRenderingMode(DefaultSettings.RenderingMode);
         RenderingAutoRadio.IsChecked = renderingMode == RenderingMode.Auto;
@@ -292,6 +304,44 @@ public partial class GeneralSettings : Page
         DefaultSettings.TrayIconStyle = TrayIconStyle.Monochrome.ToString();
         DefaultSettings.Save();
         NotifyIconUtilities.RefreshTrayIconStyle();
+    }
+
+    private void TrayLeftClickRdBtn_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet
+            || sender is not RadioButton radioButton
+            || !Enum.TryParse(radioButton.Tag?.ToString(), out TrayLeftClickAction action))
+            return;
+
+        DefaultSettings.TrayLeftClickAction = action.ToString();
+        DefaultSettings.Save();
+        NotifyIconUtilities.RefreshTrayIconStyle();
+    }
+
+    private void FlyoutSource_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        TrayFlyoutSources sources = TrayFlyoutSources.None;
+        if (FlyoutEditTextChkBx.IsChecked == true)
+            sources |= TrayFlyoutSources.EditText;
+        if (FlyoutGrabFramesChkBx.IsChecked == true)
+            sources |= TrayFlyoutSources.GrabFrames;
+        if (FlyoutFilesChkBx.IsChecked == true)
+            sources |= TrayFlyoutSources.Files;
+
+        DefaultSettings.TrayFlyoutSources = TrayFlyoutItemProvider.FormatSources(sources);
+        DefaultSettings.Save();
+    }
+
+    private void FlyoutItemCountBox_ValueChanged(object sender, Wpf.Ui.Controls.NumberBoxValueChangedEventArgs args)
+    {
+        if (!settingsSet || args.NewValue is not double value)
+            return;
+
+        DefaultSettings.TrayFlyoutItemCount = TrayFlyoutItemProvider.ClampItemCount((int)Math.Round(value));
+        DefaultSettings.Save();
     }
 
     private void RenderingModeRadio_Checked(object sender, RoutedEventArgs e)
