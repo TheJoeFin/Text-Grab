@@ -178,7 +178,14 @@ internal static class SvgImageLoader
     /// Renders SVG content to a frozen, premultiplied-alpha bitmap. The result keeps the SVG's intrinsic
     /// size in device-independent units; it is supersampled when the size limits allow.
     /// </summary>
-    internal static BitmapSource RenderSvg(byte[] content)
+    internal static BitmapSource RenderSvg(byte[] content) =>
+        RenderSvg(content, MaxRenderedDimension, MaxRenderedPixels, RenderOversample);
+
+    /// <summary>
+    /// Renders with caller-chosen limits. Diagrams are far larger than typical images yet are shown scaled
+    /// down to the window, so they ask for more pixels to stay crisp when shrunk or zoomed.
+    /// </summary>
+    internal static BitmapSource RenderSvg(byte[] content, int maxDimension, long maxPixels, int preferredOversample)
     {
         if (content.LongLength > MaxDownloadBytes)
             throw new InvalidDataException($"The SVG is larger than the {MaxDownloadBytes / (1024 * 1024)} MB limit.");
@@ -187,11 +194,18 @@ internal static class SvgImageLoader
         {
             XmlDocument xml = LoadHardenedXml(content);
             SvgDocument svg = SvgDocument.Open(xml);
-            (double dipWidth, double dipHeight) = GetBoundedSize(svg);
-            int oversample = dipWidth * RenderOversample <= MaxRenderedDimension
-                && dipHeight * RenderOversample <= MaxRenderedDimension
-                && dipWidth * dipHeight * RenderOversample * RenderOversample <= MaxRenderedPixels
-                ? RenderOversample : 1;
+            (double dipWidth, double dipHeight) = GetBoundedSize(svg, maxDimension, maxPixels);
+            int oversample = 1;
+            for (int candidate = preferredOversample; candidate > 1; candidate--)
+            {
+                if (dipWidth * candidate <= maxDimension
+                    && dipHeight * candidate <= maxDimension
+                    && dipWidth * dipHeight * candidate * candidate <= maxPixels)
+                {
+                    oversample = candidate;
+                    break;
+                }
+            }
             int pixelWidth = Math.Max(1, (int)Math.Round(dipWidth * oversample));
             int pixelHeight = Math.Max(1, (int)Math.Round(dipHeight * oversample));
 
@@ -206,7 +220,7 @@ internal static class SvgImageLoader
         }
     }
 
-    private static (double Width, double Height) GetBoundedSize(SvgDocument svg)
+    private static (double Width, double Height) GetBoundedSize(SvgDocument svg, int maxDimension, long maxPixels)
     {
         float width;
         float height;
@@ -228,8 +242,8 @@ internal static class SvgImageLoader
         }
 
         double scale = Math.Min(1d, Math.Min(
-            MaxRenderedDimension / (double)Math.Max(width, height),
-            Math.Sqrt(MaxRenderedPixels / ((double)width * height))));
+            maxDimension / (double)Math.Max(width, height),
+            Math.Sqrt(maxPixels / ((double)width * height))));
         return (Math.Max(1d, width * scale), Math.Max(1d, height * scale));
     }
 
