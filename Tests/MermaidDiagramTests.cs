@@ -274,6 +274,43 @@ public class MermaidDiagramTests
         Assert.Throws<InvalidDataException>(() => MermaidImageRenderer.PrepareSvg(Encoding.UTF8.GetBytes(svg)));
     }
 
+    [Fact]
+    public async Task SankeyRibbonsAreStackedInTheOrderOfTheirNeighbouringNodes()
+    {
+        const string source = "sankey-beta\n  Captures,Text,70\n  Captures,Images,30\n  Text,Documents,60\n  Text,Clipboard,10\n  Images,Documents,30";
+        string svg = await RenderRawSvgAsync(source);
+        XmlDocument document = new();
+        document.LoadXml(Encoding.UTF8.GetString(MermaidImageRenderer.PrepareSvg(Encoding.UTF8.GetBytes(svg))));
+
+        double TopOf(string name) => double.Parse(document.GetElementsByTagName("g").Cast<XmlElement>()
+            .Single(g => g.GetAttribute("data-node") == name).GetElementsByTagName("rect")[0]!.Attributes!["y"]!.Value, CultureInfo.InvariantCulture);
+
+        // (sourceTop, targetTop) for each ribbon, parsed from "M sx sy C ... tx ty L ...".
+        List<(double SourceX, double SourceTop, double TargetX, double TargetTop)> ribbons = document.GetElementsByTagName("path").Cast<XmlElement>()
+            .Where(path => path.GetAttribute("class") == "sankey-link")
+            .Select(path => System.Text.RegularExpressions.Regex.Matches(path.GetAttribute("d"), @"-?\d+(?:\.\d+)?")
+                .Select(m => double.Parse(m.Value, CultureInfo.InvariantCulture)).ToArray())
+            .Select(n => (n[0], n[1], n[6], n[7])).ToList();
+        Assert.Equal(5, ribbons.Count);
+
+        // From Captures (x=54): the ribbon heading to the higher node (Text) must start higher.
+        var fromCaptures = ribbons.Where(r => r.SourceX == 54).OrderBy(r => r.SourceTop).ToArray();
+        Assert.Equal(TopOf("Text"), fromCaptures[0].TargetTop, 0.5);
+        Assert.Equal(TopOf("Images"), fromCaptures[1].TargetTop, 0.5);
+
+        // Into Documents: the ribbon from Text (higher) must arrive above the one from Images.
+        double documentsX = ribbons.Max(r => r.TargetX);
+        var intoDocuments = ribbons.Where(r => r.TargetX == documentsX).OrderBy(r => r.TargetTop).ToArray();
+        Assert.Equal(TopOf("Text"), intoDocuments[0].SourceTop, 0.5);
+    }
+
+    private static async Task<string> RenderRawSvgAsync(string source)
+    {
+        using MemoryStream output = new();
+        await MermaidRenderer.RenderSvgAsync(source, output, new Mermaider.Models.RenderOptions());
+        return Encoding.UTF8.GetString(output.ToArray());
+    }
+
     private static FlowDocument CreateDocument(string markdown) =>
         MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
 

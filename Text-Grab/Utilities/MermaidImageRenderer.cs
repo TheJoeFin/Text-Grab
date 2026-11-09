@@ -28,6 +28,8 @@ internal static class MermaidImageRenderer
     private const long MaxBitmapPixels = 16_000_000;
     private const int PreferredOversample = 2;
 
+    private static readonly Regex SvgNumber = new(@"-?\d+(?:\.\d+)?", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
     internal static async Task<BitmapSource> RenderAsync(string source, bool isLightTheme, CancellationToken cancellationToken = default)
         => (await RenderWithSvgAsync(source, isLightTheme, cancellationToken).ConfigureAwait(false)).Bitmap;
 
@@ -80,6 +82,7 @@ internal static class MermaidImageRenderer
         XmlDocument document = SvgImageLoader.LoadHardenedXml(content);
         Dictionary<string, string> variables = new(StringComparer.Ordinal);
         XmlElement root = document.DocumentElement ?? throw new InvalidDataException("The Mermaid renderer returned no SVG.");
+        ReorderSankeyLinks(document);
         XmlElement[] styles = document.GetElementsByTagName("style").Cast<XmlElement>().ToArray();
         foreach (XmlElement style in styles)
             CollectVariables(style.InnerText);
@@ -130,6 +133,119 @@ internal static class MermaidImageRenderer
             foreach (Match match in VariableDeclaration.Matches(css))
                 variables[match.Groups["name"].Value] = match.Groups["value"].Value.Trim();
         }
+    }
+
+    private sealed record SankeyNode(double X, double Y, double Width, double Height)
+    {
+        internal double CenterY => Y + Height / 2;
+    }
+
+    private sealed class SankeyLink
+    {
+        internal required XmlElement Element;
+        internal required double SourceX, TargetX, SourceTop, SourceBottom, TargetTop, TargetBottom;
+        internal int Source = -1, Target = -1, Index;
+        internal double NewSourceTop, NewTargetTop;
+    }
+
+    /// <summary>
+    /// Mermaider stacks each node's ribbons in the opposite order from where the neighbouring nodes sit,
+    /// so ribbons cross even when the nodes themselves are ordered sensibly. Re-stack every node's
+    /// outgoing ribbons by target position and incoming ribbons by source position (what d3-sankey and
+    /// mermaid.js do), leaving the node layout and everything else untouched.
+    /// </summary>
+    internal static void ReorderSankeyLinks(XmlDocument document)
+    {
+        List<SankeyNode> nodes = [];
+        foreach (XmlElement group in document.GetElementsByTagName("g").Cast<XmlElement>()
+            .Where(g => g.GetAttribute("class") == "sankey-node"))
+        {
+            XmlElement? rect = group.ChildNodes.OfType<XmlElement>().FirstOrDefault(e => e.LocalName == "rect");
+            if (rect is null
+                || !TryGetDouble(rect, "x", out double x) || !TryGetDouble(rect, "y", out double y)
+                || !TryGetDouble(rect, "width", out double width) || !TryGetDouble(rect, "height", out double height))
+                return;
+            nodes.Add(new SankeyNode(x, y, width, height));
+        }
+
+        if (nodes.Count == 0)
+            return;
+
+        List<SankeyLink> links = [];
+        foreach (XmlElement path in document.GetElementsByTagName("path").Cast<XmlElement>()
+            .Where(p => p.GetAttribute("class") == "sankey-link"))
+        {
+            MatchCollection numbers = SvgNumber.Matches(path.GetAttribute("d"));
+            if (numbers.Count != 16)
+                return;
+
+            double[] n = numbers.Select(m => double.Parse(m.Value, CultureInfo.InvariantCulture)).ToArray();
+            SankeyLink link = new()
+            {
+                Element = path,
+                Index = links.Count,
+                SourceX = n[0], SourceTop = n[1], SourceBottom = n[15],
+                TargetX = n[6], TargetTop = n[7], TargetBottom = n[9],
+            };
+            link.Source = FindNode(link.SourceX, (link.SourceTop + link.SourceBottom) / 2, atRightEdge: true);
+            link.Target = FindNode(link.TargetX, (link.TargetTop + link.TargetBottom) / 2, atRightEdge: false);
+            if (link.Source < 0 || link.Target < 0)
+                return;
+            links.Add(link);
+        }
+
+        for (int node = 0; node < nodes.Count; node++)
+        {
+            SankeyLink[] outgoing = links.Where(l => l.Source == node)
+                .OrderBy(l => nodes[l.Target].CenterY).ThenBy(l => l.Index).ToArray();
+            if (outgoing.Length > 0)
+            {
+                double top = outgoing.Min(l => l.SourceTop);
+                foreach (SankeyLink link in outgoing)
+                {
+                    link.NewSourceTop = top;
+                    top += link.SourceBottom - link.SourceTop;
+                }
+            }
+
+            SankeyLink[] incoming = links.Where(l => l.Target == node)
+                .OrderBy(l => nodes[l.Source].CenterY).ThenBy(l => l.Index).ToArray();
+            if (incoming.Length > 0)
+            {
+                double top = incoming.Min(l => l.TargetTop);
+                foreach (SankeyLink link in incoming)
+                {
+                    link.NewTargetTop = top;
+                    top += link.TargetBottom - link.TargetTop;
+                }
+            }
+        }
+
+        foreach (SankeyLink link in links)
+        {
+            double sourceBottom = link.NewSourceTop + (link.SourceBottom - link.SourceTop);
+            double targetBottom = link.NewTargetTop + (link.TargetBottom - link.TargetTop);
+            double middle = (link.SourceX + link.TargetX) / 2;
+            string F(double value) => Math.Round(value, 2).ToString("0.##", CultureInfo.InvariantCulture);
+            link.Element.SetAttribute("d",
+                $"M {F(link.SourceX)} {F(link.NewSourceTop)} C {F(middle)} {F(link.NewSourceTop)} {F(middle)} {F(link.NewTargetTop)} {F(link.TargetX)} {F(link.NewTargetTop)} " +
+                $"L {F(link.TargetX)} {F(targetBottom)} C {F(middle)} {F(targetBottom)} {F(middle)} {F(sourceBottom)} {F(link.SourceX)} {F(sourceBottom)} Z");
+        }
+
+        int FindNode(double x, double centerY, bool atRightEdge)
+        {
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                SankeyNode node = nodes[i];
+                double edge = atRightEdge ? node.X + node.Width : node.X;
+                if (Math.Abs(edge - x) < 0.5 && centerY >= node.Y - 0.5 && centerY <= node.Y + node.Height + 0.5)
+                    return i;
+            }
+            return -1;
+        }
+
+        static bool TryGetDouble(XmlElement element, string name, out double value) =>
+            double.TryParse(element.GetAttribute(name), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
     private static string Resolve(string value, IReadOnlyDictionary<string, string> variables, int depth = 0)
