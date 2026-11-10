@@ -615,7 +615,7 @@ public partial class App : System.Windows.Application
         AutomationDiagnostics.Record("exit", new { e.ApplicationExitCode });
         TextGrabIcon?.Close();
 
-        NotifyIconUtilities.UnregisterHotkeys(this);
+        NotifyIconUtilities.UnregisterHotkeys();
         HotKeyIds.Clear();
 
         StopWatchingTheme();

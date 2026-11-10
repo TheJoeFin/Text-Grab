@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -20,37 +21,38 @@ public static class NotifyIconUtilities
         if (AutomationProfile.Current is { AllowsSystemIntegration: false })
             return;
 
-        App app = (App)App.Current;
-        if (app.TextGrabIcon is not null
-            || app.NumberOfRunningInstances > 1)
+        AppRuntimeState state = RuntimeState;
+        if (state.TextGrabIcon is not null
+            || state.NumberOfRunningInstances > 1)
         {
             return;
         }
-        RegisterHotKeys(app);
+        RegisterHotKeys();
 
-        app.TextGrabIcon = CreateNotifyIconWindow();
+        state.TextGrabIcon = CreateNotifyIconWindow();
     }
 
     public static async Task ResetNotifyIcon()
     {
-        App app = (App)App.Current;
-        app.TextGrabIcon = null;
+        AppRuntimeState state = RuntimeState;
+        state.TextGrabIcon = null;
 
-        UnregisterHotkeys(app);
+        UnregisterHotkeys();
 
         NotifyIconWindow? existingIcon = GetExistingNotifyIconWindow();
         existingIcon?.Close();
 
-        RegisterHotKeys(app);
+        RegisterHotKeys();
 
-        app.TextGrabIcon = CreateNotifyIconWindow();
+        state.TextGrabIcon = CreateNotifyIconWindow();
     }
 
-    public static void RegisterHotKeys(App app)
+    public static void RegisterHotKeys()
     {
         if (AutomationProfile.Current is { AllowsSystemIntegration: false })
             return;
 
+        AppRuntimeState state = RuntimeState;
         IEnumerable<ShortcutKeySet> shortcuts = ShortcutKeysUtilities.GetShortcutKeySetsFromSettings();
 
         foreach (ShortcutKeySet keySet in shortcuts)
@@ -59,7 +61,7 @@ public static class NotifyIconUtilities
                 continue;
 
             if (HotKeyManager.RegisterHotKey(keySet) is int id)
-                app.HotKeyIds.Add(id);
+                state.HotKeyIds.Add(id);
             else
                 AutomationDiagnostics.Record("hotkey-registration-failed", new { keySet.Action, keySet.Name, keySet.NonModifierKey, keySet.Modifiers });
         }
@@ -68,20 +70,20 @@ public static class NotifyIconUtilities
         HotKeyManager.HotKeyPressed += new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
     }
 
-    public static void UnregisterHotkeys(App app)
+    public static void UnregisterHotkeys()
     {
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
-        foreach (int hotKeyId in app.HotKeyIds)
+        foreach (int hotKeyId in RuntimeState.HotKeyIds)
             HotKeyManager.UnregisterHotKey(hotKeyId);
     }
 
     private static void trayIcon_Disposed(object? sender, EventArgs e)
     {
-        App app = (App)App.Current;
-
-        UnregisterHotkeys(app);
+        UnregisterHotkeys();
     }
+
+    private static AppRuntimeState RuntimeState => AppServices.Provider.GetRequiredService<AppRuntimeState>();
 
     private static void HotKeyManager_HotKeyPressed(object? sender, HotKeyEventArgs e)
     {

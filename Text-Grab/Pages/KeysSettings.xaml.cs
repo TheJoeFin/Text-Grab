@@ -98,8 +98,7 @@ public partial class KeysSettings : Page
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
-        if (App.Current is App app)
-            NotifyIconUtilities.UnregisterHotkeys(app);
+        NotifyIconUtilities.UnregisterHotkeys();
         // registering of hotkeys is done when the settings window closes
 
         RunInBackgroundChkBx.IsChecked = DefaultSettings.RunInTheBackground;
