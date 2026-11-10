@@ -488,7 +488,7 @@ public static class OcrSourceUtilities
         return OcrUtilities.GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
-    private static Bitmap LoadBitmapFromFile(string absolutePath)
+    internal static Bitmap LoadBitmapFromFile(string absolutePath)
     {
         Uri fileURI = new(absolutePath, UriKind.Absolute);
         RotateFlipType rotateFlipType = BitmapUtilities.GetRotateFlipType(absolutePath);
