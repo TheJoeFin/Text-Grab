@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +12,7 @@ using System.Windows.Navigation;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
+using Text_Grab.Services;
 using Text_Grab.Utilities;
 using Windows.Globalization;
 using Windows.Media.Ocr;
@@ -159,7 +162,7 @@ public partial class LanguageSettings : Page
         string tesseractFilePath = $"{tesseractPath}\\tessdata\\{pickedLanguageFile}";
         string tempFilePath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), pickedLanguageFile);
 
-        TesseractGitHubFileDownloader fileDownloader = new();
+        TesseractGitHubFileDownloader fileDownloader = new(AppServices.Provider.GetRequiredService<HttpClient>());
         await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);
         await CopyFileWithElevatedPermissions(tempFilePath, tesseractFilePath);
         await LoadTesseractContent();
