@@ -102,43 +102,30 @@ public static class NotifyIconUtilities
             if (keySet.Equals(e))
                 pressedAction = keySet.Action;
 
-        switch (pressedAction)
-        {
-            case ShortcutKeyActions.None:
-                break;
-            case ShortcutKeyActions.Settings:
-                break;
-            case ShortcutKeyActions.Fullscreen:
-                RunOnUiThread(TrayActions.OpenFullscreenGrab);
-                break;
-            case ShortcutKeyActions.GrabFrame:
-                RunOnUiThread(TrayActions.OpenGrabFrame);
-                break;
-            case ShortcutKeyActions.Lookup:
-                RunOnUiThread(TrayActions.OpenLookup);
-                break;
-            case ShortcutKeyActions.EditWindow:
-                RunOnUiThread(TrayActions.OpenEditTextWindow);
-                break;
-            case ShortcutKeyActions.PreviousRegionGrab:
-                RunOnUiThread(TrayActions.CopyPreviousRegion);
-                break;
-            case ShortcutKeyActions.PreviousEditWindow:
-                RunOnUiThread(TrayActions.OpenLastEditTextWindow);
-                break;
-            case ShortcutKeyActions.PreviousGrabFrame:
-                RunOnUiThread(TrayActions.OpenLastGrabFrame);
-                break;
-            case ShortcutKeyActions.OpenClipboardContent:
-                RunOnUiThread(TrayActions.OpenClipboardContent);
-                break;
-            case ShortcutKeyActions.Flyout:
-                RunOnUiThread(() => TrayFlyoutController.Toggle(fromTrayIcon: false));
-                break;
-            default:
-                break;
-        }
+        if (GetHotkeyHandler(pressedAction) is Action handler)
+            RunOnUiThread(handler);
     }
+
+    /// <summary>
+    /// The handler a global hotkey runs, or null for actions that do nothing (None, Settings).
+    /// The switch that used to live in <see cref="HotKeyManager_HotKeyPressed"/>, unchanged, as an
+    /// expression so a test can pin the mapping before it moves to a router (v5 F5).
+    /// </summary>
+    internal static Action? GetHotkeyHandler(ShortcutKeyActions action) => action switch
+    {
+        ShortcutKeyActions.Fullscreen => TrayActions.OpenFullscreenGrab,
+        ShortcutKeyActions.GrabFrame => TrayActions.OpenGrabFrame,
+        ShortcutKeyActions.Lookup => TrayActions.OpenLookup,
+        ShortcutKeyActions.EditWindow => TrayActions.OpenEditTextWindow,
+        ShortcutKeyActions.PreviousRegionGrab => TrayActions.CopyPreviousRegion,
+        ShortcutKeyActions.PreviousEditWindow => TrayActions.OpenLastEditTextWindow,
+        ShortcutKeyActions.PreviousGrabFrame => TrayActions.OpenLastGrabFrame,
+        ShortcutKeyActions.OpenClipboardContent => TrayActions.OpenClipboardContent,
+        ShortcutKeyActions.Flyout => ToggleFlyoutFromHotkey,
+        _ => null,
+    };
+
+    private static void ToggleFlyoutFromHotkey() => TrayFlyoutController.Toggle(fromTrayIcon: false);
 
     private static void RunOnUiThread(Action action)
         => System.Windows.Application.Current.Dispatcher.Invoke(action);
