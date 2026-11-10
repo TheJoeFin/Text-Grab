@@ -26,7 +26,7 @@ Move the in-memory history lists and the debounced write out of the app-side `Hi
 - `Text-Grab/Services/TrayFlyoutItemProvider.cs` projects history into flat, searchable items.
 - `Tests/HistoryServiceTests.cs` covers the service.
 
-**Corrections and a blocker found at step 2 (2026-11-09, `v5/f3-6`). Steps 1 and 2 are done; step 3 is not started, pending an owner decision.**
+**Corrections and a blocker found at step 2 (2026-11-09, `v5/f3-6`). Steps 1 and 2 are done. On 2026-11-09 the owner shelved the rest of this phase until a consumer needs it, as the note at the top already advises. Whoever resumes it must first resolve the points below, starting with how `HistoryServiceTests` is allowed to change.**
 
 - **The cached-bitmap trap is backwards.** The cached fullscreen bitmap is disposed by the *save* timer (`SaveTimer_Tick` calls `WriteHistory()` and then `DisposeCachedBitmap()`) and by `SaveToHistory(HistoryInfo)`. The idle-release timer never touches it; it releases only the lists. Moving the save debounce into a store means the store has to tell `HistoryService` after each debounced write, and the bitmap has to be disposed on the UI thread, where `OcrSourceUtilities` and `FullscreenGrab` read `CachedBitmap`.
 - **The design contradicts the verification.** "`HistoryServiceTests` unchanged" cannot hold if the lists move. Five of its tests set `HistoryService`'s private fields `HistoryWithImage`, `HistoryTextOnly`, `_imageHistoryLoaded`, `_textHistoryLoaded` and `_hasPendingWrite` by reflection, which are exactly the state the design moves into `HistoryStore`.
