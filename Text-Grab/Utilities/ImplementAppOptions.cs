@@ -1,7 +1,9 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Text_Grab.Services;
 using Windows.ApplicationModel;
 
 namespace Text_Grab.Utilities;
@@ -36,9 +38,9 @@ internal class ImplementAppOptions
         }
         else
         {
-            App app = (App)App.Current;
-            app.TextGrabIcon?.Close();
-            app.TextGrabIcon = null;
+            AppRuntimeState state = AppServices.Provider.GetRequiredService<AppRuntimeState>();
+            state.TextGrabIcon?.Close();
+            state.TextGrabIcon = null;
         }
     }
 
