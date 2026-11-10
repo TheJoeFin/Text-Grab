@@ -175,7 +175,9 @@ public class AppServicesTests
     {
         IServiceProvider provider = AppServices.Provider;
 
-        Assert.IsType<WinRtClipboardService>(provider.GetRequiredService<IClipboardService>());
+        // The Core.Windows service, wrapped so Text Grab's own writes skip the clipboard trigger (F5).
+        Assert.IsType<SelfSuppressingClipboardService>(provider.GetRequiredService<IClipboardService>());
+        Assert.Same(provider.GetRequiredService<ClipboardMonitorService>(), provider.GetRequiredService<ClipboardMonitorService>());
         Assert.IsType<TextFileWriter>(provider.GetRequiredService<ITextFileWriter>());
         Assert.IsType<ToastService>(provider.GetRequiredService<IToastService>());
         Assert.IsType<HttpPostService>(provider.GetRequiredService<IHttpPostService>());

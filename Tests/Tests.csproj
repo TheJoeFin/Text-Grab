@@ -26,6 +26,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- The fake clock FolderWatcherServiceTests uses; ClipboardMonitorServiceTests needs the same one. -->
+        <Compile Include="..\Tests.Core\ManualTimeProvider.cs" Link="ManualTimeProvider.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="TextFiles\MarkdownFeatures.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>

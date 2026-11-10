@@ -62,8 +62,13 @@ internal static class AppServices
         services.AddSingleton<IOcrService, OcrService>();
 
         // Output seams (v5 F4). One instance each: the clipboard service owns its fallback STA
-        // thread, and the others are stateless.
-        services.AddSingleton<IClipboardService, WinRtClipboardService>();
+        // thread, and the others are stateless. Clipboard writes are marked as Text Grab's own so
+        // they do not fire the clipboard trigger (v5 F5).
+        services.AddSingleton<WinRtClipboardService>();
+        services.AddSingleton<ClipboardMonitorService>();
+        services.AddSingleton<IClipboardService>(static provider => new SelfSuppressingClipboardService(
+            provider.GetRequiredService<WinRtClipboardService>(),
+            provider.GetRequiredService<ClipboardMonitorService>()));
         services.AddSingleton<ITextFileWriter, TextFileWriter>();
         services.AddSingleton<IToastService, ToastService>();
 

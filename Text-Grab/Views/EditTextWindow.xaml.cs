@@ -1,4 +1,5 @@
 using Humanizer;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6304,7 +6305,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         DefaultSettings.Save();
 
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
+        AppServices.Provider.GetRequiredService<ClipboardMonitorService>().ContentChanged -= Clipboard_ContentChanged;
 
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
 
@@ -6417,8 +6418,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         RestoreWindowSettings();
 
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged -= Clipboard_ContentChanged;
-        Windows.ApplicationModel.DataTransfer.Clipboard.ContentChanged += Clipboard_ContentChanged;
+        // One app-wide subscription (v5 F5), started here on the UI thread as the direct WinRT
+        // subscription was. ContentChanged forwards every change, as WinRT's event did.
+        ClipboardMonitorService clipboardMonitor = AppServices.Provider.GetRequiredService<ClipboardMonitorService>();
+        clipboardMonitor.ContentChanged -= Clipboard_ContentChanged;
+        clipboardMonitor.ContentChanged += Clipboard_ContentChanged;
+        clipboardMonitor.Start();
 
         EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
