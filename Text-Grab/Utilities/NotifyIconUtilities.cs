@@ -102,33 +102,12 @@ public static class NotifyIconUtilities
             if (keySet.Equals(e))
                 pressedAction = keySet.Action;
 
-        if (GetHotkeyHandler(pressedAction) is Action handler)
-            RunOnUiThread(handler);
+        // Unregistered actions (None, Settings) do nothing, as they always have.
+        AppServices.Provider.GetRequiredService<HotkeyActionRouter>().TryInvoke(pressedAction);
     }
 
-    /// <summary>
-    /// The handler a global hotkey runs, or null for actions that do nothing (None, Settings).
-    /// The switch that used to live in <see cref="HotKeyManager_HotKeyPressed"/>, unchanged, as an
-    /// expression so a test can pin the mapping before it moves to a router (v5 F5).
-    /// </summary>
-    internal static Action? GetHotkeyHandler(ShortcutKeyActions action) => action switch
-    {
-        ShortcutKeyActions.Fullscreen => TrayActions.OpenFullscreenGrab,
-        ShortcutKeyActions.GrabFrame => TrayActions.OpenGrabFrame,
-        ShortcutKeyActions.Lookup => TrayActions.OpenLookup,
-        ShortcutKeyActions.EditWindow => TrayActions.OpenEditTextWindow,
-        ShortcutKeyActions.PreviousRegionGrab => TrayActions.CopyPreviousRegion,
-        ShortcutKeyActions.PreviousEditWindow => TrayActions.OpenLastEditTextWindow,
-        ShortcutKeyActions.PreviousGrabFrame => TrayActions.OpenLastGrabFrame,
-        ShortcutKeyActions.OpenClipboardContent => TrayActions.OpenClipboardContent,
-        ShortcutKeyActions.Flyout => ToggleFlyoutFromHotkey,
-        _ => null,
-    };
-
-    private static void ToggleFlyoutFromHotkey() => TrayFlyoutController.Toggle(fromTrayIcon: false);
-
-    private static void RunOnUiThread(Action action)
-        => System.Windows.Application.Current.Dispatcher.Invoke(action);
+    /// <summary>The Flyout hotkey's handler, registered by <see cref="HotkeyActionRouter.RegisterTrayActions"/>.</summary>
+    internal static void ToggleFlyoutFromHotkey() => TrayFlyoutController.Toggle(fromTrayIcon: false);
 
     private static NotifyIconWindow CreateNotifyIconWindow()
     {

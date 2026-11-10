@@ -70,6 +70,9 @@ internal static class AppServices
         // Its own client, not the shared one above: that one follows redirects (the Tesseract
         // downloader needs it to), and HttpPostService must decide about redirects itself.
         services.AddSingleton<IHttpPostService>(static _ => new HttpPostService(HttpPostService.CreateClient()));
+
+        // Global hotkey dispatch (v5 F5), built with the handlers the old switch had.
+        services.AddSingleton(static _ => HotkeyActionRouter.CreateWithTrayActions());
     }
 
     /// <summary>
