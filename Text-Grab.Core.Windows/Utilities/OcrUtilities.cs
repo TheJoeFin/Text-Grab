@@ -28,8 +28,10 @@ public static partial class OcrUtilities
 
     public static List<WordBorderInfo> ParseOcrResultIntoWordBorderInfos(
         IOcrLinesWords ocrResult,
-        bool shouldCorrectToLatin = true)
+        bool shouldCorrectToLatin = true,
+        OcrOptions? options = null)
     {
+        options ??= OcrOptions.FromSettings(SettingsAccess.Current);
         List<WordBorderInfo> infos = [];
 
         foreach (IOcrLine ocrLine in ocrResult.Lines)
@@ -46,7 +48,7 @@ public static partial class OcrUtilities
                 (float)Math.Abs(bottom - top));
 
             StringBuilder lineText = new();
-            ocrLine.GetTextFromOcrLine(true, lineText, shouldCorrectToLatin);
+            ocrLine.GetTextFromOcrLine(true, lineText, shouldCorrectToLatin, options);
 
             WordBorderInfo info = new()
             {
@@ -66,8 +68,11 @@ public static partial class OcrUtilities
         this IOcrLine ocrLine,
         bool isSpaceJoiningOCRLang,
         StringBuilder text,
-        bool shouldCorrectToLatin = true)
+        bool shouldCorrectToLatin = true,
+        OcrOptions? options = null)
     {
+        options ??= OcrOptions.FromSettings(SettingsAccess.Current);
+
         // (when OCR language is zh or ja)
         // matches words in a space-joining language, which contains:
         // - one letter that is not in "other letters" (CJK characters are "other letters")
@@ -80,7 +85,7 @@ public static partial class OcrUtilities
         {
             text.AppendLine(ocrLine.Text);
 
-            if (SettingsAccess.Current.CorrectErrors)
+            if (options.CorrectErrors)
                 text.TryFixEveryWordLetterNumberErrors();
         }
         else
@@ -88,7 +93,7 @@ public static partial class OcrUtilities
             // For CJK languages, filter out likely furigana (small ruby-text
             // characters above the main text) before merging the words. This is
             // opt-in via the RemoveFurigana setting.
-            IEnumerable<IOcrWord> words = SettingsAccess.Current.RemoveFurigana
+            IEnumerable<IOcrWord> words = options.RemoveFurigana
                 ? FilterFurigana([.. ocrLine.Words])
                 : ocrLine.Words;
 
@@ -101,7 +106,7 @@ public static partial class OcrUtilities
 
                 bool isThisWordSpaceJoining = _cachedSpaceJoiningWordRegex.IsMatch(wordString);
 
-                if (SettingsAccess.Current.CorrectErrors)
+                if (options.CorrectErrors)
                     wordString = wordString.TryFixNumberLetterErrors();
 
                 if (isFirstWord || (!isThisWordSpaceJoining && !isPrevWordSpaceJoining))
@@ -114,7 +119,7 @@ public static partial class OcrUtilities
             }
         }
 
-        if (SettingsAccess.Current.CorrectToLatin && shouldCorrectToLatin)
+        if (options.CorrectToLatin && shouldCorrectToLatin)
             text.ReplaceGreekOrCyrillicWithLatin();
     }
 
@@ -189,14 +194,15 @@ public static partial class OcrUtilities
         public string SingleLineText => string.Join(" ", Lines.Select(static line => line.Text.MakeStringSingleLine()).Where(static text => !string.IsNullOrWhiteSpace(text)));
     }
 
-    internal static string BuildTextFromOcrLines(ILanguage language, IOcrLinesWords ocrResult)
+    internal static string BuildTextFromOcrLines(ILanguage language, IOcrLinesWords ocrResult, OcrOptions? options = null)
     {
+        options ??= OcrOptions.FromSettings(SettingsAccess.Current);
         StringBuilder text = new();
 
         bool isSpaceJoiningOCRLang = language.IsSpaceJoining();
         IOcrLine[] lines = ocrResult.Lines;
 
-        if (ShouldUseParagraphDetection(isSpaceJoiningOCRLang) && lines.Length > 0)
+        if (ShouldUseParagraphDetection(isSpaceJoiningOCRLang, options: options) && lines.Length > 0)
         {
             List<GroupedOcrLines> groupedLines =
             [
@@ -227,11 +233,11 @@ public static partial class OcrUtilities
             // short lines sitting directly above the kanji they annotate, so the
             // word-level filter above never catches them. Drop those whole lines
             // when furigana removal is enabled.
-            if (!isSpaceJoiningOCRLang && SettingsAccess.Current.RemoveFurigana)
+            if (!isSpaceJoiningOCRLang && options.RemoveFurigana)
                 orderedLines = FilterFuriganaLines(orderedLines);
 
             foreach (IOcrLine ocrLine in orderedLines)
-                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, language.IsLatinBased());
+                ocrLine.GetTextFromOcrLine(isSpaceJoiningOCRLang, text, language.IsLatinBased(), options);
         }
 
         if (language.IsRightToLeft())
@@ -342,9 +348,10 @@ public static partial class OcrUtilities
         return kept.Count > 0 ? kept : lines;
     }
 
-    internal static bool ShouldUseParagraphDetection(bool isSpaceJoiningLanguage, bool isTableMode = false)
+    internal static bool ShouldUseParagraphDetection(bool isSpaceJoiningLanguage, bool isTableMode = false, OcrOptions? options = null)
     {
-        return SettingsAccess.Current.ParagraphDetection && isSpaceJoiningLanguage && !isTableMode;
+        options ??= OcrOptions.FromSettings(SettingsAccess.Current);
+        return options.ParagraphDetection && isSpaceJoiningLanguage && !isTableMode;
     }
 
     internal static List<GroupedOcrLines> GroupWrappedParagraphLines(IReadOnlyList<PositionedOcrLine> lines)
@@ -448,13 +455,14 @@ public static partial class OcrUtilities
         return gap < avgLineHeight * 0.6;
     }
 
-    public static string GetStringFromOcrOutputs(List<OcrOutput> outputs)
+    public static string GetStringFromOcrOutputs(List<OcrOutput> outputs, OcrOptions? options = null)
     {
+        options ??= OcrOptions.FromSettings(SettingsAccess.Current);
         StringBuilder text = new();
 
         foreach (OcrOutput output in outputs)
         {
-            output.CleanOutput();
+            output.CleanOutput(options);
 
             if (!string.IsNullOrWhiteSpace(output.CleanedOutput))
                 text.Append(output.CleanedOutput);

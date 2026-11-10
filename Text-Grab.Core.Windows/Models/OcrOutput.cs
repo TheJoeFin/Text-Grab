@@ -16,17 +16,20 @@ public record OcrOutput
     public SoftwareBitmap? SourceSoftwareBitmap { get; set; }
     public ILanguage? Language { get; set; }
 
-    public void CleanOutput()
+    /// <param name="options">Per-call overrides; <c>null</c> uses the current user settings.</param>
+    public void CleanOutput(OcrOptions? options = null)
     {
         if (Kind == OcrOutputKind.Barcode)
             return;
 
+        options ??= OcrOptions.FromSettings(SettingsAccess.Current);
+
         string correctingString = RawOutput;
 
-        if (SettingsAccess.Current.CorrectToLatin && Language?.IsLatinBased() == true)
+        if (options.CorrectToLatin && Language?.IsLatinBased() == true)
             correctingString = correctingString.ReplaceGreekOrCyrillicWithLatin();
 
-        if (SettingsAccess.Current.CorrectErrors)
+        if (options.CorrectErrors)
             correctingString = correctingString.TryFixEveryWordLetterNumberErrors();
 
         CleanedOutput = correctingString;

@@ -104,7 +104,7 @@ public static class TesseractHelper
         return result.StandardOutput;
     }
 
-    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, TessLang language)
+    public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, TessLang language, OcrOptions? options = null)
     {
         bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
 
@@ -116,7 +116,7 @@ public static class TesseractHelper
             SourceBitmap = bmp,
             RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language.RawTag)
         };
-        ocrOutput.CleanOutput();
+        ocrOutput.CleanOutput(options);
 
         return ocrOutput;
     }

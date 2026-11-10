@@ -16,7 +16,7 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 | Phase | Work plan | Depends on | Status |
 |---|---|---|---|
 | F1 | [DI composition root](F1-DI-Composition-Root.md) | — | Done (790bc4e) |
-| F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | Not started |
+| F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | Done (9d8b126) |
 | F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | Not started |
 | F4 | [Output services](F4-Output-Services.md) | F1 | Not started |
 | F5 | [Trigger infrastructure](F5-Trigger-Infrastructure.md) | F1 | Not started |

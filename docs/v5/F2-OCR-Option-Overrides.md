@@ -19,6 +19,8 @@ Let a caller OCR with options that differ from the user's saved settings, withou
 
 - Headless OCR code reads `SettingsAccess.Current` (an `ITextGrabSettings`) directly. Find every read: search `SettingsAccess.Current` in `Text-Grab.Core` and `Text-Grab.Core.Windows` (26 hits on 2026-11-09).
 - The OCR-relevant ones are in `Text-Grab.Core.Windows/Models/OcrOutput.cs` (`CleanOutput`: `CorrectToLatin`, `CorrectErrors`) and `Text-Grab.Core.Windows/Utilities/OcrUtilities.cs` (`BuildTextFromOcrLines` and helpers: `RemoveFurigana`, `ParagraphDetection`), plus `TryToReadBarcodes` and `UseTesseract` in the dispatch path.
+- Correction (verified when F2 was built): `TryToReadBarcodes` is read only in the app (`Text-Grab/Utilities/OcrSourceUtilities.cs`, `GrabFrame`), and `UseTesseract` only in `CaptureLanguageUtilities` (language list, not text shaping). Neither is in Core.Windows text shaping, so `OcrOptions` carries `TryToReadBarcodes` but nothing in Core.Windows consumes it yet; the app dispatch path adopts it in F3.
+- Quirk: on the space-joining path `GetTextFromOcrLine` discards the return value of `StringBuilder.TryFixEveryWordLetterNumberErrors`, so `CorrectErrors` has no effect there. F2 preserved it (pinned in `OcrSettingsCharacterizationTests`).
 - `Tests.Core.Windows/FakeTextGrabSettings.cs` supplies settings to headless tests.
 
 ## Design
