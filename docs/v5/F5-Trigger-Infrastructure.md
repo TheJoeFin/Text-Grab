@@ -21,6 +21,13 @@ Three reusable event sources — clipboard changed, folder changed, hotkey press
 - **Folder**: no `FileSystemWatcher` anywhere.
 - **Hotkeys**: `NotifyIconUtilities.HotKeyManager_HotKeyPressed` (~line 86) is a `switch` over `ShortcutKeyActions` with 11 cases, each calling a static on `Text-Grab/Utilities/TrayActions.cs` via `RunOnUiThread`. `HotKeyManager` (a background message-loop form) does the registration and works; leave it.
 
+**Corrections found while building F5 (2026-11-09, `v5/f3-6`):**
+
+- The hotkey handler was at line 93. Of its 11 cases, eight call `TrayActions` statics, `Flyout` calls `TrayFlyoutController.Toggle(fromTrayIcon: false)`, and `None` and `Settings` do nothing. `ShortcutKeyActions` is an app type (`Text-Grab/Models/ShortcutKeySet.cs`), so the router has to be app-side.
+- The Edit Text Window subscribes in `Window_Loaded` (~line 6420), handles the event in `Clipboard_ContentChanged` (~line 2868), and also unsubscribes on close (~line 6307).
+- **The watcher appends every clipboard change today**, Text Grab's own included: every grab through `OutputUtilities.HandleTextFromOcr`, and the window's own WPF copies, because `IsAccessingClipboard` is only set around paste and the handler itself. So the manual check "does not append text the window itself just copied" does not describe today's behavior. F5 keeps the window's behavior as it was: it listens to `ClipboardMonitorService.ContentChanged`, which forwards every change. Only the trigger stream, `Triggered`, honors `SuppressSelf`. Giving the window the suppressed stream would have stopped it collecting grabs, while its own copies, which bypass `IClipboardService`, would still arrive.
+- **Threading of `ContentChanged`, checked with a throwaway probe of the real event:** subscribed on the WPF UI thread, it is raised on that same thread (the window's handler reads `ClipboardWatcherMenuItem.IsChecked` directly and relies on this). Subscribed on an MTA thread with no message pump, it is never raised. In F5 only the Edit Text Window starts the monitor. A headless consumer (W1) must start it on the UI thread.
+
 ## Design
 
 In `Text-Grab.Core`, namespace `Text_Grab.Core.Abstractions`:
