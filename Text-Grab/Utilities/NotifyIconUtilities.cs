@@ -74,8 +74,13 @@ public static class NotifyIconUtilities
     {
         HotKeyManager.HotKeyPressed -= new EventHandler<HotKeyEventArgs>(HotKeyManager_HotKeyPressed);
 
-        foreach (int hotKeyId in RuntimeState.HotKeyIds)
+        List<int> hotKeyIds = RuntimeState.HotKeyIds;
+        foreach (int hotKeyId in hotKeyIds)
             HotKeyManager.UnregisterHotKey(hotKeyId);
+
+        // These IDs are no longer registered. Keeping them would make the list grow with every
+        // Settings open/close cycle, since RegisterHotKeys always adds fresh IDs.
+        hotKeyIds.Clear();
     }
 
     private static void trayIcon_Disposed(object? sender, EventArgs e)
