@@ -26,15 +26,28 @@ public static partial class HotKeyManager
     public static int? RegisterHotKey(Keys key, KeyModifiers modifiers)
     {
         _windowReadyEvent?.WaitOne();
-        int id = Interlocked.Increment(ref _id);
-        object? result = _wnd?.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
-        bool registered = result is bool success && success;
+        if (_ids.Reserve() is not int id)
+            return null;
+
+        bool registered = false;
+        try
+        {
+            object? result = _wnd?.Invoke(new RegisterHotKeyDelegate(RegisterHotKeyInternal), _hwnd, id, (uint)modifiers, (uint)key);
+            registered = result is bool success && success;
+        }
+        finally
+        {
+            if (!registered)
+                _ids.Release(id);
+        }
+
         return registered ? id : null;
     }
 
     public static void UnregisterHotKey(int id)
     {
         _wnd?.Invoke(new UnRegisterHotKeyDelegate(UnRegisterHotKeyInternal), _hwnd, id);
+        _ids.Release(id);
     }
 
     private delegate bool RegisterHotKeyDelegate(IntPtr hwnd, int id, uint modifiers, uint key);
@@ -109,7 +122,10 @@ public static partial class HotKeyManager
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool UnregisterHotKey(IntPtr hWnd, int id);
 
-    private static int _id = 0;
+    // RegisterHotKey accepts application IDs 0x0000-0xBFFF. Starts at 1, as the old counter did.
+    internal const int FirstHotKeyId = 1;
+    internal const int LastHotKeyId = 0xBFFF;
+    private static readonly HotKeyIdPool _ids = new(FirstHotKeyId, LastHotKeyId);
 }
 
 
