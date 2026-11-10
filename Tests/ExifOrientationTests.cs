@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using Text_Grab;
 using Text_Grab.Utilities;
 
@@ -71,6 +72,31 @@ public class ExifOrientationTests
         using Bitmap bitmap = OcrSourceUtilities.LoadBitmapFromFile(path);
 
         Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
+    }
+
+    [WpfFact]
+    public void LoadBitmapFromFile_DoesNotLockTheFile()
+    {
+        string source = FileUtilities.GetPathToLocalFile(@".\Images\Exif\exif-orientation-6.jpg");
+        string copy = Path.Combine(Path.GetTempPath(), $"exif-lock-{Guid.NewGuid():N}.jpg");
+        File.Copy(source, copy);
+
+        try
+        {
+            using Bitmap bitmap = OcrSourceUtilities.LoadBitmapFromFile(copy);
+
+            // Still holding the bitmap: the file must already be free.
+            using (FileStream exclusive = new(copy, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                Assert.True(exclusive.Length > 0);
+
+            File.Delete(copy);
+            Assert.Equal(32, bitmap.Width);
+        }
+        finally
+        {
+            if (File.Exists(copy))
+                File.Delete(copy);
+        }
     }
 
     private static char Classify(Color pixel)

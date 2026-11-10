@@ -488,18 +488,34 @@ public static class OcrSourceUtilities
         return OcrUtilities.GetStringFromOcrOutputs(await GetTextFromImageAsync(bmp, language));
     }
 
+    /// <summary>
+    /// Loads an image file as a 32bpp ARGB bitmap, rotated upright by its EXIF orientation.
+    ///
+    /// The file is read into memory first: a GDI+ Bitmap built from a path or a file stream keeps
+    /// the file locked until it is disposed. Copying through <c>new Bitmap(Image)</c> both detaches
+    /// the result from that stream and normalizes it to 32bpp ARGB - GDI+ decodes a JPEG as 24bpp,
+    /// and the OCR scaling path copies pixels as 32 bits each.
+    ///
+    /// Only the three pure rotations are applied, exactly as the WPF <c>RotateImage</c> switch this
+    /// replaced did. Mirrored orientations (EXIF 2, 4, 5, 7) were never flipped, and 5 and 7 were
+    /// not rotated either; ExifOrientationTests pins that.
+    /// </summary>
     internal static Bitmap LoadBitmapFromFile(string absolutePath)
     {
-        Uri fileURI = new(absolutePath, UriKind.Absolute);
         RotateFlipType rotateFlipType = BitmapUtilities.GetRotateFlipType(absolutePath);
-        BitmapImage droppedImage = new();
-        droppedImage.BeginInit();
-        droppedImage.UriSource = fileURI;
-        ImageMethods.RotateImage(droppedImage, rotateFlipType);
-        droppedImage.CacheOption = BitmapCacheOption.None;
-        droppedImage.EndInit();
-        droppedImage.Freeze();
-        return ImageMethods.BitmapImageToBitmap(droppedImage);
+
+        using MemoryStream fileContents = new(File.ReadAllBytes(absolutePath));
+        using Bitmap decoded = new(fileContents);
+        Bitmap bitmap = new(decoded);
+
+        if (rotateFlipType is RotateFlipType.Rotate90FlipNone
+            or RotateFlipType.Rotate180FlipNone
+            or RotateFlipType.Rotate270FlipNone)
+        {
+            bitmap.RotateFlip(rotateFlipType);
+        }
+
+        return bitmap;
     }
 
     public static async Task<string> GetClickedWordAsync(Window passedWindow, Point clickedPoint, ILanguage OcrLang)
