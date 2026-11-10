@@ -17,11 +17,11 @@ Introduce `Microsoft.Extensions.DependencyInjection` with one container built by
 
 ## Current state (verify)
 
-- No DI package is referenced anywhere.
+- No DI package is referenced directly. (Corrected 2026-11-09, `dev` @ `6edfc7a`: `Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 was already a transitive dependency of Core, via `NCalc.Core` 7.4.0 → `Microsoft.Extensions.Logging.Abstractions` 10.0.14, and via `Microsoft.Recognizers.Text` → `Microsoft.Extensions.Caching.Memory` 2.2.0. So adding it directly to Core changed no resolved version.)
 - `Text-Grab.Core/Utilities/Singleton.cs` (11 lines) is a `ConcurrentDictionary`-backed lazy `new T()`. It lives in **Core**, so it cannot see the app.
-- 77 uses: `Singleton<HistoryService>` 52, `<TtsService>` 10, `<LanguageService>` 8, `<WebSearchUrlCatalog>` 6, `<SettingsService>` 1.
+- 77 uses in product code: `Singleton<HistoryService>` 52, `<TtsService>` 10, `<LanguageService>` 8, `<WebSearchUrlCatalog>` 6, `<SettingsService>` 1. (`Tests/LanguageServiceTests.cs` adds 4 more `Singleton<LanguageService>` uses.)
 - Four delegate seams in `Text-Grab.Core/Services/`: `SettingsAccess`, `UiThreadAccess`, `InputLanguageAccess`, `TtsEngineAccess`. Each is registered by a `[ModuleInitializer]` in `Text-Grab/Utilities/*Initializer.cs`.
-- `Text-Grab/App.xaml.cs`: constructor at ~line 50 reads a static `_defaultSettings` to set the render mode; `appStartup` at ~line 610. `App` exposes `HotKeyIds`, `NumberOfRunningInstances`, `TextGrabIcon`, reached by `(App)App.Current` casts in `NotifyIconUtilities.cs` (3), `ImplementAppOptions.cs`, `WindowUtilities.cs`, `SettingsWindow.xaml.cs` (2), `KeysSettings.xaml.cs`.
+- `Text-Grab/App.xaml.cs`: constructor at ~line 50 reads a static `_defaultSettings` to set the render mode; `appStartup` at ~line 610. `App` exposes `HotKeyIds`, `NumberOfRunningInstances`, `TextGrabIcon`, reached by `(App)App.Current` casts in `NotifyIconUtilities.cs` (3), `ImplementAppOptions.cs`, `WindowUtilities.cs`, `SettingsWindow.xaml.cs` (2), `KeysSettings.xaml.cs`. (Clarified 2026-11-09: the last three use the `App.Current is App app` pattern. The `SettingsWindow` and `KeysSettings` casts exist only to pass `app` to `NotifyIconUtilities.RegisterHotKeys(App)` / `UnregisterHotkeys(App)`, whose only use of it is `HotKeyIds`. Removing those casts therefore means changing the two signatures, which also touches `App.appExit`.)
 - `HttpClient`s today: `TesseractGitHubFileDownloader` (Core) and `SvgImageLoader` (app, deliberately locked down).
 - The `Tests` project loads the app assembly and never raises WPF Startup. See `Tests/TestHostInitializer.cs`, `Tests/SettingsIsolationCollection.cs`, `Tests/StartupTests.cs`.
 
