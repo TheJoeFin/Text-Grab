@@ -898,7 +898,7 @@ established 4e/6a pattern), `GrabFrameFileUtilities.cs` needed none. That move a
 
 | File | Blocker (specific) | Unblocked by |
 |---|---|---|
-| `Utilities/OcrSourceUtilities.cs` | Post-4c remainder. `LoadBitmapFromFile` builds a WPF `BitmapImage` to apply EXIF rotation; decoupling means a GDI+/WIC rewrite, and it takes `OcrAbsoluteFilePathAsync` and `OcrFile` with it. Engine dispatch additionally needs `WindowsAiUtilities` (5a) and `LanguageUtilities` (4e); the rest is `Window`/`BitmapSource` capture and stays | a GDI+/WIC rewrite, then 5a + 4e |
+| `Utilities/OcrSourceUtilities.cs` | Post-v5-F3 remainder. F3 rewrote `LoadBitmapFromFile` on GDI+ and moved engine dispatch and image-file OCR to Core.Windows as `OcrEngineUtilities`, putting the WPF scaler behind the `BitmapScalingAccess` seam. What is left is genuinely app-bound: `Window`/`Rect`/`Point`/`BitmapSource` sources, UI Automation (B4), capture through `ImageMethods.GetRegionOfScreenAsBitmap` (which caches into `HistoryService`, 5c), the PDF branches of `OcrAbsoluteFilePathAsync`/`OcrFile` (`PdfDocumentRenderer`, 5f), `OcrFile`'s template branch (`GrabTemplateExecutor`, row below) and the replay UI | PDF branches: 5f. Template branch: the `GrabTemplateExecutor` row. The rest never moves |
 | `Services/SettingsService.cs` | Clones `ButtonInfo` and `ShortcutKeySet` field-by-field (both never-move); `Windows.Storage.ApplicationDataContainer` caps it at Core.Windows regardless | needs a `ButtonInfo` redesign — likely never |
 | `Utilities/GrabTemplateManager.cs` | `SaveTemplateReferenceImage` (BitmapSource) and `CreateButtonInfoForTemplate` (Wpf.Ui) must stay; `IsFileBackedManagedSettingsEnabled` is a service property, not a scalar. `GrabTemplate`/`TemplateRegion` moved to Core in 2d, so the remaining blocker is a plain split | a split |
 | `Utilities/GrabTemplateExecutor.cs` | `LoadStoredRegexes()` needs a non-scalar seam. `GrabTemplate`/`TemplateRegion` moved to Core in 2d and 4c has landed, so the remaining blocker is the settings façade plus its calls into `OcrSourceUtilities` | a façade + `OcrSourceUtilities` |
@@ -1007,7 +1007,7 @@ below - WPF-bound code, settings orchestration, and the handful of files that we
 splitting for what they would free. See the residue list at the end of this section for the
 honest accounting of what is here and why, rather than a claim that it is all just "not done yet."
 
-### The four delegate-resolver seams
+### The delegate-resolver seams
 
 Four places in `Text-Grab.Core/Services/` let portable code call something only the app can
 provide, without Core referencing the app. Same shape every time: a static class holding a
@@ -1025,6 +1025,7 @@ there register their own fake (see `FakeTextGrabSettings` below).
 | `UiThreadAccess` (a poster, not a resolver) | `UiThreadAccessInitializer` | `Application.Current?.Dispatcher.InvokeAsync(...)`, silently dropping the post if there is no dispatcher yet |
 | `InputLanguageAccess` (`Func<string?>`) | `InputLanguageAccessInitializer` | `InputLanguageManager.Current?.CurrentInputLanguage?.Name`, catching the `NullReferenceException` the manager can throw internally |
 | `TtsEngineAccess` (`Func<ITtsEngine>`, a factory not a stored instance) | `TtsEngineAccessInitializer` | `new WindowsSpeechEngine()` |
+| `BitmapScalingAccess` (`Func<Bitmap, double, Bitmap>`). In **Core.Windows**, because it carries a GDI+ `Bitmap`. Falls back to a GDI+ bicubic default instead of throwing | `BitmapScalingAccessInitializer` | `ImageMethods.ScaleBitmapUniform`, the WPF `TransformedBitmap` scaler. Added in v5 F3, when engine dispatch moved out of the app |
 
 They arrived in this order as each wave hit the blocker they solve: `SettingsAccess` in B1 (Wave
 0), `UiThreadAccess` in 5b (`HdrScreenCapture`'s one-time consent-dialog pump),
@@ -1090,9 +1091,9 @@ Not everything left in `Text-Grab` is a WPF view. Grouping the real reasons, so 
   Core.
 - **`BitmapSource` currency (B3).** `PostGrabContext`, `FullscreenCaptureResult`,
   `PdfDocumentRenderer.RenderPageAsync`, and the WPF half of `ImageMethods`/`OcrSourceUtilities`
-  all carry `System.Windows.Media.Imaging.BitmapSource`, which B3 fixed as app-only currency;
-  `OcrSourceUtilities.LoadBitmapFromFile` specifically needs a GDI+/WIC rewrite to lose it, not
-  just a move.
+  all carry `System.Windows.Media.Imaging.BitmapSource`, which B3 fixed as app-only currency.
+  (`LoadBitmapFromFile` was the one in the file-OCR path. v5 F3 rewrote it on GDI+ and moved it
+  to Core.Windows with the engine dispatch, `OcrEngineUtilities`.)
 - **`ButtonInfo`/`ShortcutKeySet` coupling.** `SettingsService` clones both field-by-field;
   `ButtonInfo` itself is ~90 static entries each assigning a `Wpf.Ui.Controls.SymbolRegular`, not
   a splittable class. `GrabTemplateManager`'s `CreateButtonInfoForTemplate` inherits the same
