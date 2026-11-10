@@ -60,6 +60,16 @@ internal static class AppServices
 
         // Headless OCR (v5 F3). Stateless, so one instance serves every caller.
         services.AddSingleton<IOcrService, OcrService>();
+
+        // Output seams (v5 F4). One instance each: the clipboard service owns its fallback STA
+        // thread, and the others are stateless.
+        services.AddSingleton<IClipboardService, WinRtClipboardService>();
+        services.AddSingleton<ITextFileWriter, TextFileWriter>();
+        services.AddSingleton<IToastService, ToastService>();
+
+        // Its own client, not the shared one above: that one follows redirects (the Tesseract
+        // downloader needs it to), and HttpPostService must decide about redirects itself.
+        services.AddSingleton<IHttpPostService>(static _ => new HttpPostService(HttpPostService.CreateClient()));
     }
 
     /// <summary>

@@ -171,6 +171,22 @@ public class AppServicesTests
     }
 
     [Fact]
+    public void OutputServices_AreRegisteredAsOneSharedInstanceEach()
+    {
+        IServiceProvider provider = AppServices.Provider;
+
+        Assert.IsType<WinRtClipboardService>(provider.GetRequiredService<IClipboardService>());
+        Assert.IsType<TextFileWriter>(provider.GetRequiredService<ITextFileWriter>());
+        Assert.IsType<ToastService>(provider.GetRequiredService<IToastService>());
+        Assert.IsType<HttpPostService>(provider.GetRequiredService<IHttpPostService>());
+
+        Assert.Same(provider.GetRequiredService<IClipboardService>(), provider.GetRequiredService<IClipboardService>());
+        Assert.Same(provider.GetRequiredService<ITextFileWriter>(), provider.GetRequiredService<ITextFileWriter>());
+        Assert.Same(provider.GetRequiredService<IToastService>(), provider.GetRequiredService<IToastService>());
+        Assert.Same(provider.GetRequiredService<IHttpPostService>(), provider.GetRequiredService<IHttpPostService>());
+    }
+
+    [Fact]
     public void HttpClient_IsOneSharedInstance()
     {
         Assert.Same(
