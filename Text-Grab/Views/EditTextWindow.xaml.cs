@@ -4977,7 +4977,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             {
                 RandomAccessStreamReference streamReference = await dataPackageView.GetBitmapAsync();
                 using IRandomAccessStream stream = await streamReference.OpenReadAsync();
-                List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                List<OcrOutput> outputs = await OcrEngineUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                 string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));
@@ -5001,7 +5001,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                         continue;
 
                     using IRandomAccessStream stream = await storageFile.OpenAsync(FileAccessMode.Read);
-                    List<OcrOutput> outputs = await OcrSourceUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
+                    List<OcrOutput> outputs = await OcrEngineUtilities.GetTextFromRandomAccessStream(stream, LanguageUtilities.GetOCRLanguage());
                     string text = OcrUtilities.GetStringFromOcrOutputs(outputs);
 
                     System.Windows.Application.Current.Dispatcher.Invoke(new Action(() => { AddCopiedTextToTextBox(text); }));

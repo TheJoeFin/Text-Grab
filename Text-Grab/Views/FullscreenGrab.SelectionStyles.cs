@@ -1292,7 +1292,7 @@ public partial class FullscreenGrab
                 // TODO: Look into why this happens and find a better way to dispose the bitmap
                 // DO NOT add a using statement to this selected bitmap, it crashes the app
                 Bitmap selectionBitmap = ImageMethods.GetRegionOfScreenAsBitmap(selection.CaptureRegion.AsRectangle());
-                TextFromOCR = await OcrSourceUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
+                TextFromOCR = await OcrEngineUtilities.GetTextFromBitmapAsTableAsync(selectionBitmap, selectedOcrLang);
             }
             else
             {

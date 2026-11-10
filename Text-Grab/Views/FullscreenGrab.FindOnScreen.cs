@@ -235,12 +235,12 @@ public partial class FullscreenGrab
         if (bitmapSource is not null)
         {
             using System.Drawing.Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(bitmapSource);
-            (result, scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
+            (result, scale) = await OcrEngineUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
         }
         else
         {
             using System.Drawing.Bitmap bitmap = ImageMethods.GetWindowsBoundsBitmap(this);
-            (result, scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
+            (result, scale) = await OcrEngineUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
         }
 
         return result is null ? null : new FindOnScreenOcrSnapshot(result, scale, language);

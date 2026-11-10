@@ -218,7 +218,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(pageContent.RenderedPage);
         // Recognize the page once so overlapping image regions do not duplicate words
         // and all OCR bounds share the rendered page's origin.
-        (IOcrLinesWords? ocrResult, double scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, resolvedLanguage);
+        (IOcrLinesWords? ocrResult, double scale) = await OcrEngineUtilities.GetOcrResultFromBitmapAsync(bitmap, resolvedLanguage);
         return CombineNativeAndOcrWords(pageContent.NativeWords, pageContent.ImageRegions, ocrResult, scale);
     }
 
@@ -543,7 +543,7 @@ internal sealed class PdfDocumentRenderer : IDisposable
         Func<Windows.Foundation.Rect, bool>? sourceRectPredicate = null)
     {
         using Bitmap bitmap = ImageMethods.BitmapSourceToBitmap(renderedPage);
-        (IOcrLinesWords? ocrResult, double scale) = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
+        (IOcrLinesWords? ocrResult, double scale) = await OcrEngineUtilities.GetOcrResultFromBitmapAsync(bitmap, language);
         if (ocrResult is null || ocrResult.Lines.Length == 0)
             return [];
 

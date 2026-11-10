@@ -37,7 +37,7 @@ public class ExifOrientationTests
     {
         string path = FileUtilities.GetPathToLocalFile($@".\Images\Exif\exif-orientation-{orientation}.jpg");
 
-        using Bitmap bitmap = OcrSourceUtilities.LoadBitmapFromFile(path);
+        using Bitmap bitmap = OcrEngineUtilities.LoadBitmapFromFile(path);
 
         Assert.Equal(expectedWidth, bitmap.Width);
         Assert.Equal(expectedHeight, bitmap.Height);
@@ -69,7 +69,7 @@ public class ExifOrientationTests
     {
         string path = FileUtilities.GetPathToLocalFile($@".\Images\Exif\exif-orientation-{orientation}.jpg");
 
-        using Bitmap bitmap = OcrSourceUtilities.LoadBitmapFromFile(path);
+        using Bitmap bitmap = OcrEngineUtilities.LoadBitmapFromFile(path);
 
         Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
     }
@@ -83,7 +83,7 @@ public class ExifOrientationTests
 
         try
         {
-            using Bitmap bitmap = OcrSourceUtilities.LoadBitmapFromFile(copy);
+            using Bitmap bitmap = OcrEngineUtilities.LoadBitmapFromFile(copy);
 
             // Still holding the bitmap: the file must already be free.
             using (FileStream exclusive = new(copy, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
