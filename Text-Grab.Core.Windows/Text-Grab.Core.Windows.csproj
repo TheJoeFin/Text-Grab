@@ -50,6 +50,11 @@
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.17" />
     <!-- Tesseract.exe process invocation for TesseractHelper. -->
     <PackageReference Include="CliWrap" Version="3.10.5" />
+    <!-- ToastContentBuilder / ToastNotificationManagerCompat for ToastService (v5 F4): the same
+         toast plumbing, AUMID and COM-activator registration the app's NotificationUtilities use.
+         Same version as Text-Grab.csproj, which keeps its own reference because app code calls
+         these types directly. Its net5.0-windows asset references no WPF assembly. -->
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <!-- IDXGIOutput6/DXGI enumeration for DisplayHdrInfo. -->
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
