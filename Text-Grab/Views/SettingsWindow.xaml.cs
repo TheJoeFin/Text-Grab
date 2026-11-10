@@ -26,8 +26,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     {
         AppUtilities.TextGrabSettings.Save();
 
-        if (App.Current is App app)
-            NotifyIconUtilities.RegisterHotKeys(app);
+        NotifyIconUtilities.RegisterHotKeys();
 
         WindowUtilities.ShouldShutDown();
     }
@@ -36,8 +35,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     {
         SettingsNavView.Navigate(typeof(GeneralSettings));
 
-        if (App.Current is App app)
-            NotifyIconUtilities.UnregisterHotkeys(app);
+        NotifyIconUtilities.UnregisterHotkeys();
     }
 
     #endregion Methods

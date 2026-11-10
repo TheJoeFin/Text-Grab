@@ -1,5 +1,6 @@
 ﻿using Dapplo.Windows.User32;
 using Fasetto.Word;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -452,18 +453,17 @@ public static partial class WindowUtilities
 
         if (AppUtilities.TextGrabSettings.RunInTheBackground)
         {
-            if (App.Current is App app)
-            {
-                if (app.NumberOfRunningInstances > 1
-                    && app.TextGrabIcon == null
-                    && zeroOpenWindows)
-                    shouldShutDown = true;
+            AppRuntimeState state = AppServices.Provider.GetRequiredService<AppRuntimeState>();
 
-                if (app.TextGrabIcon is not null
-                    && app.TextGrabIcon.Icon is null
-                    && zeroOpenWindows)
-                    shouldShutDown = true;
-            }
+            if (state.NumberOfRunningInstances > 1
+                && state.TextGrabIcon == null
+                && zeroOpenWindows)
+                shouldShutDown = true;
+
+            if (state.TextGrabIcon is not null
+                && state.TextGrabIcon.Icon is null
+                && zeroOpenWindows)
+                shouldShutDown = true;
         }
         else if (zeroOpenWindows)
             shouldShutDown = true;

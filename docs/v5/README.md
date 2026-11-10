@@ -15,7 +15,7 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 
 | Phase | Work plan | Depends on | Status |
 |---|---|---|---|
-| F1 | [DI composition root](F1-DI-Composition-Root.md) | — | Not started |
+| F1 | [DI composition root](F1-DI-Composition-Root.md) | — | Done (790bc4e) |
 | F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | Not started |
 | F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | Not started |
 | F4 | [Output services](F4-Output-Services.md) | F1 | Not started |
@@ -67,7 +67,7 @@ Run the tests by launching the built test executables (they are xunit.v3 executa
 
 ```bash
 Tests.Core/bin/Debug/net10.0/Tests.Core.exe
-Tests.Core.Windows/bin/x64/Debug/net10.0-windows10.0.22621/Tests.Core.Windows.exe
+Tests.Core.Windows/bin/x64/Debug/net10.0-windows10.0.22621.0/Tests.Core.Windows.exe
 Tests/bin/x64/Debug/net10.0-windows10.0.22621/Tests.exe
 Tests/bin/x64/Debug/net10.0-windows10.0.22621/Tests.exe -class Tests.SomeClassName   # one class
 ```

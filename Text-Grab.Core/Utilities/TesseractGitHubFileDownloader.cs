@@ -7,13 +7,24 @@ namespace Text_Grab.Utilities;
 
 public class TesseractGitHubFileDownloader
 {
+    // It's a good practice to set a user-agent when making requests
+    private const string UserAgent = "Text Grab settings language downloader";
+
     private readonly HttpClient _client;
 
     public TesseractGitHubFileDownloader()
+        : this(new HttpClient())
     {
-        _client = new HttpClient();
-        // It's a good practice to set a user-agent when making requests
-        _client.DefaultRequestHeaders.Add("User-Agent", "Text Grab settings language downloader");
+    }
+
+    /// <param name="client">
+    /// Used as-is and may be shared: the user-agent is sent per request, so the client's
+    /// <see cref="HttpClient.DefaultRequestHeaders"/> are never changed.
+    /// </param>
+    public TesseractGitHubFileDownloader(HttpClient client)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        _client = client;
     }
 
     public async Task DownloadFileAsync(string filenameToDownload, string localDestination)
@@ -25,7 +36,9 @@ public class TesseractGitHubFileDownloader
         try
         {
             // Send a GET request to the specified URL
-            HttpResponseMessage response = await _client.GetAsync(fileUrl);
+            using HttpRequestMessage request = new(HttpMethod.Get, fileUrl);
+            request.Headers.Add("User-Agent", UserAgent);
+            HttpResponseMessage response = await _client.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             // Read the response content
