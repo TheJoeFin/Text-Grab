@@ -17,10 +17,10 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 |---|---|---|---|
 | F1 | [DI composition root](F1-DI-Composition-Root.md) | — | Done (790bc4e) |
 | F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | Done (9d8b126) |
-| F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | Not started |
-| F4 | [Output services](F4-Output-Services.md) | F1 | Not started |
-| F5 | [Trigger infrastructure](F5-Trigger-Infrastructure.md) | F1 | Not started |
-| F6 | [Observable history store](F6-History-Store.md) (optional) | — | Not started |
+| F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | Done (bf1a568) |
+| F4 | [Output services](F4-Output-Services.md) | F1 | Done (fea6fe7) |
+| F5 | [Trigger infrastructure](F5-Trigger-Infrastructure.md) | F1 | Done (964b0d0) |
+| F6 | [Observable history store](F6-History-Store.md) (optional) | — | In progress (steps 1–2; step 3 blocked on an owner decision, see the phase file) |
 | A1 | [Action registry](A1-Action-Registry.md) | F1 | Not started |
 | W1 | [Workflow engine](W1-Workflow-Engine.md) | A1, F3, F4, F5 | Not started |
 | W2 | [Workflow end-to-end and entry points](W2-Workflow-E2E-Entry-Points.md) | W1 | Not started |
