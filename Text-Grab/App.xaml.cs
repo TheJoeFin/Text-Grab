@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.Notifications;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.Win32;
 using RegistryUtils;
 using System;
@@ -42,9 +43,26 @@ public partial class App : System.Windows.Application
 
     #region Properties
 
-    public List<int> HotKeyIds { get; set; } = [];
-    public int NumberOfRunningInstances { get; set; } = 0;
-    public NotifyIconWindow? TextGrabIcon { get; set; }
+    // These forward to AppRuntimeState in the container; new code should resolve that instead.
+    public List<int> HotKeyIds
+    {
+        get => RuntimeState.HotKeyIds;
+        set => RuntimeState.HotKeyIds = value;
+    }
+
+    public int NumberOfRunningInstances
+    {
+        get => RuntimeState.NumberOfRunningInstances;
+        set => RuntimeState.NumberOfRunningInstances = value;
+    }
+
+    public NotifyIconWindow? TextGrabIcon
+    {
+        get => RuntimeState.TextGrabIcon;
+        set => RuntimeState.TextGrabIcon = value;
+    }
+
+    private static AppRuntimeState RuntimeState => AppServices.Provider.GetRequiredService<AppRuntimeState>();
     #endregion Properties
 
     public App()

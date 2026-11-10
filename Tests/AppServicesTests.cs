@@ -55,6 +55,7 @@ public class AppServicesTests
         Assert.NotNull(provider.GetRequiredService<WebSearchUrlCatalog>());
         Assert.NotNull(provider.GetRequiredService<ITextGrabSettings>());
         Assert.NotNull(provider.GetRequiredService<HttpClient>());
+        Assert.NotNull(provider.GetRequiredService<AppRuntimeState>());
     }
 
     [WpfFact]
@@ -165,6 +166,16 @@ public class AppServicesTests
         Assert.Same(
             AppServices.Provider.GetRequiredService<HttpClient>(),
             AppServices.Provider.GetRequiredService<HttpClient>());
+    }
+
+    [Fact]
+    public void AppRuntimeState_IsOneSharedInstance()
+    {
+        // App.HotKeyIds, NumberOfRunningInstances and TextGrabIcon forward here, and the tray and
+        // hotkey code reads it from the container; both must see the same state.
+        Assert.Same(
+            AppServices.Provider.GetRequiredService<AppRuntimeState>(),
+            AppServices.Provider.GetRequiredService<AppRuntimeState>());
     }
 
     private static ServiceProvider BuildProviderWith<T>() where T : class, new()

@@ -54,6 +54,8 @@ internal static class AppServices
         {
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
         }));
+
+        services.AddSingleton<AppRuntimeState>();
     }
 
     /// <summary>
