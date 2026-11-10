@@ -23,6 +23,12 @@ Put the four outputs a workflow needs behind interfaces declared in Core, so hea
 - **Toast**: `DesktopNotificationManagerCompat` is in Core.Windows. `Text-Grab/Utilities/NotificationUtilities.cs` is app-side because it reopens windows on activation.
 - **HTTP**: no shared client or POST helper. F1 registered one `HttpClient` in the container.
 
+**Corrections found while building F4 (2026-11-09, `v5/f3-6`):**
+
+- **Clipboard.** `ClipboardUtilities` has no write method and no retry pattern. The grab write is WPF `Clipboard.SetDataObject(text, copy: true)`, inline in `OutputUtilities.HandleTextFromOcr` and wrapped in an empty `catch`. WPF's `Clipboard` retries the OLE calls internally, synchronously: 10 attempts, 100 ms apart. `WinRtClipboardService` copies that budget and runs inline on STA callers. `HandleTextFromOcr` calls `WindowUtilities.ShouldShutDown()` right after the write, so a write left queued on the dispatcher could be lost when the app exits.
+- **Toast.** Nothing calls `DesktopNotificationManagerCompat`'s registration or notifier methods. The live plumbing is `Microsoft.Toolkit.Uwp.Notifications` (`ToastContentBuilder.Show()` and `ToastNotificationManagerCompat.OnActivated`), which only the app referenced. `ToastService` uses it, so Core.Windows now references the same 7.1.3 (its net5.0-windows asset references no WPF assembly). Both toast-click entry points ignore a toast with no argument, which is what `ToastService` sends.
+- **HTTP.** F1's shared `HttpClient` follows redirects, and `TesseractGitHubFileDownloader` relies on it doing so. "No automatic redirect to a different host" cannot be enforced on that client, so `IHttpPostService` is registered over its own `HttpPostService.CreateClient()` client (`AllowAutoRedirect = false`). The service follows same-host 307/308 redirects itself.
+
 ## Design
 
 Interfaces in `Text-Grab.Core`, namespace `Text_Grab.Core.Abstractions`:
