@@ -144,6 +144,28 @@ public sealed class WinRtClipboardServiceTests
     }
 
     [Fact]
+    public void StaCaller_BusyClipboard_IsRetriedBeforeTheCallReturns()
+    {
+        // What keeps a UI-thread write from being lost when the app shuts down right after it:
+        // the retries happen inside the call, as WPF's own Clipboard does them.
+        int attempts = 0;
+        using WinRtClipboardService clipboard = new(
+            () => "unused",
+            _ => { if (++attempts < 3) throw ClipboardBusy(); },
+            Short,
+            TimeSpan.FromMilliseconds(1));
+        bool completedSynchronously = false;
+
+        Thread sta = new(() => completedSynchronously = clipboard.SetTextAsync("x").IsCompletedSuccessfully);
+        sta.SetApartmentState(ApartmentState.STA);
+        sta.Start();
+        sta.Join();
+
+        Assert.True(completedSynchronously);
+        Assert.Equal(3, attempts);
+    }
+
+    [Fact]
     public async Task BusyClipboard_GivesUpAfterTheLastAttempt()
     {
         int attempts = 0;

@@ -1,5 +1,8 @@
-﻿using System.Windows;
+﻿using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using Text_Grab.Core.Abstractions;
 using Text_Grab.Services;
 using Text_Grab.Views;
 
@@ -36,11 +39,28 @@ public class OutputUtilities
         }
 
         if (!AppUtilities.TextGrabSettings.NeverAutoUseClipboard)
-            try { Clipboard.SetDataObject(grabbedText, true); } catch { }
+            _ = CopyToClipboardAsync(grabbedText);
 
         if (AppUtilities.TextGrabSettings.ShowToast)
             NotificationUtilities.ShowToast(grabbedText);
 
         WindowUtilities.ShouldShutDown();
+    }
+
+    /// <summary>
+    /// Puts the grab on the clipboard through <see cref="IClipboardService"/> (v5 F4). Callers are
+    /// on the UI thread, an STA thread, where the service runs the write and any retries before
+    /// returning, so the write is finished before <see cref="WindowUtilities.ShouldShutDown"/> can
+    /// exit the app. Failures are swallowed, as they were around the WPF write this replaced.
+    /// </summary>
+    private static async Task CopyToClipboardAsync(string text)
+    {
+        try
+        {
+            await AppServices.Provider.GetRequiredService<IClipboardService>().SetTextAsync(text);
+        }
+        catch
+        {
+        }
     }
 }

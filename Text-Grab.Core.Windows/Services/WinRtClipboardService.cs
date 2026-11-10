@@ -25,14 +25,17 @@ namespace Text_Grab.Services;
 /// that this service owns.</item>
 /// </list>
 ///
-/// Another process holding the clipboard open makes calls fail with CLIPBRD_E_CANT_*; those are
-/// retried with a short backoff. Writes are flushed, so the text stays on the clipboard after the
+/// Another process holding the clipboard open makes calls fail with CLIPBRD_E_CANT_*. Those are
+/// retried on the clipboard thread itself, synchronously, with the budget WPF's own
+/// <c>Clipboard</c> uses (10 attempts, 100 ms apart), so a write from the UI thread still finishes
+/// before the call returns. Writes are flushed, so the text stays on the clipboard after the
 /// process exits, as the WPF <c>Clipboard.SetDataObject(text, copy: true)</c> it replaces did.
 /// </summary>
 public sealed class WinRtClipboardService : IClipboardService, IDisposable
 {
-    internal const int MaxAttempts = 5;
+    internal const int MaxAttempts = 10;
 
+    private static readonly TimeSpan DefaultRetryDelay = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan DefaultUiThreadStartTimeout = TimeSpan.FromSeconds(2);
 
     private readonly Func<string?> _read;
@@ -42,7 +45,7 @@ public sealed class WinRtClipboardService : IClipboardService, IDisposable
     private readonly Lazy<StaWorker> _worker = new(() => new StaWorker());
 
     public WinRtClipboardService()
-        : this(ReadClipboardText, WriteClipboardText, DefaultUiThreadStartTimeout, TimeSpan.FromMilliseconds(25))
+        : this(ReadClipboardText, WriteClipboardText, DefaultUiThreadStartTimeout, DefaultRetryDelay)
     {
     }
 
@@ -79,18 +82,26 @@ public sealed class WinRtClipboardService : IClipboardService, IDisposable
             _worker.Value.Dispose();
     }
 
-    private async Task<T> RunWithRetryAsync<T>(Func<T> operation, CancellationToken ct)
+    private Task<T> RunWithRetryAsync<T>(Func<T> operation, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return RunOnClipboardThreadAsync(() => RunWithRetry(operation, ct), ct);
+    }
+
+    /// <summary>Runs on the clipboard thread, retrying there while another process holds the clipboard.</summary>
+    private T RunWithRetry<T>(Func<T> operation, CancellationToken ct)
     {
         for (int attempt = 1; ; attempt++)
         {
             ct.ThrowIfCancellationRequested();
             try
             {
-                return await RunOnClipboardThreadAsync(operation, ct);
+                return operation();
             }
             catch (COMException ex) when (attempt < MaxAttempts && IsClipboardBusy(ex))
             {
-                await Task.Delay(_retryDelay * attempt, ct);
+                // Returns early, and the next check throws, if the caller cancels meanwhile.
+                ct.WaitHandle.WaitOne(_retryDelay);
             }
         }
     }
