@@ -131,6 +131,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private bool isApplyingMarkdownDocument = false;
     private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
     private string? markdownOffsetMapSourceText;
+    private bool? markdownAppliedLightTheme;
     private bool isLoadingOpenedFile = false;
     private bool hasPendingFileEdits = false;
     private bool isShowingPendingFileClosePrompt = false;
@@ -1040,10 +1041,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (MarkdownEditorControl.Document is null)
             return;
 
+        bool isLightTheme = SystemThemeUtility.IsLightTheme();
         MarkdownFlowDocumentUtilities.ApplyTheme(
             MarkdownEditorControl.Document,
             this,
-            SystemThemeUtility.IsLightTheme());
+            isLightTheme);
+        markdownAppliedLightTheme = isLightTheme;
+    }
+
+    /// <summary>
+    /// Re-theming walks and restyles the whole document, which invalidates layout for every block.
+    /// On window activation it is only needed when the system theme changed while the window was inactive.
+    /// </summary>
+    private void ApplyMarkdownThemeIfChanged()
+    {
+        if (markdownAppliedLightTheme == SystemThemeUtility.IsLightTheme())
+            return;
+
+        ApplyMarkdownTheme();
     }
 
     private void ApplyMarkdownWrapSetting()
@@ -1125,7 +1140,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return null;
     }
 
-    private void SetEditorMode(EtwEditorMode mode)
+    /// <param name="deferMarkdownLoad">
+    /// When switching to Markdown, skip building the document from the current text. The caller is about
+    /// to replace the text and refresh the document itself, so building it here would be thrown away.
+    /// </param>
+    private void SetEditorMode(EtwEditorMode mode, bool deferMarkdownLoad = false)
     {
         bool isModeAlreadyApplied = mode switch
         {
@@ -1142,7 +1161,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (editorMode == mode && isModeAlreadyApplied)
         {
-            if (mode == EtwEditorMode.Markdown)
+            if (mode == EtwEditorMode.Markdown && !deferMarkdownLoad)
                 ApplyMarkdownTheme();
 
             UpdateSpreadsheetModeUi();
@@ -1168,7 +1187,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (editorMode == EtwEditorMode.Spreadsheet && SpreadsheetDataGrid.Visibility == Visibility.Visible)
                 SyncSpreadsheetDocumentFromTable();
 
-            LoadMarkdownDocumentFromText(PassedTextControl.Text);
+            if (!deferMarkdownLoad)
+                LoadMarkdownDocumentFromText(PassedTextControl.Text);
+
             SpreadsheetDataGrid.Visibility = Visibility.Collapsed;
             PassedTextControl.Visibility = Visibility.Collapsed;
             MarkdownEditorControl.Visibility = Visibility.Visible;
@@ -2597,8 +2618,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                     ? EtwEditorMode.Text
                     : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
 
+                // The text and Markdown document are replaced just below, so don't build the old text's document.
                 if (IsLoaded)
-                    SetEditorMode(targetMode);
+                    SetEditorMode(targetMode, deferMarkdownLoad: true);
                 else
                     editorMode = targetMode;
             }
@@ -4690,7 +4712,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (editorMode == EtwEditorMode.Markdown)
         {
-            RefreshMarkdownFromText();
+            // OpenPath builds the document once itself after setting the text.
+            if (!(isLoadingOpenedFile && IsLoaded))
+                RefreshMarkdownFromText();
+
             UpdatePendingFileEditState();
             return;
         }
@@ -6223,7 +6248,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SpreadsheetDataGrid.Focus();
         else if (editorMode == EtwEditorMode.Markdown)
         {
-            ApplyMarkdownTheme();
+            ApplyMarkdownThemeIfChanged();
             MarkdownEditorControl.Focus();
         }
         else
