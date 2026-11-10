@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Text_Grab.Core.Abstractions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -56,6 +57,9 @@ internal static class AppServices
         }));
 
         services.AddSingleton<AppRuntimeState>();
+
+        // Headless OCR (v5 F3). Stateless, so one instance serves every caller.
+        services.AddSingleton<IOcrService, OcrService>();
     }
 
     /// <summary>

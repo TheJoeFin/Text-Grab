@@ -1,5 +1,6 @@
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Text_Grab.Core.Abstractions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -158,6 +159,15 @@ public class AppServicesTests
         ITextGrabSettings restored = AppServices.Provider.GetRequiredService<ITextGrabSettings>();
         Assert.NotSame(substitute, restored);
         Assert.Same(AppUtilities.TextGrabSettings, restored);
+    }
+
+    [Fact]
+    public void OcrService_IsRegisteredAsOneSharedInstance()
+    {
+        IOcrService ocr = AppServices.Provider.GetRequiredService<IOcrService>();
+
+        Assert.IsType<OcrService>(ocr);
+        Assert.Same(ocr, ServiceAccess.GetRequired<IOcrService>());
     }
 
     [Fact]
