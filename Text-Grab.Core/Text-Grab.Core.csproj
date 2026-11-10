@@ -14,6 +14,9 @@
 
   <ItemGroup>
     <PackageReference Include="Markdig" Version="1.6.0" />
+    <!-- ServiceAccess (Services/ServiceAccess.cs) is how Core and Core.Windows reach the app's
+         container. Abstractions only: the container itself is built by the app. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     <PackageReference Include="Microsoft.Recognizers.Text.Choice" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.Number" Version="1.8.13" />
