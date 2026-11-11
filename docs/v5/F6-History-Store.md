@@ -26,6 +26,14 @@ Move the in-memory history lists and the debounced write out of the app-side `Hi
 - `Text-Grab/Services/TrayFlyoutItemProvider.cs` projects history into flat, searchable items.
 - `Tests/HistoryServiceTests.cs` covers the service.
 
+**Corrections and a blocker found at step 2 (2026-11-09, `v5/f3-6`). Steps 1 and 2 are done. On 2026-11-09 the owner shelved the rest of this phase until a consumer needs it, as the note at the top already advises. Whoever resumes it must first resolve the points below, starting with how `HistoryServiceTests` is allowed to change.**
+
+- **The cached-bitmap trap is backwards.** The cached fullscreen bitmap is disposed by the *save* timer (`SaveTimer_Tick` calls `WriteHistory()` and then `DisposeCachedBitmap()`) and by `SaveToHistory(HistoryInfo)`. The idle-release timer never touches it; it releases only the lists. Moving the save debounce into a store means the store has to tell `HistoryService` after each debounced write, and the bitmap has to be disposed on the UI thread, where `OcrSourceUtilities` and `FullscreenGrab` read `CachedBitmap`.
+- **The design contradicts the verification.** "`HistoryServiceTests` unchanged" cannot hold if the lists move. Five of its tests set `HistoryService`'s private fields `HistoryWithImage`, `HistoryTextOnly`, `_imageHistoryLoaded`, `_textHistoryLoaded` and `_hasPendingWrite` by reflection, which are exactly the state the design moves into `HistoryStore`.
+- **All history state is UI-thread-affine today.** Both timers are `DispatcherTimer`s and every caller is on the UI thread. Callers get live `HistoryInfo` objects (`GetImageHistoryById`, `GetEditWindows` items, `GrabFrame(historyInfo)`), and both sides mutate them in place: `SaveToHistory(EditTextWindow)` bumps `CaptureDateTime`, and `WriteHistory` normalizes, clears payloads, drops excess images and deletes their files. A `System.Threading.Timer` write would race those mutations unless every mutation takes the store's lock, which the UI-side code does not, or the write is marshalled back to the UI thread.
+- **Shutdown:** `App.appExit` calls `WriteHistory()` and then `Dispose()` (which writes again if anything is pending), synchronously on the UI thread.
+- The 52 product call sites to `Singleton<HistoryService>.Instance` were confirmed by count.
+
 ## Design
 
 `HistoryStore` in `Text-Grab.Core.Windows` (namespace `Text_Grab.Services`):

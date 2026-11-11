@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Text_Grab.Core.Abstractions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -56,6 +57,27 @@ internal static class AppServices
         }));
 
         services.AddSingleton<AppRuntimeState>();
+
+        // Headless OCR (v5 F3). Stateless, so one instance serves every caller.
+        services.AddSingleton<IOcrService, OcrService>();
+
+        // Output seams (v5 F4). One instance each: the clipboard service owns its fallback STA
+        // thread, and the others are stateless. Clipboard writes are marked as Text Grab's own so
+        // they do not fire the clipboard trigger (v5 F5).
+        services.AddSingleton<WinRtClipboardService>();
+        services.AddSingleton<ClipboardMonitorService>();
+        services.AddSingleton<IClipboardService>(static provider => new SelfSuppressingClipboardService(
+            provider.GetRequiredService<WinRtClipboardService>(),
+            provider.GetRequiredService<ClipboardMonitorService>()));
+        services.AddSingleton<ITextFileWriter, TextFileWriter>();
+        services.AddSingleton<IToastService, ToastService>();
+
+        // Its own client, not the shared one above: that one follows redirects (the Tesseract
+        // downloader needs it to), and HttpPostService must decide about redirects itself.
+        services.AddSingleton<IHttpPostService>(static _ => new HttpPostService(HttpPostService.CreateClient()));
+
+        // Global hotkey dispatch (v5 F5), built with the handlers the old switch had.
+        services.AddSingleton(static _ => HotkeyActionRouter.CreateWithTrayActions());
     }
 
     /// <summary>

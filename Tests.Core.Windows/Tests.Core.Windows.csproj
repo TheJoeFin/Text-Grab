@@ -45,6 +45,11 @@
     <Content Include="..\Tests\Images\font_sample.png" Link="Images\font_sample.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- OcrServiceTests (v5 F3) OCRs this, font_sample.png and FontTest.png headlessly against
+         the same expected text the app-hosted Tests\OcrSourceTests.cs asserts. -->
+    <Content Include="..\Tests\Images\paragraph-test-image.png" Link="Images\paragraph-test-image.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

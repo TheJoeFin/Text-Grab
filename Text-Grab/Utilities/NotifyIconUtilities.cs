@@ -102,46 +102,12 @@ public static class NotifyIconUtilities
             if (keySet.Equals(e))
                 pressedAction = keySet.Action;
 
-        switch (pressedAction)
-        {
-            case ShortcutKeyActions.None:
-                break;
-            case ShortcutKeyActions.Settings:
-                break;
-            case ShortcutKeyActions.Fullscreen:
-                RunOnUiThread(TrayActions.OpenFullscreenGrab);
-                break;
-            case ShortcutKeyActions.GrabFrame:
-                RunOnUiThread(TrayActions.OpenGrabFrame);
-                break;
-            case ShortcutKeyActions.Lookup:
-                RunOnUiThread(TrayActions.OpenLookup);
-                break;
-            case ShortcutKeyActions.EditWindow:
-                RunOnUiThread(TrayActions.OpenEditTextWindow);
-                break;
-            case ShortcutKeyActions.PreviousRegionGrab:
-                RunOnUiThread(TrayActions.CopyPreviousRegion);
-                break;
-            case ShortcutKeyActions.PreviousEditWindow:
-                RunOnUiThread(TrayActions.OpenLastEditTextWindow);
-                break;
-            case ShortcutKeyActions.PreviousGrabFrame:
-                RunOnUiThread(TrayActions.OpenLastGrabFrame);
-                break;
-            case ShortcutKeyActions.OpenClipboardContent:
-                RunOnUiThread(TrayActions.OpenClipboardContent);
-                break;
-            case ShortcutKeyActions.Flyout:
-                RunOnUiThread(() => TrayFlyoutController.Toggle(fromTrayIcon: false));
-                break;
-            default:
-                break;
-        }
+        // Unregistered actions (None, Settings) do nothing, as they always have.
+        AppServices.Provider.GetRequiredService<HotkeyActionRouter>().TryInvoke(pressedAction);
     }
 
-    private static void RunOnUiThread(Action action)
-        => System.Windows.Application.Current.Dispatcher.Invoke(action);
+    /// <summary>The Flyout hotkey's handler, registered by <see cref="HotkeyActionRouter.RegisterTrayActions"/>.</summary>
+    internal static void ToggleFlyoutFromHotkey() => TrayFlyoutController.Toggle(fromTrayIcon: false);
 
     private static NotifyIconWindow CreateNotifyIconWindow()
     {

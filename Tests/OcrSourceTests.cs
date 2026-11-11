@@ -148,7 +148,7 @@ December	12	Winter";
         GlobalLang globalLang = new(EnglishLanguage);
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        IOcrLinesWords ocrResult = await OcrSourceUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
+        IOcrLinesWords ocrResult = await OcrEngineUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
         Rectangle rectCanvasSize = new()
         {
@@ -312,9 +312,9 @@ December	12	Winter";
             return;
 
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(jaTestPath));
-        double scale = await OcrSourceUtilities.GetIdealScaleFactorForOcrAsync(testBitmap, japanese);
+        double scale = await OcrEngineUtilities.GetIdealScaleFactorForOcrAsync(testBitmap, japanese);
         Bitmap scaledBitmap = ImageMethods.ScaleBitmapUniform(testBitmap, scale);
-        IOcrLinesWords ocrResult = await OcrSourceUtilities.GetOcrResultFromImageAsync(scaledBitmap, japanese);
+        IOcrLinesWords ocrResult = await OcrEngineUtilities.GetOcrResultFromImageAsync(scaledBitmap, japanese);
 
         StringBuilder report = new();
         report.AppendLine($"scale factor: {scale:0.###}");
@@ -381,7 +381,7 @@ December	12	Winter";
         GlobalLang globalLang = new(EnglishLanguage);
         Bitmap testBitmap = new(FileUtilities.GetPathToLocalFile(testImagePath));
         // When
-        IOcrLinesWords ocrResult = await OcrSourceUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
+        IOcrLinesWords ocrResult = await OcrEngineUtilities.GetOcrResultFromImageAsync(testBitmap, globalLang);
 
         Rectangle rectCanvasSize = new()
         {
@@ -427,7 +427,7 @@ December	12	Winter";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         ILanguage language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrSourceUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
+        double idealScaleFactor = await OcrEngineUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When
@@ -455,7 +455,7 @@ December	12	Winter";
         bmpImg.Freeze();
         Bitmap bmp = ImageMethods.BitmapImageToBitmap(bmpImg);
         ILanguage language = LanguageUtilities.GetOCRLanguage();
-        double idealScaleFactor = await OcrSourceUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
+        double idealScaleFactor = await OcrEngineUtilities.GetIdealScaleFactorForOcrAsync(bmp, language);
         Bitmap scaledBMP = ImageMethods.ScaleBitmapUniform(bmp, idealScaleFactor);
 
         // When

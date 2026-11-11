@@ -2708,7 +2708,7 @@ public partial class GrabFrame : Window
             if (frameContentImageSource is BitmapSource frozenBmp)
             {
                 using System.Drawing.Bitmap bmpForOcr = ImageMethods.BitmapSourceToBitmap(frozenBmp);
-                recognition = await OcrSourceUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
+                recognition = await OcrEngineUtilities.GetOcrResultFromBitmapAsync(bmpForOcr, CurrentLanguage);
             }
             else
             {

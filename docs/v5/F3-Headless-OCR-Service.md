@@ -29,6 +29,25 @@ The single WPF dependency in the file-OCR path is `LoadBitmapFromFile` (~line 49
 
 `OcrFile` also calls `GrabTemplateExecutor.ExecuteTemplateOnBitmapAsync`, which is app-side. PDF input goes through `PdfDocumentRenderer`, also app-side (returns `BitmapSource`).
 
+**Census, step 3 (2026-11-09, `v5/f3-6`). The table above is wrong in four places:**
+
+1. **The dispatch group is not WPF-free.** `GetTextFromImageAsync`, `GetOcrResultFromBitmapAsync`, `GetOcrResultFromRegionAsync` and `GetTextFromBitmapAsTableAsync` all call `ImageMethods.ScaleBitmapUniform`, which scales through a WPF `BitmapImage` + `TransformedBitmap` + `ScaleTransform`. Every Windows-OCR (`GlobalLang`) call goes through it. Fix: a delegate-resolver seam, `Text-Grab.Core.Windows/Services/BitmapScalingAccess.cs`. The app registers the unchanged WPF scaler from a `[ModuleInitializer]`, so the app's scaled pixels do not change. A host with nothing registered gets a GDI+ bicubic default.
+2. **`GetTextFromAbsoluteRectAsync` stays in the app.** It takes a WPF `Rect`, calls `UIAutomationUtilities` (app-only by Core-Split B4) and captures through `ImageMethods.GetRegionOfScreenAsBitmap`, which writes to `HistoryService` (Core-Split 5c).
+3. **`GetOcrResultFromRegionAsync` stays in the app** for the same `GetRegionOfScreenAsBitmap` reason. Its body after the capture is identical to `GetOcrResultFromBitmapAsync`, so it becomes a two-line wrapper over that method.
+4. **`OcrAbsoluteFilePathAsync` cannot move whole.** It has a PDF branch through `PdfDocumentRenderer`, as `OcrFile` does. The image path moves down as a new method, `OcrImageFileAsync`. `OcrAbsoluteFilePathAsync` stays in the app as the PDF-aware wrapper, so its 8 callers are unchanged.
+
+Also: `LoadBitmapFromFile`'s rotation (via `RotateImage`) applies only the three pure rotations. EXIF 2/4/5/7 (mirrored) are never flipped, and 5/7 are not rotated either. The sketch `bitmap.RotateFlip(GetRotateFlipType(path))` in step 2 would have changed that, so the rewrite keeps the old switch.
+
+Corrected destinations:
+
+| Kind | Members | Destination |
+|---|---|---|
+| Engine dispatch | `GetTextFromImageAsync`, `GetOcrResultFromImageAsync` (both), `GetOcrResultFromBitmapAsync`, `GetTextFromBitmapAsync`, `GetTextFromBitmapAsTableAsync`, `GetTextFromRandomAccessStream`, `GetTextFromWinAiAsync`, `GetTextFromWinAiDescriptionAsync`, `GetIdealScaleFactorForOcrAsync`, private `GetTextFromOcrResult` / `GetWindowsAiDescriptionOcrResultAsync` / `GetIdealScaleFactorForOcrResult`; `IsUiAutomationLanguage` / `GetCompatibleOcrLanguage` become `internal` (the app half still calls them) | Core.Windows |
+| File OCR, image path | `LoadBitmapFromFile` (internal), new `OcrImageFileAsync` | Core.Windows |
+| App-bound | `GetTextFromAbsoluteRectAsync`, `GetOcrResultFromRegionAsync` (wrapper), `OcrAbsoluteFilePathAsync` (PDF wrapper), `OcrFile` (PDF + template wrapper), `GetRegionsTextAsync` and `GetRegionsTextAsTableAsync` (no callers; left alone), the `BitmapSource` overloads, `GetClickedWordAsync` and its two private helpers, `GetCopyTextFromPreviousRegion`, `GetTextFromPreviousFullscreenRegion`, `CanReplayPreviousFullscreenSelection`, `GetExcludedWindowHandles` | Stay in the app |
+
+Name: 21 external references point at members that stay and 16 at members that move. Following batch 4c, the app half keeps `OcrSourceUtilities` and the moved half takes a new name, `OcrEngineUtilities`.
+
 ## Design
 
 Interface in `Text-Grab.Core` (`Text_Grab.Core.Abstractions`):

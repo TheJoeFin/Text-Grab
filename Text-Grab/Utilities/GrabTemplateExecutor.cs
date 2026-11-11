@@ -166,7 +166,7 @@ public static class GrabTemplateExecutor
                     using Bitmap regionBitmap = bitmap.Clone(
                         new Rectangle(x, y, width, height), bitmap.PixelFormat);
                     string regionText = OcrUtilities.GetStringFromOcrOutputs(
-                        await OcrSourceUtilities.GetTextFromImageAsync(regionBitmap, resolvedLanguage));
+                        await OcrEngineUtilities.GetTextFromImageAsync(regionBitmap, resolvedLanguage));
                     regionResults[region.RegionNumber] = string.IsNullOrWhiteSpace(regionText)
                         ? region.DefaultValue
                         : regionText.Trim();
@@ -194,7 +194,7 @@ public static class GrabTemplateExecutor
             try
             {
                 fullAreaText = OcrUtilities.GetStringFromOcrOutputs(
-                    await OcrSourceUtilities.GetTextFromImageAsync(bitmap, resolvedLanguage));
+                    await OcrEngineUtilities.GetTextFromImageAsync(bitmap, resolvedLanguage));
             }
             catch (Exception)
             {

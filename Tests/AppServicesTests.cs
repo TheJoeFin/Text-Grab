@@ -1,5 +1,6 @@
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Text_Grab.Core.Abstractions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -158,6 +159,33 @@ public class AppServicesTests
         ITextGrabSettings restored = AppServices.Provider.GetRequiredService<ITextGrabSettings>();
         Assert.NotSame(substitute, restored);
         Assert.Same(AppUtilities.TextGrabSettings, restored);
+    }
+
+    [Fact]
+    public void OcrService_IsRegisteredAsOneSharedInstance()
+    {
+        IOcrService ocr = AppServices.Provider.GetRequiredService<IOcrService>();
+
+        Assert.IsType<OcrService>(ocr);
+        Assert.Same(ocr, ServiceAccess.GetRequired<IOcrService>());
+    }
+
+    [Fact]
+    public void OutputServices_AreRegisteredAsOneSharedInstanceEach()
+    {
+        IServiceProvider provider = AppServices.Provider;
+
+        // The Core.Windows service, wrapped so Text Grab's own writes skip the clipboard trigger (F5).
+        Assert.IsType<SelfSuppressingClipboardService>(provider.GetRequiredService<IClipboardService>());
+        Assert.Same(provider.GetRequiredService<ClipboardMonitorService>(), provider.GetRequiredService<ClipboardMonitorService>());
+        Assert.IsType<TextFileWriter>(provider.GetRequiredService<ITextFileWriter>());
+        Assert.IsType<ToastService>(provider.GetRequiredService<IToastService>());
+        Assert.IsType<HttpPostService>(provider.GetRequiredService<IHttpPostService>());
+
+        Assert.Same(provider.GetRequiredService<IClipboardService>(), provider.GetRequiredService<IClipboardService>());
+        Assert.Same(provider.GetRequiredService<ITextFileWriter>(), provider.GetRequiredService<ITextFileWriter>());
+        Assert.Same(provider.GetRequiredService<IToastService>(), provider.GetRequiredService<IToastService>());
+        Assert.Same(provider.GetRequiredService<IHttpPostService>(), provider.GetRequiredService<IHttpPostService>());
     }
 
     [Fact]
