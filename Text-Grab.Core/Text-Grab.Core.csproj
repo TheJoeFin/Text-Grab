@@ -34,7 +34,7 @@
          no such framework reference, so they need this package explicitly. Verified by a
          standalone probe: both types resolve and run correctly on plain net10.0 with this
          package referenced. -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.14" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="11.0.0" />
     <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 
