@@ -105,7 +105,7 @@
         <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" />
         <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
              build tool. Exclude all its assets so nuget.exe never flows into the app output. -->
-        <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
+        <PackageReference Include="NuGet.CommandLine" Version="8.0.0" ExcludeAssets="all" PrivateAssets="all">
           <IncludeAssets>none</IncludeAssets>
         </PackageReference>
         <PackageReference Include="PdfPig" Version="0.1.16" />

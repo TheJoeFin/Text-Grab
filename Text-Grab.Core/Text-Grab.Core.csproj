@@ -25,7 +25,7 @@
     <PackageReference Include="NCalcAsync" Version="7.4.0" />
     <!-- Microsoft.Recognizers.Text erroneously declares a dependency on the NuGet.CommandLine
          build tool. Exclude all its assets so nuget.exe never flows into the output. -->
-    <PackageReference Include="NuGet.CommandLine" Version="7.9.0" ExcludeAssets="all" PrivateAssets="all">
+    <PackageReference Include="NuGet.CommandLine" Version="8.0.0" ExcludeAssets="all" PrivateAssets="all">
       <IncludeAssets>none</IncludeAssets>
     </PackageReference>
     <!-- AutomationSettingsProvider/AutomationProfile need ApplicationSettingsBase and
