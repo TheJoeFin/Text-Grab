@@ -25,7 +25,7 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 | W1 | [Workflow engine](W1-Workflow-Engine.md) | A1, F3, F4, F5 | Not started |
 | W2 | [Workflow end-to-end and entry points](W2-Workflow-E2E-Entry-Points.md) | W1 | Not started |
 | W3 | [Nodify graph editor](W3-Nodify-Graph-Editor.md) | W2, E4 | Not started |
-| E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | Not started |
+| E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | In progress (E1a done, 21428ec) |
 | E2 | [ETW commands onto the registry](E2-Commands-Onto-Registry.md) | A1, E1 | Not started |
 | E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | E2 | Not started |
 | E4 | [Layout engine and Classic layout](E4-Layout-Engine.md) | E3 | Not started |

@@ -19,7 +19,7 @@ Stop everything — inside and outside the window — from reaching directly int
 
 ## Current state (verify)
 
-- `Text-Grab/Views/EditTextWindow.xaml.cs`: one class, 8,176 lines. `EditTextWindow.xaml`: 1,538 lines, 205 `MenuItem`s.
+- `Text-Grab/Views/EditTextWindow.xaml.cs`: one class, 8,206 lines before E1a (`dev` @ `b8adc26`). `EditTextWindow.xaml`: 1,538 lines, 205 `MenuItem`s. After E1a the class is split across nine files; see "E1a outcome".
 - Three editors switched by `EtwEditorMode` (`Text`, `Markdown`, `Spreadsheet`; enum in `Text-Grab.Core/Models/EditTextTableDocument.cs`): `PassedTextControl` (`TextBox`), `MarkdownEditorControl` (`RichTextBox`), `SpreadsheetDataGrid` (`DataGrid`).
 - `PassedTextControl.Text` is the source of truth; the other two editors sync to and from it through `SyncTextFromActiveEditor`, `SyncActiveEditorFromText`, `RefreshSpreadsheetFromText`, `RefreshMarkdownFromText`, `SyncMarkdownTextFromDocument`, guarded by flags `isSyncingTextFromSpreadsheet`, `isSyncingTextFromMarkdown`, `isApplyingSpreadsheetLayout`, `isApplyingMarkdownDocument`.
 - `PassedTextControl` is referenced 280 times inside the window and 20 times from other files. `EditTextWindow` is referenced from 29 other app files, among them `FindAndReplaceWindow`, `JoinLinesWindow`, `AddOrRemoveWindow`, `SplitColumnWindow`, `RegexManager`, `BottomBarSettings`, `OutputUtilities`, `HistoryService`, `NotificationUtilities`, `CustomBottomBarUtilities`, `PostGrabActionManager`, `GrabFrame`, `FullscreenGrab`, `QuickSimpleLookup`.
@@ -57,6 +57,26 @@ Steps:
 Done when: the main file is under ~2,500 lines, the test count and results equal the baseline, and `git diff --stat` shows only moves (verify with `git diff -M --stat` and by confirming the total line count across the partials equals the original plus the added file headers).
 
 Traps: the XAML names its handlers; renaming a method breaks the XAML compile but a *deleted* duplicate does not. `#region` blocks span the whole file — remove the regions rather than leaving them unbalanced.
+
+### E1a outcome (2026-11-11, branch `v5/e1a-etw-partials`, last move 21428ec)
+
+| File | Lines |
+|---|---|
+| `EditTextWindow.xaml.cs` | 2,367 |
+| `EditTextWindow.Spreadsheet.cs` | 1,997 |
+| `EditTextWindow.Selection.cs` | 851 |
+| `EditTextWindow.Calc.cs` | 659 |
+| `EditTextWindow.Files.cs` | 637 |
+| `EditTextWindow.LocalAi.cs` | 593 |
+| `EditTextWindow.Transcription.cs` | 586 |
+| `EditTextWindow.Menus.cs` | 506 |
+| `EditTextWindow.Markdown.cs` | 315 |
+
+- The name patterns above left the main file at ~3,150 lines, so members that only one cluster calls, or that clearly belong to it, went with that cluster. Examples: the calc-only handlers (`DebounceTimer_Tick`, `ShowErrors*`, `TextBoxSplitter_MouseDoubleClick`, `CopyAllContextItem_Click`); the pattern-button and bottom-bar code (to Selection); the handlers attached by the dynamic menu builders and the `AddPossible*RightClickMenu` builders (to Menus). Each commit message lists its extras.
+- `SavePatternMenuItem_Click` and `SaveCurrentPatternToRegexManager` match `Save*` but are pattern-button code, so they are in Selection, not Files.
+- `ClearGrabTemplateMenuItems` and `ClearDynamicMenuItems` stay in the main file. `EditTextWindowGrabTemplateMenuTests.ClearGrabTemplateMenuItems_RestoresPlaceholderAfterClearing` reads `EditTextWindow.xaml.cs` as text and expects both there, in that order.
+- The four `#region`s (Fields, Constructors, Properties, Methods) stay in the main file and stay balanced. They were not removed.
+- `PassedTextControl_*` handlers stay in the main file with the text editor they belong to.
 
 ---
 
