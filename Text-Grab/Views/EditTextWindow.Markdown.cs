@@ -43,7 +43,7 @@ public partial class EditTextWindow
         if (isSyncingTextFromMarkdown)
             return;
 
-        LoadMarkdownDocumentFromText(PassedTextControl.Text);
+        LoadMarkdownDocumentFromText(Session.Text);
         UpdateLineAndColumnText();
     }
 
@@ -69,7 +69,7 @@ public partial class EditTextWindow
             return;
 
         isSyncingTextFromMarkdown = true;
-        PassedTextControl.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
+        Session.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
             MarkdownEditorControl.Document,
             preserveLiteralMarkdown: true);
         isSyncingTextFromMarkdown = false;
@@ -120,7 +120,7 @@ public partial class EditTextWindow
     private void ReloadMarkdownDocumentAndRestoreCaret(int targetPlainTextOffset)
     {
         SyncMarkdownTextFromDocument();
-        LoadMarkdownDocumentFromText(PassedTextControl.Text);
+        LoadMarkdownDocumentFromText(Session.Text);
 
         if (MarkdownEditorControl.Document is null)
             return;

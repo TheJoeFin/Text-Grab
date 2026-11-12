@@ -147,7 +147,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private SpreadsheetUndoState? pendingSpreadsheetUndoState;
     private string savedFileText = string.Empty;
     private HwndSource? windowSource;
-    private readonly EditorSession editorSession;
+    private EditorSession? editorSession;
 
     #endregion Fields
 
@@ -156,14 +156,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public EditTextWindow()
     {
         InitializeComponent();
-        editorSession = CreateEditorSession();
         App.SetTheme();
     }
 
     public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
     {
         InitializeComponent();
-        editorSession = CreateEditorSession();
         App.SetTheme();
 
         if (isEncoded)
@@ -177,7 +175,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public EditTextWindow(HistoryInfo historyInfo)
     {
         InitializeComponent();
-        editorSession = CreateEditorSession();
         App.SetTheme();
 
         PassedTextControl.Text = historyInfo.TextContent;
@@ -220,7 +217,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private bool IsAccessingClipboard { get; set; } = false;
 
     /// <summary>The document in this window and the editor showing it.</summary>
-    public IEditorSession Session => editorSession;
+    /// <remarks>
+    /// Created on first use rather than in the constructors: handlers that run inside
+    /// <c>InitializeComponent</c> (<c>Window_Initialized</c> re-themes the Markdown document, which
+    /// raises its TextChanged) already need it, and by then the editors it wraps exist.
+    /// </remarks>
+    public IEditorSession Session => editorSession ??= CreateEditorSession();
 
     #endregion Properties
 
