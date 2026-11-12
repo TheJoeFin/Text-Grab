@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,7 +22,6 @@ namespace Tests;
 /// commands and the mode menu items. The one exception is spreadsheet undo, whose command binding is
 /// added by <c>Window_Loaded</c>; <see cref="AddLoadedCommandBindings"/> adds just those bindings.
 /// </remarks>
-[Collection(EditTextWindowInstancesCollection.Name)]
 public class EditorSessionCharacterizationTests
 {
     private const string ThreeLines = "one\r\ntwo\r\nthree";
@@ -288,41 +286,12 @@ public class EditorSessionCharacterizationTests
 
     private static EditTextWindow CreateWindow(string text)
     {
-        EditTextWindow window = ConstructWithStandInApplication();
+        EditTextWindow window = new();
         LayOut(window);
         RawTextBox(window).Text = text;
         DoEvents();
         LayOut(window);
         return window;
-    }
-
-    /// <summary>
-    /// Runs the window's constructor with a stand-in <see cref="Application.Current"/>, then clears it.
-    /// </summary>
-    /// <remarks>
-    /// The constructor calls <c>App.SetTheme</c>, which ends in <c>NotifyIconUtilities.RefreshTrayIconStyle</c>
-    /// reading <c>Application.Current.Dispatcher</c>. The test process has no Application, and a real one
-    /// cannot be left in place: other tests call <c>Application.Current?.Windows</c> from threads that are
-    /// not its dispatcher's. So an uninitialized Application bound to this thread's dispatcher stands in
-    /// for the constructor only. This class is in a non-parallel collection so no other test sees it.
-    /// </remarks>
-    private static EditTextWindow ConstructWithStandInApplication()
-    {
-        FieldInfo appInstance = typeof(Application).GetField("_appInstance", BindingFlags.NonPublic | BindingFlags.Static)!;
-        Application standIn = (Application)RuntimeHelpers.GetUninitializedObject(typeof(Application));
-        typeof(DispatcherObject)
-            .GetField("_dispatcher", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .SetValue(standIn, Dispatcher.CurrentDispatcher);
-
-        appInstance.SetValue(null, standIn);
-        try
-        {
-            return new EditTextWindow();
-        }
-        finally
-        {
-            appInstance.SetValue(null, null);
-        }
     }
 
     /// <summary>

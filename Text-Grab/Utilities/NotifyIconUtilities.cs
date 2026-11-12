@@ -126,7 +126,10 @@ public static class NotifyIconUtilities
     {
         // Windows theme changes are observed via a registry watcher that raises its event on a
         // background thread, but NotifyIcon.Icon is a DependencyProperty owned by the UI thread.
-        System.Windows.Threading.Dispatcher dispatcher = Application.Current.Dispatcher;
+        // No Application means no tray icon to restyle (the test host constructs windows without one).
+        if (Application.Current?.Dispatcher is not System.Windows.Threading.Dispatcher dispatcher)
+            return;
+
         if (!dispatcher.CheckAccess())
         {
             dispatcher.BeginInvoke(RefreshTrayIconStyle);
