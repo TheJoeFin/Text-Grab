@@ -75,6 +75,9 @@ public partial class EditTextWindow
 
         SessionImpl.SyncEditorFromText(EtwEditorMode.Code);
         MirrorTextSelectionToCodeEditor();
+
+        // Fold the text now rather than after the typing delay, so the markers are there on entry.
+        CodeEditorControl.UpdateFoldings();
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using System.Windows.Input;
 using Text_Grab;
@@ -147,6 +148,57 @@ public class EditTextWindowCodeModeTests
 
         Assert.DoesNotContain(editor.TextArea.CommandBindings.Cast<CommandBinding>(),
             binding => binding.Command == AvalonEditCommands.DeleteLine || binding.Command == AvalonEditCommands.IndentSelection);
+    }
+
+    [WpfFact]
+    public void FoldingMarkers_AppearOnlyForLanguagesWithAFoldingRule()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+
+        Assert.NotNull(editor.Foldings);
+        Assert.Contains(editor.TextArea.LeftMargins, margin => margin is FoldingMargin);
+        // The class body and the property's braces are on one line, so only the class folds.
+        Assert.Single(editor.Foldings!.AllFoldings);
+
+        window.SetCodeLanguage(CodeLanguages.Python);
+
+        Assert.Null(editor.Foldings);
+        Assert.DoesNotContain(editor.TextArea.LeftMargins, margin => margin is FoldingMargin);
+    }
+
+    [WpfFact]
+    public void Folding_FollowsEditsAndKeepsCollapsedRegionsCollapsed()
+    {
+        EditTextWindow window = CreateWindow("class A\r\n{\r\n    int x;\r\n}\r\n");
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        FoldingSection classBody = Assert.Single(editor.Foldings!.AllFoldings);
+        classBody.IsFolded = true;
+
+        window.Session.Text += "class B\r\n{\r\n    int y;\r\n}\r\n";
+        DoEvents();
+        editor.UpdateFoldings();
+
+        Assert.Equal(2, editor.Foldings!.AllFoldings.Count());
+        Assert.True(editor.Foldings.AllFoldings.First().IsFolded);
+        Assert.False(editor.Foldings.AllFoldings.Last().IsFolded);
+    }
+
+    [WpfFact]
+    public void ShowingARangeInsideACollapsedRegion_ExpandsIt()
+    {
+        EditTextWindow window = CreateWindow("class A\r\n{\r\n    int target;\r\n}");
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        SwitchMode(window, EtwEditorMode.Code);
+        FoldingSection classBody = Assert.Single(CodeEditor(window).Foldings!.AllFoldings);
+        classBody.IsFolded = true;
+
+        window.SelectInEditor(window.Session.Text.IndexOf("target"), "target".Length);
+
+        Assert.False(classBody.IsFolded);
     }
 
     [WpfFact]

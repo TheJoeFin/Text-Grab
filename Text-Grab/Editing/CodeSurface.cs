@@ -55,6 +55,8 @@ internal sealed class CodeSurface(CodeEditor editor) : IEditorSurface
     public void SelectAndShow(TextSpan range)
     {
         Selection = range;
+        // A Find match or other shown range may sit inside a collapsed region.
+        editor.ExpandFoldingsAround(Selection.Start, Selection.End);
         ICSharpCode.AvalonEdit.Document.TextLocation location = editor.Document.GetLocation(Selection.Start);
         editor.ScrollTo(location.Line, location.Column);
         editor.TextArea.Focus();

@@ -1,5 +1,6 @@
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Editing;
+using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Rendering;
 using System;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Text_Grab.Core.Editing;
 
 namespace Text_Grab.Controls;
@@ -26,10 +28,21 @@ namespace Text_Grab.Controls;
 /// AvalonEdit binds Ctrl+D (delete line) and Ctrl+I (indent). The Edit Text Window uses both
 /// (duplicate line, isolate selection), so those two bindings are removed and the keys reach the window.
 /// </para>
+/// <para>
+/// Languages with a <see cref="CodeFolding"/> rule get collapse/expand markers in the gutter. The
+/// regions are recomputed shortly after the text stops changing; AvalonEdit anchors existing regions to
+/// the text, so collapsed regions stay collapsed through edits around them.
+/// </para>
 /// </remarks>
 public class CodeEditor : TextEditor
 {
+    /// <summary>How long the text must be still before the folding regions are recomputed.</summary>
+    public static readonly TimeSpan FoldingUpdateDelay = TimeSpan.FromMilliseconds(400);
+
     private static readonly RoutedCommand[] CommandsTheWindowOwns = [AvalonEditCommands.DeleteLine, AvalonEditCommands.IndentSelection];
+
+    private readonly DispatcherTimer foldingTimer;
+    private FoldingManager? foldingManager;
 
     public CodeEditor()
     {
@@ -42,10 +55,28 @@ public class CodeEditor : TextEditor
         RemoveCommandBindingsTheWindowOwns();
         SpaceOutTheGutter();
         Loaded += (_, _) => ApplyTheme();
+
+        foldingTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = FoldingUpdateDelay };
+        foldingTimer.Tick += (_, _) =>
+        {
+            foldingTimer.Stop();
+            UpdateFoldings();
+        };
+        TextChanged += (_, _) =>
+        {
+            if (foldingManager is null)
+                return;
+
+            foldingTimer.Stop();
+            foldingTimer.Start();
+        };
     }
 
     /// <summary>True while the editor is showing the dark theme's colors.</summary>
     public bool IsDarkTheme { get; private set; }
+
+    /// <summary>The folding regions, or null when the current language has no folding rule.</summary>
+    public FoldingManager? Foldings => foldingManager;
 
     protected override IVisualLineTransformer CreateColorizer(IHighlightingDefinition highlightingDefinition)
         => new ThemeAwareHighlightingColorizer(highlightingDefinition, this);
@@ -56,6 +87,67 @@ public class CodeEditor : TextEditor
 
         if (e.Property == ForegroundProperty)
             ApplyTheme();
+        else if (e.Property == SyntaxHighlightingProperty)
+            ConfigureFolding();
+    }
+
+    /// <summary>Recomputes the folding regions from the text now, keeping collapsed ones collapsed.</summary>
+    public void UpdateFoldings()
+    {
+        if (foldingManager is null)
+            return;
+
+        IEnumerable<NewFolding> foldings = CodeFolding.Find(Document.Text, SyntaxHighlighting?.Name)
+            .Select(region => new NewFolding(region.Start, region.End));
+        foldingManager.UpdateFoldings(foldings, -1);
+    }
+
+    /// <summary>Expands every collapsed region that hides part of the range from <paramref name="start"/> to <paramref name="end"/>.</summary>
+    public void ExpandFoldingsAround(int start, int end)
+    {
+        if (foldingManager is null)
+            return;
+
+        foreach (FoldingSection folding in foldingManager.AllFoldings)
+        {
+            if (folding.IsFolded && folding.StartOffset < Math.Max(end, start + 1) && folding.EndOffset > start)
+                folding.IsFolded = false;
+        }
+    }
+
+    /// <summary>Adds the folding markers for a language with a folding rule, and removes them otherwise.</summary>
+    private void ConfigureFolding()
+    {
+        bool supported = CodeFolding.IsSupported(SyntaxHighlighting?.Name);
+
+        if (supported && foldingManager is null)
+        {
+            foldingManager = FoldingManager.Install(TextArea);
+            ApplyFoldingMarginTheme();
+        }
+        else if (!supported && foldingManager is not null)
+        {
+            foldingTimer.Stop();
+            FoldingManager.Uninstall(foldingManager);
+            foldingManager = null;
+        }
+
+        UpdateFoldings();
+    }
+
+    private void ApplyFoldingMarginTheme()
+    {
+        Color textColor = Foreground is SolidColorBrush brush ? brush.Color : Colors.Black;
+        Brush markerBrush = LineNumbersForeground ?? Brushes.Gray;
+        Brush hoverBackground = Freeze(new SolidColorBrush(Color.FromArgb(0x26, textColor.R, textColor.G, textColor.B)));
+
+        foreach (FoldingMargin margin in TextArea.LeftMargins.OfType<FoldingMargin>())
+        {
+            margin.SetValue(FoldingMargin.FoldingMarkerBrushProperty, markerBrush);
+            margin.SetValue(FoldingMargin.FoldingMarkerBackgroundBrushProperty, Brushes.Transparent);
+            margin.SetValue(FoldingMargin.SelectedFoldingMarkerBrushProperty, Foreground);
+            margin.SetValue(FoldingMargin.SelectedFoldingMarkerBackgroundBrushProperty, hoverBackground);
+        }
     }
 
     /// <summary>Re-reads the theme from the foreground brush and re-colors the editor if it changed.</summary>
@@ -74,6 +166,7 @@ public class CodeEditor : TextEditor
         // Not null: the property already is null, so null never reaches the renderer, which keeps
         // AvalonEdit's default translucent green border.
         TextArea.TextView.CurrentLineBorder = Freeze(new Pen(Brushes.Transparent, 0));
+        ApplyFoldingMarginTheme();
 
         if (isDark == IsDarkTheme)
             return;
