@@ -64,7 +64,7 @@ public partial class EditTextWindow
         }
         catch (Exception ex)
         {
-            PassedTextControl.AppendText($"Failed to read directory: {ex.Message}{Environment.NewLine}");
+            Session.AppendText($"Failed to read directory: {ex.Message}{Environment.NewLine}");
         }
 
         if (files is null)
@@ -74,7 +74,7 @@ public partial class EditTextWindow
 
         if (imageFiles.Count == 0)
         {
-            PassedTextControl.AppendText($"{folderPath} contains no images or PDFs");
+            Session.AppendText($"{folderPath} contains no images or PDFs");
             return;
         }
 
@@ -102,36 +102,36 @@ public partial class EditTextWindow
 
         if (options.OutputHeader)
         {
-            PassedTextControl.AppendText(folderPath);
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"{imageFiles.Count} files found");
+            Session.AppendText(folderPath);
+            Session.AppendText(Environment.NewLine);
+            Session.AppendText($"{imageFiles.Count} files found");
 
             if (!string.IsNullOrEmpty(tesseractLanguageTag))
             {
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText($"Using {tesseractLanguageTag} from Tesseract.");
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText("Tesseract can only run single threaded,");
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText("May be slower if processing many images");
-                PassedTextControl.AppendText(Environment.NewLine);
+                Session.AppendText(Environment.NewLine);
+                Session.AppendText($"Using {tesseractLanguageTag} from Tesseract.");
+                Session.AppendText(Environment.NewLine);
+                Session.AppendText("Tesseract can only run single threaded,");
+                Session.AppendText(Environment.NewLine);
+                Session.AppendText("May be slower if processing many images");
+                Session.AppendText(Environment.NewLine);
             }
             else
             {
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText($"Using {selectedLanguage.DisplayName} from Windows.");
-                PassedTextControl.AppendText(Environment.NewLine);
+                Session.AppendText(Environment.NewLine);
+                Session.AppendText($"Using {selectedLanguage.DisplayName} from Windows.");
+                Session.AppendText(Environment.NewLine);
             }
 
             if (options.GrabTemplate is GrabTemplate headerTemplate)
             {
-                PassedTextControl.AppendText($"Using template: {headerTemplate.Name}");
-                PassedTextControl.AppendText(Environment.NewLine);
+                Session.AppendText($"Using template: {headerTemplate.Name}");
+                Session.AppendText(Environment.NewLine);
             }
 
-            PassedTextControl.AppendText("Press Escape to cancel");
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText(Environment.NewLine);
+            Session.AppendText("Press Escape to cancel");
+            Session.AppendText(Environment.NewLine);
+            Session.AppendText(Environment.NewLine);
         }
 
         cancellationTokenForDirOCR = new();
@@ -152,15 +152,15 @@ public partial class EditTextWindow
 
             if (options.OutputFooter)
             {
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} files");
+                Session.AppendText(Environment.NewLine);
+                Session.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} files");
             }
         }
         catch (OperationCanceledException)
         {
-            PassedTextControl.AppendText(Environment.NewLine);
+            Session.AppendText(Environment.NewLine);
             int countCompleted = ocrFileResults.Where(r => r.OcrResult is not null).Count();
-            PassedTextControl.AppendText($"----- CANCELLED OCR OF {ocrFileResults.Count - countCompleted}, Completed {countCompleted} files");
+            Session.AppendText($"----- CANCELLED OCR OF {ocrFileResults.Count - countCompleted}, Completed {countCompleted} files");
         }
         finally
         {
@@ -172,12 +172,12 @@ public partial class EditTextWindow
 
         if (options.OutputFooter)
         {
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"----- from {folderPath}");
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed:c}");
+            Session.AppendText(Environment.NewLine);
+            Session.AppendText($"----- from {folderPath}");
+            Session.AppendText(Environment.NewLine);
+            Session.AppendText($"----- and took {stopwatch.Elapsed:c}");
         }
-        PassedTextControl.ScrollToEnd();
+        Session.ScrollToEnd();
 
         GC.Collect();
         cancellationTokenForDirOCR = null;
@@ -289,7 +289,7 @@ public partial class EditTextWindow
             isLoadingOpenedFile = true;
             try
             {
-                PassedTextControl.Text = TextContent;
+                Session.Text = TextContent;
 
                 if (IsLoaded && editorMode == EtwEditorMode.Spreadsheet)
                     RefreshSpreadsheetFromText();
@@ -380,11 +380,11 @@ public partial class EditTextWindow
         string chosenFolderPath = folderBrowserDialog1.SelectedPath;
         try
         {
-            PassedTextControl.AppendText(IoUtilities.ListFilesFoldersInDirectory(chosenFolderPath));
+            Session.AppendText(IoUtilities.ListFilesFoldersInDirectory(chosenFolderPath));
         }
         catch (Exception ex)
         {
-            PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
+            Session.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
         }
     }
 
@@ -415,9 +415,9 @@ public partial class EditTextWindow
             {
                 await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    PassedTextControl.AppendText(Environment.NewLine);
-                    PassedTextControl.AppendText(ocrFile.OcrResult);
-                    PassedTextControl.ScrollToEnd();
+                    Session.AppendText(Environment.NewLine);
+                    Session.AppendText(ocrFile.OcrResult);
+                    Session.ScrollToEnd();
                 });
             }
         });
@@ -499,7 +499,7 @@ public partial class EditTextWindow
     {
         SyncTextFromActiveEditor();
 
-        string fileText = PassedTextControl.Text;
+        string fileText = Session.Text;
         string? targetFilePath = saveAs ? null : OpenedFilePath;
 
         if (string.IsNullOrEmpty(targetFilePath))
@@ -535,7 +535,7 @@ public partial class EditTextWindow
     private void SetOpenedFileState(string? openedFilePath)
     {
         OpenedFilePath = openedFilePath;
-        savedFileText = string.IsNullOrWhiteSpace(openedFilePath) ? string.Empty : PassedTextControl.Text;
+        savedFileText = string.IsNullOrWhiteSpace(openedFilePath) ? string.Empty : Session.Text;
         hasPendingFileEdits = false;
         UpdateWindowTitle();
     }
@@ -552,7 +552,7 @@ public partial class EditTextWindow
         if (isLoadingOpenedFile)
             return;
 
-        hasPendingFileEdits = ShouldShowPendingFileEdits(OpenedFilePath, savedFileText, PassedTextControl.Text);
+        hasPendingFileEdits = ShouldShowPendingFileEdits(OpenedFilePath, savedFileText, Session.Text);
         UpdateWindowTitle();
     }
 
@@ -596,7 +596,7 @@ public partial class EditTextWindow
     private void SaveWindowTextToHistoryIfNeeded()
     {
         if (string.IsNullOrEmpty(OpenedFilePath)
-            && !string.IsNullOrWhiteSpace(PassedTextControl.Text))
+            && !string.IsNullOrWhiteSpace(Session.Text))
             Singleton<HistoryService>.Instance.SaveToHistory(this);
     }
 
