@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -454,6 +455,33 @@ public static partial class StringMethods
         return CurrentCase.Camel;
     }
 
+    /// <summary>
+    /// One press of Toggle Case. When <paramref name="state"/> is <see cref="CurrentCase.Unknown"/>
+    /// it is first detected from <paramref name="text"/> with <see cref="DetermineToggleCase"/>. The
+    /// case the state names is applied (<see cref="CurrentCase.Camel"/> is title case), and the next
+    /// state in the cycle lower → title → upper → lower is returned for the caller to keep. So the
+    /// first press re-applies the case the text already has, and later presses change it.
+    /// Whitespace-only text is returned unchanged with <see cref="CurrentCase.Unknown"/>.
+    /// </summary>
+    public static (string Result, CurrentCase Next) ToggleCase(string text, CurrentCase state, CultureInfo culture)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(culture);
+
+        if (state == CurrentCase.Unknown)
+            state = DetermineToggleCase(text);
+
+        TextInfo textInfo = culture.TextInfo;
+
+        return state switch
+        {
+            CurrentCase.Lower => (textInfo.ToLower(text), CurrentCase.Camel),
+            CurrentCase.Camel => (textInfo.ToTitleCase(text), CurrentCase.Upper),
+            CurrentCase.Upper => (textInfo.ToUpper(text), CurrentCase.Lower),
+            _ => (text, state),
+        };
+    }
+
     public enum CharType { Letter, Number, Space, Special, Other };
 
     public class CharRun
@@ -842,6 +870,33 @@ public static partial class StringMethods
 
         string shuffledText = string.Join(Environment.NewLine, lines);
         return endsWithNewline ? $"{shuffledText}{Environment.NewLine}" : shuffledText;
+    }
+
+    /// <summary>
+    /// Split Lines Before Each Selection: puts a line break before every occurrence of
+    /// <paramref name="selection"/> in <paramref name="fullText"/>. Occurrences are matched
+    /// ordinally (so case-sensitively) and without overlapping, from the left.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="selection"/> is empty.</exception>
+    public static string SplitOnSelection(string fullText, string selection)
+    {
+        ArgumentNullException.ThrowIfNull(fullText);
+        ArgumentException.ThrowIfNullOrEmpty(selection);
+
+        return new StringBuilder(fullText).Replace(selection, Environment.NewLine + selection).ToString();
+    }
+
+    /// <summary>
+    /// Split Lines After Each Selection: puts a line break after every occurrence of
+    /// <paramref name="selection"/> in <paramref name="fullText"/>, matched as in <see cref="SplitOnSelection"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="selection"/> is empty.</exception>
+    public static string SplitAfterSelection(string fullText, string selection)
+    {
+        ArgumentNullException.ThrowIfNull(fullText);
+        ArgumentException.ThrowIfNullOrEmpty(selection);
+
+        return new StringBuilder(fullText).Replace(selection, selection + Environment.NewLine).ToString();
     }
 
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
