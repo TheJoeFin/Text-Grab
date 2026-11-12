@@ -1027,7 +1027,8 @@
                     PreviewDragOver="ETWindow_DragOver"
                     PreviewDrop="ETWindow_Drop"
                     VerticalScrollBarVisibility="Auto"
-                    Visibility="Collapsed" />
+                    Visibility="Collapsed"
+                    utils:SmoothScrollBehavior.IsEnabled="True" />
             </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"

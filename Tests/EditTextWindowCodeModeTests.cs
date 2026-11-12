@@ -1,6 +1,7 @@
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab;
 using Text_Grab.Controls;
@@ -199,6 +200,27 @@ public class EditTextWindowCodeModeTests
         window.SelectInEditor(window.Session.Text.IndexOf("target"), "target".Length);
 
         Assert.False(classBody.IsFolded);
+    }
+
+    [WpfFact]
+    public void TheCodeEditor_ScrollsInPixelsSoTheSmoothWheelCanEaseIt()
+    {
+        string longText = string.Join("\r\n", Enumerable.Range(1, 400).Select(i => $"int line{i} = {i};"));
+        EditTextWindow window = CreateWindow(longText);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        ScrollViewer scrollViewer = Text_Grab.Utilities.WindowUtilities.GetScrollViewer(editor)!;
+
+        Assert.True(Text_Grab.Utilities.SmoothScrollBehavior.GetIsEnabled(editor));
+
+        // A fractional offset survives: the editor scrolls by pixels, not whole lines, so each frame
+        // of the eased scroll moves it a little rather than snapping line to line.
+        scrollViewer.ScrollToVerticalOffset(37.5);
+        LayOut(window);
+        Assert.Equal(37.5, scrollViewer.VerticalOffset, 3);
+
+        // One wheel notch down engages the eased scroll instead of AvalonEdit's instant jump.
+        Assert.True(Text_Grab.Utilities.SmoothScrollBehavior.ScrollBy(editor, -120));
     }
 
     [WpfFact]
