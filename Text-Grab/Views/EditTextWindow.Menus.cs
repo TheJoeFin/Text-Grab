@@ -38,10 +38,10 @@ public partial class EditTextWindow
 {
     private void AddPossibleMailToToRightClickMenu(int caretIndex)
     {
-        string possibleEmail = PassedTextControl.SelectedText;
+        string possibleEmail = Session.SelectedText;
 
         if (string.IsNullOrEmpty(possibleEmail))
-            possibleEmail = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
+            possibleEmail = Session.Text.GetWordAtCursorPosition(caretIndex);
 
         if (!possibleEmail.IsValidEmailAddress())
             return;
@@ -102,11 +102,11 @@ public partial class EditTextWindow
 
     private void AddPossibleURLToRightClickMenu(int caretIndex)
     {
-        string possibleURL = PassedTextControl.SelectedText;
+        string possibleURL = Session.SelectedText;
 
         if (string.IsNullOrEmpty(possibleURL))
         {
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
+            possibleURL = Session.Text.GetWordAtCursorPosition(caretIndex);
         }
 
         if (ExternalLinkLauncher.CreateMenuItem(possibleURL) is MenuItem urlMi)
@@ -272,7 +272,7 @@ public partial class EditTextWindow
 
     private void OpenRecentEditWindowExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string currentText = PassedTextControl.Text;
+        string currentText = Session.Text;
 
         HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
 
@@ -427,7 +427,7 @@ public partial class EditTextWindow
             MenuItem menuItem = new() { Tag = history.ID };
             menuItem.Click += RecentTextHistoryMenuItem_Click;
 
-            if (PassedTextControl.Text == history.TextContent)
+            if (Session.Text == history.TextContent)
                 menuItem.IsEnabled = false;
 
             string snippet = history.TextContent.Trim().Replace("\t", " ").MakeStringSingleLine().Truncate(40);
@@ -458,10 +458,10 @@ public partial class EditTextWindow
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
+        if (string.IsNullOrWhiteSpace(Session.Text))
         {
             ResetSpreadsheetUndoHistory();
-            PassedTextControl.Text = selectedHistory.TextContent;
+            Session.Text = selectedHistory.TextContent;
             tableDocument = EditTextTableDocument.TryDeserialize(selectedHistory.EditTextTableDocumentJson);
             editorMode = selectedHistory.EditorMode;
             SetEditorMode(editorMode);
