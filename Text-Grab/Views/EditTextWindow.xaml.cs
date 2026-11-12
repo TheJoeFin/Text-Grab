@@ -167,7 +167,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (isEncoded)
             ReadEncodedString(possiblyEncodedString);
         else
-            PassedTextControl.Text = possiblyEncodedString;
+            Session.Text = possiblyEncodedString;
 
         LaunchedFromNotification = true;
     }
@@ -177,7 +177,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         InitializeComponent();
         App.SetTheme();
 
-        PassedTextControl.Text = historyInfo.TextContent;
+        Session.Text = historyInfo.TextContent;
         editorMode = historyInfo.EditorMode;
         tableDocument = EditTextTableDocument.TryDeserialize(historyInfo.EditTextTableDocumentJson);
 
@@ -266,7 +266,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public void AddCharsToEditTextWindow(string stringToAdd, SpotInLine spotInLine)
     {
-        PassedTextControl.Text = PassedTextControl.Text.AddCharsToEachLine(stringToAdd, spotInLine);
+        Session.Text = Session.Text.AddCharsToEachLine(stringToAdd, spotInLine);
     }
 
     public void JoinLinesInEditTextWindow(string joiningText, bool trimLineBeforeJoining, string textAtBeginning = "", string textAtEnd = "")
@@ -276,7 +276,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public void AddThisText(string textToAdd)
     {
-        PassedTextControl.AppendText(textToAdd);
+        Session.AppendText(textToAdd);
     }
 
     public System.Windows.Controls.TextBox GetMainTextBox()
@@ -288,7 +288,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
-        PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
+        Session.Text = Session.Text.RemoveFromEachLine(numberOfChars, spotInLine);
     }
 
     private void LanguagePicker_LanguageChanged(object sender, RoutedEventArgs e)
@@ -398,7 +398,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 SyncSpreadsheetDocumentFromTable();
 
             if (!deferMarkdownLoad)
-                LoadMarkdownDocumentFromText(PassedTextControl.Text);
+                LoadMarkdownDocumentFromText(Session.Text);
 
             SpreadsheetDataGrid.Visibility = Visibility.Collapsed;
             PassedTextControl.Visibility = Visibility.Collapsed;
@@ -505,7 +505,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             LanguageTag = LanguageUtilities.GetCurrentInputLanguage().LanguageTag,
             LanguageKind = LanguageKind.Global,
             CaptureDateTime = DateTimeOffset.Now,
-            TextContent = PassedTextControl.Text,
+            TextContent = Session.Text,
             SourceMode = TextGrabMode.EditText,
             CalcPaneWidth = calcPaneWidth,
             HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true,
@@ -521,7 +521,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
     {
-        PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
+        Session.Text = Session.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
     }
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
@@ -537,11 +537,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (AppUtilities.TextGrabSettings.EtwNormalizeLineEndingsOnPaste)
             textToAdd = NormalizeLineEndings(textToAdd);
 
-        PassedTextControl.SelectedText = textToAdd;
-        int currentSelectionIndex = PassedTextControl.SelectionStart;
-        int currentSelectionLength = PassedTextControl.SelectionLength;
+        Session.ReplaceSelection(textToAdd);
+        int currentSelectionIndex = Session.Selection.Start;
+        int currentSelectionLength = Session.Selection.Length;
 
-        PassedTextControl.Select(currentSelectionIndex + currentSelectionLength, 0);
+        Session.Selection = new TextSpan(currentSelectionIndex + currentSelectionLength, 0);
     }
 
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
@@ -549,7 +549,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         AddOrRemoveWindow addRemoveWindow = new()
         {
             Owner = this,
-            SelectedTextFromEditTextWindow = PassedTextControl.SelectedText
+            SelectedTextFromEditTextWindow = Session.SelectedText
         };
         addRemoveWindow.ShowDialog();
     }
@@ -586,10 +586,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Spreadsheet)
             return GetSpreadsheetSelectedText().Trim();
 
-        string possibleURL = PassedTextControl.SelectedText;
+        string possibleURL = Session.SelectedText;
 
         if (string.IsNullOrEmpty(possibleURL))
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+            possibleURL = Session.Text.GetWordAtCursorPosition(Session.Selection.Start);
 
         return possibleURL;
     }
@@ -632,7 +632,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         Keyboard.Focus(PassedTextControl);
         PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
-        PassedTextControl.SelectedText = " ";
+        Session.ReplaceSelection(" ");
         if (BottomBarButtons.Children.Count > 0
             && BottomBarButtons.Children[0] is CollapsibleButton collapsibleButton)
             collapsibleButton.Focus();
@@ -700,14 +700,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
     {
-        string clipboardText = PassedTextControl.Text;
+        string clipboardText = Session.Text;
         try { System.Windows.Clipboard.SetDataObject(clipboardText, true); } catch { }
         this.Close();
     }
 
     private async void CopyClosePasteBTN_Click(object sender, RoutedEventArgs e)
     {
-        string clipboardText = PassedTextControl.Text;
+        string clipboardText = Session.Text;
         try { System.Windows.Clipboard.SetDataObject(clipboardText, true); } catch { }
         this.Close();
         await WindowUtilities.TryInsertString(clipboardText);
@@ -715,17 +715,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selectionToDelete = PassedTextControl.SelectedText;
+        string selectionToDelete = Session.SelectedText;
 
-        PassedTextControl.Text = PassedTextControl.Text.RemoveAllInstancesOf(selectionToDelete);
+        Session.Text = Session.Text.RemoveAllInstancesOf(selectionToDelete);
     }
 
     private void DeleteAllSelectionPatternExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selectionToDelete = PassedTextControl.SelectedText;
+        string selectionToDelete = Session.SelectedText;
         string Pattern = selectionToDelete.ExtractSimplePattern();
-        MatchCollection Matches = Regex.Matches(PassedTextControl.Text, Pattern, RegexOptions.Multiline);
-        StringBuilder sb = new(PassedTextControl.Text);
+        MatchCollection Matches = Regex.Matches(Session.Text, Pattern, RegexOptions.Multiline);
+        StringBuilder sb = new(Session.Text);
         for (int i = Matches.Count - 1; i >= 0; i--)
         {
             Match match = Matches[i];
@@ -733,12 +733,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             sb.Remove(match.Index, match.Length);
         }
 
-        PassedTextControl.Text = sb.ToString();
+        Session.Text = sb.ToString();
     }
 
     private void DeleteSelectedTextMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        PassedTextControl.SelectedText = String.Empty;
+        Session.ReplaceSelection(String.Empty);
     }
 
     private void EditTextWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -802,15 +802,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
-    public string GetSelectedTextOrAllText()
-    {
-        string textToModify;
-        if (PassedTextControl.SelectionLength == 0)
-            textToModify = PassedTextControl.Text;
-        else
-            textToModify = PassedTextControl.SelectedText;
-        return textToModify;
-    }
+    public string GetSelectedTextOrAllText() => Session.GetSelectedTextOrAllText();
 
     internal IEnumerable<string> GetSelectedOrAllTextSegmentsForPreview()
     {
@@ -830,15 +822,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return [GetSelectedTextOrAllText()];
     }
 
-    private void ReplaceSelectedTextOrAllText(string updatedText)
-    {
-        ArgumentNullException.ThrowIfNull(updatedText);
-
-        if (PassedTextControl.SelectionLength == 0)
-            PassedTextControl.Text = updatedText;
-        else
-            PassedTextControl.SelectedText = updatedText;
-    }
+    private void ReplaceSelectedTextOrAllText(string updatedText) => Session.ReplaceSelectedTextOrAllText(updatedText);
 
     private void ApplySelectedTextOrAllTextTransform(Func<string, string> transform)
     {
@@ -958,13 +942,13 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string[] splitString = PassedTextControl.Text.Split([Environment.NewLine], StringSplitOptions.None);
-        string selectionText = PassedTextControl.SelectedText;
-        int initialSelectionStart = PassedTextControl.SelectionStart;
-        int selectionPositionInLine = PassedTextControl.SelectionStart;
+        string[] splitString = Session.Text.Split([Environment.NewLine], StringSplitOptions.None);
+        string selectionText = Session.SelectedText;
+        int initialSelectionStart = Session.Selection.Start;
+        int selectionPositionInLine = Session.Selection.Start;
         for (int i = initialSelectionStart; i >= 0; i--)
         {
-            if (PassedTextControl.Text[i] is '\n'
+            if (Session.Text[i] is '\n'
                 or '\r')
             {
                 selectionPositionInLine = initialSelectionStart - i - 1;
@@ -972,7 +956,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
         }
 
-        int selectionLength = PassedTextControl.SelectionLength;
+        int selectionLength = Session.Selection.Length;
 
         if (string.IsNullOrEmpty(splitString.Last()))
             splitString = [.. splitString.SkipLast(1)];
@@ -998,7 +982,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             sb.Append(Environment.NewLine);
         }
 
-        PassedTextControl.Text = sb.ToString();
+        Session.Text = sb.ToString();
     }
 
     private void InsertSelectionOnEveryLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1006,10 +990,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Operates on absolute character positions within the flat document text, which
         // has no meaningful equivalent in Spreadsheet mode, so keep it disabled there.
         if (editorMode == EtwEditorMode.Spreadsheet
-            || string.IsNullOrEmpty(PassedTextControl.SelectedText)
-            || PassedTextControl.SelectedText.Contains(Environment.NewLine)
-            || PassedTextControl.SelectedText.Contains('\r')
-            || PassedTextControl.SelectedText.Contains('\n'))
+            || string.IsNullOrEmpty(Session.SelectedText)
+            || Session.SelectedText.Contains(Environment.NewLine)
+            || Session.SelectedText.Contains('\r')
+            || Session.SelectedText.Contains('\n'))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -1020,7 +1004,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Isolate/Delete-All-Instances act on the flat document text, which has no
         // meaningful per-cell equivalent in Spreadsheet mode, so keep them disabled there.
         e.CanExecute = editorMode != EtwEditorMode.Spreadsheet
-            && !string.IsNullOrEmpty(PassedTextControl.SelectedText);
+            && !string.IsNullOrEmpty(Session.SelectedText);
     }
 
     private void CanSearchSelectionExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -1030,34 +1014,34 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(PassedTextControl.SelectedText))
-            PassedTextControl.Text = PassedTextControl.SelectedText;
+        if (!string.IsNullOrEmpty(Session.SelectedText))
+            Session.Text = Session.SelectedText;
     }
 
     private async void GoogleSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
     }
 
     private async void BingSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
     }
 
     private async void DuckDuckGoSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
     }
 
     private async void GitHubSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://github.com/search?q={searchStringUrlSafe}")));
     }
@@ -1104,11 +1088,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
 
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.StringFromWindow = Session.Text;
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.Show();
 
-        string selectedText = IsSpreadsheetMode ? GetSpreadsheetSelectedText() : PassedTextControl.SelectedText;
+        string selectedText = IsSpreadsheetMode ? GetSpreadsheetSelectedText() : Session.SelectedText;
 
         if (selectedText.Length > 0)
         {
@@ -1184,28 +1168,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void AddedLineAboveCommand(object sender, ExecutedRoutedEventArgs e)
     {
-        int replaceCaret = PassedTextControl.CaretIndex + Environment.NewLine.Length;
-        int selectionLength = PassedTextControl.SelectionLength;
+        int replaceCaret = Session.Selection.Start + Environment.NewLine.Length;
+        int selectionLength = Session.Selection.Length;
 
         SelectLine();
-        string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = $"{Environment.NewLine}{lineText}";
-        PassedTextControl.Select(replaceCaret, selectionLength);
+        string lineText = Session.SelectedText;
+        Session.ReplaceSelection($"{Environment.NewLine}{lineText}");
+        Session.Selection = new TextSpan(replaceCaret, selectionLength);
     }
 
     private void DuplicateSelectedLine(object sender, ExecutedRoutedEventArgs e)
     {
-        int replaceCaret = PassedTextControl.CaretIndex;
-        int selectionLength = PassedTextControl.SelectionLength;
+        int replaceCaret = Session.Selection.Start;
+        int selectionLength = Session.Selection.Length;
         SelectLine();
-        string lineText = PassedTextControl.SelectedText;
+        string lineText = Session.SelectedText;
         bool lineEndsInNewLine = lineText.EndsWithNewline();
-        PassedTextControl.SelectedText = $"{lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{lineText}";
+        Session.ReplaceSelection($"{lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{lineText}");
         int length = lineText.Length;
         if (!lineEndsInNewLine)
             length += Environment.NewLine.Length;
 
-        PassedTextControl.Select(replaceCaret + length, selectionLength);
+        Session.Selection = new TextSpan(replaceCaret + length, selectionLength);
     }
 
     private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
@@ -1221,15 +1205,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         SelectLine(sender, e);
 
-        string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = "";
-        string textBoxText = PassedTextControl.Text;
-        int selectionIndex = PassedTextControl.SelectionStart;
+        string lineText = Session.SelectedText;
+        Session.ReplaceSelection("");
+        string textBoxText = Session.Text;
+        int selectionIndex = Session.Selection.Start;
         int indexOfNextNewline = textBoxText.Length;
 
-        if (!PassedTextControl.Text.EndsWith(Environment.NewLine))
+        if (!Session.Text.EndsWith(Environment.NewLine))
         {
-            PassedTextControl.Text += Environment.NewLine;
+            Session.Text += Environment.NewLine;
         }
 
         IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
@@ -1244,8 +1228,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
         }
 
-        PassedTextControl.Select(indexOfNextNewline, 0);
-        PassedTextControl.SelectedText = lineText;
+        Session.ReplaceRange(new TextSpan(indexOfNextNewline, 0), lineText);
     }
 
     private void MoveLineDownMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1256,10 +1239,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void MoveLineUp(object? sender, ExecutedRoutedEventArgs? e)
     {
         SelectLine(sender, e);
-        string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = "";
-        string textBoxText = PassedTextControl.Text;
-        int selectionIndex = PassedTextControl.SelectionStart;
+        string lineText = Session.SelectedText;
+        Session.ReplaceSelection("");
+        string textBoxText = Session.Text;
+        int selectionIndex = Session.Selection.Start;
         int indexOfPreviousNewline = 0;
 
         IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
@@ -1271,8 +1254,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 indexOfPreviousNewline = newLineEnd;
         }
 
-        PassedTextControl.Select(indexOfPreviousNewline, 0);
-        PassedTextControl.SelectedText = lineText;
+        Session.ReplaceRange(new TextSpan(indexOfPreviousNewline, 0), lineText);
     }
 
     private void MoveLineUpMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1314,7 +1296,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
         EditTextWindow newEtwWithText = CreateSelectionWindow(selectedText, EtwEditorMode.Text);
         newEtwWithText.Show();
     }
@@ -1341,7 +1323,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         PassedTextControl.ContextMenu = baseContextMenu;
 
-        int caretIndex = PassedTextControl.CaretIndex;
+        int caretIndex = Session.Selection.Start;
 
         AddPossibleSpellingErrorsToRightClickMenu(caretIndex);
 
@@ -1424,7 +1406,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// </summary>
     private void ApplySpellCheckMode()
     {
-        bool shouldSpellCheck = ShouldEnableSpellCheck(spellCheckMode, PassedTextControl.Text);
+        bool shouldSpellCheck = ShouldEnableSpellCheck(spellCheckMode, Session.Text);
 
         if (SpellCheck.GetIsEnabled(PassedTextControl) != shouldSpellCheck)
             SpellCheck.SetIsEnabled(PassedTextControl, shouldSpellCheck);
@@ -1636,18 +1618,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
             byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
             string copiedText = Encoding.UTF8.GetString(encodedBytes);
-            PassedTextControl.Text = copiedText;
+            Session.Text = copiedText;
         }
         catch (Exception ex)
         {
-            PassedTextControl.Text = rawEncodedString;
-            PassedTextControl.Text += ex.Message;
+            Session.Text = rawEncodedString;
+            Session.Text += ex.Message;
         }
     }
 
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
     {
-        PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+        Session.Text = Session.Text.RemoveDuplicateLines();
     }
 
     private void ShuffleLinesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1737,7 +1719,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     /// <summary>
-    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>PassedTextControl.Text</c> out
+    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>Session.Text</c> out
     /// to whichever editor is showing, the same way <see cref="PassedTextControl_TextChanged"/> does.
     /// Used by anything that writes straight into the raw text box while another editor is active —
     /// streamed audio transcription, most of all. A no-op in raw-text mode.
@@ -1942,7 +1924,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Spreadsheet mode has its own cell-aware "Split Cells" feature
         // (SplitSelectedSpreadsheetCells); this flat-text version doesn't apply there.
         if (editorMode == EtwEditorMode.Spreadsheet
-            || string.IsNullOrEmpty(PassedTextControl.SelectedText))
+            || string.IsNullOrEmpty(Session.SelectedText))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -1950,7 +1932,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void SplitOnSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
 
         if (string.IsNullOrEmpty(selectedText))
         {
@@ -1963,16 +1945,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        StringBuilder textToManipulate = new(PassedTextControl.Text);
+        StringBuilder textToManipulate = new(Session.Text);
 
         textToManipulate = textToManipulate.Replace(selectedText, Environment.NewLine + selectedText);
 
-        PassedTextControl.Text = textToManipulate.ToString();
+        Session.Text = textToManipulate.ToString();
     }
 
     private async void SplitAfterSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
 
         if (string.IsNullOrEmpty(selectedText))
         {
@@ -1985,11 +1967,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        StringBuilder textToManipulate = new(PassedTextControl.Text);
+        StringBuilder textToManipulate = new(Session.Text);
 
         textToManipulate = textToManipulate.Replace(selectedText, selectedText + Environment.NewLine);
 
-        PassedTextControl.Text = textToManipulate.ToString();
+        Session.Text = textToManipulate.ToString();
     }
 
     private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -2036,10 +2018,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 break;
         }
 
-        if (PassedTextControl.SelectionLength == 0)
-            PassedTextControl.Text = textToModify;
+        if (Session.Selection.Length == 0)
+            Session.Text = textToModify;
         else
-            PassedTextControl.SelectedText = textToModify;
+            Session.ReplaceSelection(textToModify);
     }
 
     private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -2057,7 +2039,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        PassedTextControl.Text = PassedTextControl.Text.TrimEachLine();
+        Session.Text = Session.Text.TrimEachLine();
     }
 
     private void CleanUpText_Click(object sender, RoutedEventArgs e)
@@ -2078,20 +2060,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selection = NewlineReturns().Replace(PassedTextControl.SelectedText, Environment.NewLine);
+        string selection = NewlineReturns().Replace(Session.SelectedText, Environment.NewLine);
         string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
-        PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
+        Session.Text = Session.Text.UnstackStrings(numberOfLines);
     }
 
     private void UnstackGroupExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selection = NewlineReturns().Replace(PassedTextControl.SelectedText, Environment.NewLine);
+        string selection = NewlineReturns().Replace(Session.SelectedText, Environment.NewLine);
         string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
-        PassedTextControl.Text = PassedTextControl.Text.UnstackGroups(numberOfLines);
+        Session.Text = Session.Text.UnstackGroups(numberOfLines);
     }
 
     private void Window_Activated(object sender, EventArgs e)
