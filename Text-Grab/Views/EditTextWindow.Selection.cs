@@ -18,6 +18,8 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Core.Editing;
+using Text_Grab.Editing;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -118,10 +120,14 @@ public partial class EditTextWindow
     }
 
     /// <summary>
-    /// Selects the given range of <see cref="PassedTextControl"/>'s raw text in whichever editor is
-    /// currently visible and scrolls it into view. Used by Find &amp; Replace to show the active match,
-    /// since selecting in <see cref="PassedTextControl"/> alone has no visible effect while it is
-    /// hidden behind <see cref="MarkdownEditorControl"/> in markdown mode.
+    /// Selects the given range of the raw text in whichever editor is currently visible and scrolls
+    /// it into view; see <see cref="IEditorSession.SelectInEditor"/>.
+    /// </summary>
+    public void SelectInEditor(int index, int length) => Session.SelectInEditor(new TextSpan(index, length));
+
+    /// <summary>
+    /// <see cref="MarkdownSurface"/>'s half of <see cref="IEditorSession.SelectInEditor"/>: selecting
+    /// in the raw text box alone has no visible effect while it is hidden behind the rendered document.
     /// </summary>
     /// <remarks>
     /// In markdown mode the rendered document's plain text is not the same string as the raw
@@ -130,23 +136,11 @@ public partial class EditTextWindow
     /// index is translated through the offset map built alongside the rendered document
     /// (<see cref="MarkdownFlowDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
     /// </remarks>
-    public void SelectInEditor(int index, int length)
-    {
-        if (editorMode == EtwEditorMode.Markdown)
-        {
-            SelectInMarkdownEditor(index, length);
-            return;
-        }
-
-        PassedTextControl.Select(index, length);
-        PassedTextControl.Focus();
-    }
-
     private void SelectInMarkdownEditor(int index, int length)
     {
         SyncMarkdownTextFromDocument();
-        if (markdownOffsetMapSourceText != PassedTextControl.Text)
-            LoadMarkdownDocumentFromText(PassedTextControl.Text);
+        if (markdownOffsetMapSourceText != Session.Text)
+            LoadMarkdownDocumentFromText(Session.Text);
 
         if (MarkdownEditorControl.Document is not null)
         {
@@ -187,7 +181,7 @@ public partial class EditTextWindow
             return;
         }
 
-        PassedTextControl.SelectAll();
+        Session.Selection = new TextSpan(0, Session.Text.Length);
     }
 
     private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -200,9 +194,9 @@ public partial class EditTextWindow
             return;
         }
 
-        if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
-            || PassedTextControl.SelectedText.Contains('\r')
-            || PassedTextControl.SelectedText.Contains('\n'))
+        if (Session.SelectedText.Contains(Environment.NewLine)
+            || Session.SelectedText.Contains('\r')
+            || Session.SelectedText.Contains('\n'))
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -210,9 +204,9 @@ public partial class EditTextWindow
 
     private void SelectLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        (int lineStart, int lineLength) = PassedTextControl.Text.GetStartAndLengthOfLineAtPosition(PassedTextControl.SelectionStart);
+        (int lineStart, int lineLength) = Session.Text.GetStartAndLengthOfLineAtPosition(Session.Selection.Start);
 
-        PassedTextControl.Select(lineStart, lineLength);
+        Session.Selection = new TextSpan(lineStart, lineLength);
     }
 
     private void SelectLineMenuItem_Click(object sender, RoutedEventArgs e)
@@ -225,7 +219,7 @@ public partial class EditTextWindow
         if (!IsLoaded)
             return;
 
-        PassedTextControl.Select(0, 0);
+        Session.Selection = new TextSpan(0, 0);
     }
 
     private void SelectWord(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -233,9 +227,9 @@ public partial class EditTextWindow
         if (TrySelectSpreadsheetWord())
             return;
 
-        (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(PassedTextControl.CaretIndex);
+        (int wordStart, int wordLength) = Session.Text.CursorWordBoundaries(Session.Selection.Start);
 
-        PassedTextControl.Select(wordStart, wordLength);
+        Session.Selection = new TextSpan(wordStart, wordLength);
     }
 
     private void SelectWordMenuItem_Click(object sender, RoutedEventArgs e)
@@ -303,11 +297,13 @@ public partial class EditTextWindow
 
         char[] delimiters = [' ', '\r', '\n'];
 
-        if (PassedTextControl.SelectionLength < 1)
+        // Line and column come from the text box's layout (wrapped lines count), so they stay on the control.
+        TextSpan selection = Session.Selection;
+        if (selection.Length < 1)
         {
-            int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
-            int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
-            int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
+            int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(selection.Start);
+            int columnNumber = selection.Start - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
+            int words = Session.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
             string text = DefaultSettings.EtwShowWordCount
                 ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}"
@@ -323,9 +319,9 @@ public partial class EditTextWindow
         }
         else
         {
-            int selectionStartIndex = PassedTextControl.SelectionStart;
-            int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
-            int words = PassedTextControl.Text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
+            int selectionStartIndex = selection.Start;
+            int selectionStopIndex = selection.End;
+            int words = Session.Text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
 
             int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
 
@@ -338,7 +334,7 @@ public partial class EditTextWindow
             int selStartCol = selectionStartIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStartLine);
             int selStopLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStopIndex); ;
             int selStopCol = selectionStopIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStopLine); ;
-            int selLength = PassedTextControl.SelectionLength;
+            int selLength = selection.Length;
             int numbOfSelectedLines = selStopLine - selStartLine;
 
             if (numbOfSelectedLines > 0)
@@ -359,7 +355,7 @@ public partial class EditTextWindow
             return;
         }
 
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
 
         if (string.IsNullOrEmpty(selectedText))
         {
@@ -395,7 +391,7 @@ public partial class EditTextWindow
         // Show match count
         if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
         {
-            int matchCount = StringMethods.CountMatches(PassedTextControl.Text, selectedText);
+            int matchCount = StringMethods.CountMatches(Session.Text, selectedText);
             if (MatchCountButton.Content is TextBlock matchButton)
             {
                 matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
@@ -418,7 +414,7 @@ public partial class EditTextWindow
             }
 
             string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-            int similarCount = StringMethods.CountRegexMatches(PassedTextControl.Text, regexPattern);
+            int similarCount = StringMethods.CountRegexMatches(Session.Text, regexPattern);
             if (SimilarMatchesButton.Content is TextBlock similarButton)
             {
                 similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
@@ -480,7 +476,7 @@ public partial class EditTextWindow
 
     private void SimilarMatchesButton_Click(object sender, RoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
         if (string.IsNullOrEmpty(selectedText))
             return;
 
@@ -498,14 +494,14 @@ public partial class EditTextWindow
         // Launch Find and Replace with regex enabled and execute search
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.StringFromWindow = Session.Text;
         findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
         findAndReplaceWindow.Show();
     }
 
     private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
         if (string.IsNullOrEmpty(selectedText))
             return;
 
@@ -523,7 +519,7 @@ public partial class EditTextWindow
         // Launch Find and Replace with regex enabled and execute search
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.StringFromWindow = Session.Text;
         findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
         findAndReplaceWindow.Show();
     }
@@ -592,7 +588,7 @@ public partial class EditTextWindow
 
     private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
 
         if (string.IsNullOrEmpty(selectedText))
             return;
@@ -682,7 +678,7 @@ public partial class EditTextWindow
         FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
         findWindow.SetFindText(storedPattern.Pattern, useRegex: true);
         findWindow.TextEditWindow = this;
-        findWindow.StringFromWindow = PassedTextControl.Text;
+        findWindow.StringFromWindow = Session.Text;
         findWindow.SearchForText();
         findWindow.Show();
     }
