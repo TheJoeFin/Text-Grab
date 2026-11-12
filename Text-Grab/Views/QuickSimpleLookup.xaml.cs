@@ -688,7 +688,7 @@ public partial class QuickSimpleLookup : Wpf.Ui.Controls.FluentWindow
         if (EditWindowToggleButton.IsChecked is true)
         {
             EditTextWindow etw = WindowUtilities.OpenOrActivateWindow<EditTextWindow>();
-            etw.PassedTextControl.Text = stringBuilder.ToString();
+            etw.Session.Text = stringBuilder.ToString();
             etw.Show();
         }
 
