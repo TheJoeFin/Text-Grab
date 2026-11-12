@@ -1960,45 +1960,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (editorMode == EtwEditorMode.Spreadsheet)
         {
+            // Each cell is detected on its own and nothing is remembered between presses.
             CaseStatusOfToggle = CurrentCase.Unknown;
             ApplySelectedTextOrAllTextTransform(text =>
-            {
-                CurrentCase caseStatus = StringMethods.DetermineToggleCase(text);
-                return caseStatus switch
-                {
-                    CurrentCase.Lower => selectedCultureInfo.TextInfo.ToLower(text),
-                    CurrentCase.Camel => selectedCultureInfo.TextInfo.ToTitleCase(text),
-                    CurrentCase.Upper => selectedCultureInfo.TextInfo.ToUpper(text),
-                    _ => text,
-                };
-            });
+                StringMethods.ToggleCase(text, CurrentCase.Unknown, selectedCultureInfo).Result);
             return;
         }
 
         string textToModify = GetSelectedTextOrAllText();
 
-        if (CaseStatusOfToggle == CurrentCase.Unknown)
-            CaseStatusOfToggle = StringMethods.DetermineToggleCase(textToModify);
-
-        TextInfo currentTI = selectedCultureInfo.TextInfo;
-
-        switch (CaseStatusOfToggle)
-        {
-            case CurrentCase.Lower:
-                textToModify = currentTI.ToLower(textToModify);
-                CaseStatusOfToggle = CurrentCase.Camel;
-                break;
-            case CurrentCase.Camel:
-                textToModify = currentTI.ToTitleCase(textToModify);
-                CaseStatusOfToggle = CurrentCase.Upper;
-                break;
-            case CurrentCase.Upper:
-                textToModify = currentTI.ToUpper(textToModify);
-                CaseStatusOfToggle = CurrentCase.Lower;
-                break;
-            default:
-                break;
-        }
+        (textToModify, CaseStatusOfToggle) = StringMethods.ToggleCase(textToModify, CaseStatusOfToggle, selectedCultureInfo);
 
         if (Session.Selection.Length == 0)
             Session.Text = textToModify;

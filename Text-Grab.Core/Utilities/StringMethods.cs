@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -452,6 +453,33 @@ public static partial class StringMethods
             return CurrentCase.Lower;
 
         return CurrentCase.Camel;
+    }
+
+    /// <summary>
+    /// One press of Toggle Case. When <paramref name="state"/> is <see cref="CurrentCase.Unknown"/>
+    /// it is first detected from <paramref name="text"/> with <see cref="DetermineToggleCase"/>. The
+    /// case the state names is applied (<see cref="CurrentCase.Camel"/> is title case), and the next
+    /// state in the cycle lower → title → upper → lower is returned for the caller to keep. So the
+    /// first press re-applies the case the text already has, and later presses change it.
+    /// Whitespace-only text is returned unchanged with <see cref="CurrentCase.Unknown"/>.
+    /// </summary>
+    public static (string Result, CurrentCase Next) ToggleCase(string text, CurrentCase state, CultureInfo culture)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(culture);
+
+        if (state == CurrentCase.Unknown)
+            state = DetermineToggleCase(text);
+
+        TextInfo textInfo = culture.TextInfo;
+
+        return state switch
+        {
+            CurrentCase.Lower => (textInfo.ToLower(text), CurrentCase.Camel),
+            CurrentCase.Camel => (textInfo.ToTitleCase(text), CurrentCase.Upper),
+            CurrentCase.Upper => (textInfo.ToUpper(text), CurrentCase.Lower),
+            _ => (text, state),
+        };
     }
 
     public enum CharType { Letter, Number, Space, Special, Other };
