@@ -21,6 +21,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
+using Text_Grab.Core.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Pages;
@@ -153,7 +154,7 @@ public partial class EditTextWindow
 
             // The transcript was streamed into the raw text box, so the active editor is what needs
             // updating. Syncing the other way (as this used to) pushed the markdown document / table
-            // back over PassedTextControl.Text, round-tripping the whole transcript through the
+            // back over Session.Text, round-tripping the whole transcript through the
             // serializer for nothing.
             SyncActiveEditorFromText();
         }
@@ -204,12 +205,12 @@ public partial class EditTextWindow
     /// </summary>
     private void EnsureTranscriptionInsertionPoint()
     {
-        string existingText = PassedTextControl.Text;
+        string existingText = Session.Text;
         if (!string.IsNullOrEmpty(existingText) && existingText[^1] is not '\n' and not '\r')
-            PassedTextControl.AppendText(Environment.NewLine);
+            Session.AppendText(Environment.NewLine);
 
-        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
-        PassedTextControl.ScrollToEnd();
+        Session.Selection = new TextSpan(Session.Text.Length, 0);
+        Session.ScrollToEnd();
     }
 
     /// <summary>
@@ -221,9 +222,9 @@ public partial class EditTextWindow
         if (string.IsNullOrEmpty(text))
             return;
 
-        PassedTextControl.AppendText(text);
-        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
-        PassedTextControl.ScrollToEnd();
+        Session.AppendText(text);
+        Session.Selection = new TextSpan(Session.Text.Length, 0);
+        Session.ScrollToEnd();
     }
 
     /// <summary>
@@ -235,8 +236,8 @@ public partial class EditTextWindow
         if (string.IsNullOrEmpty(text))
             return;
 
-        string existingText = PassedTextControl.Text;
-        if (!string.IsNullOrEmpty(existingText) && PassedTextControl.SelectionStart == existingText.Length)
+        string existingText = Session.Text;
+        if (!string.IsNullOrEmpty(existingText) && Session.Selection.Start == existingText.Length)
         {
             char lastChar = existingText[^1];
             if (separateWithSpace)
@@ -555,7 +556,7 @@ public partial class EditTextWindow
                 return;
 
             // Insert at the end of the document, separating phrases with a single space.
-            PassedTextControl.Select(PassedTextControl.Text.Length, 0);
+            Session.Selection = new TextSpan(Session.Text.Length, 0);
             InsertTranscribedText(phrase, separateWithSpace: true);
         });
     }
