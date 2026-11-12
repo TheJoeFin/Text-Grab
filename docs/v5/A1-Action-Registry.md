@@ -109,6 +109,32 @@ All three test executables pass. `TierBoundaryTests` passes. The existing `EditT
 - Do not "improve" a transform while wrapping it. If one looks buggy, note it in the report.
 - Display names are user-facing strings users already know. Copy them; do not rewrite them.
 
+## A1 outcome (2026-11-11, branch `v5/a1-action-registry`, last code commit 96e59be)
+
+Branched from `v5/e1b-editor-session` @ `a90dc0a`, not `dev`. E1 is not merged into `dev` yet, and steps 4–5 edit code that E1 moved into new places.
+
+**What was built, and how it differs from the sketch:**
+
+- `Text_Grab.Core.Actions` in Core: `ActionKind`, `ActionCategory`, `ActionDescriptor` and `ITextTransform` as designed; `IActionRegistry` as designed, with `[MaybeNullWhen(false)]` on `TryGet`. `ActionRegistry` is thread-safe and lists actions in registration order. It compares IDs ordinally, rejects IDs that do not match `textgrab.<area>.<verb>` (three parts, lower camel case), rejects blank display names, and throws `ArgumentException` on a duplicate ID.
+- `ITextTransform`'s remarks set the contract: current culture; JSON config read case-insensitively; failure by exception (`ArgumentException` for bad config, `InvalidOperationException` with a user-facing message when the transform cannot produce a result, `OperationCanceledException`), never error text returned as a result.
+- `DelegateTextTransform` (no config) and `DelegateTextTransform<TConfig>` (config record). An internal `ActionConfig` reader applies the same rules to every action: property names in any case, enums by name or number, unknown properties ignored, and a missing or null required value or a wrong JSON type is an `ArgumentException`.
+- `CoreActions.RegisterAll` registers 13 transforms and `WindowsActions.RegisterAll` (Core.Windows) registers 6 AI actions; see appendix A. `AppServices` registers one `IActionRegistry` filled from both.
+- Clean Up Text is registered with the config transforms (step 7), not in step 3, because it takes `CorrectToLatin`.
+- `DefaultGesture` is set only on Replace Reserved Characters (`Ctrl+R`): its gesture runs the same handler as the menu item. Unstack's `Ctrl+U` belongs to E2's selection-driven command.
+- Step 6: `ApplyTextOnlyTemplate` did not move. It resolves pattern placeholders through the app's settings service, and templates load through the app-side `GrabTemplateManager`, so there is no headless way to load a template. No apply-template transform is registered.
+- Step 7: pattern extraction takes a regex, not a saved-pattern ID, for the same reason: saved patterns only load app-side. A `PatternId` can be added to `ApplyPatternConfig` later without breaking stored config.
+- Step 8: Rewrite and Convert to Table are descriptors only, because their services return `"ERROR: …"` as the text. Meeting notes is registered too (the plan points at `WinAiMeetingNotes`, and it is an Edit Text Window menu item).
+- New display names: "Apply Pattern" and "Apply Smart Pattern" (no existing string fits). The config-driven unstack transforms keep the menu's "(Select Top Row)" / "(Select First Column)" text, which reads oddly outside the window. Display names are not persisted, so either can change cheaply.
+
+**Found while wrapping, not changed:**
+
+- Toggle Case's first press re-applies the case it detects, so all-lower or all-upper text does not visibly change until the second press. Title case leaves an all-capitals word unchanged, and in Spreadsheet mode toggle case never changes an all-lower or all-upper cell.
+- Rewrite and Convert to Table put `"ERROR: …"` into the document when Windows AI fails.
+- `PatternExecutor` returns an empty string for an invalid regex, so Apply Pattern with a bad regex produces empty output rather than an error.
+- `WindowsAiUtilities.SummarizeParagraph` takes no cancellation token.
+
+**Tests:** Tests.Core: `ActionRegistryTests`, `CoreActionsTests` (pinned IDs), `DelegateTextTransformTests`, `CoreTextTransformTests` and `CoreConfigTransformTests` (each transform against the function it wraps), `ToggleCaseTests`, `SplitOnSelectionTests`. Tests.Core.Windows: `WindowsActionsTests` (pinned IDs; the unavailable-device paths). Tests: `EditTextWindowToggleCaseTests` (9) and `EditTextWindowSplitOnSelectionTests` (7), written and passing against the old code first; a registry case in `AppServicesTests`; `ActionIconKeyTests`.
+
 ## Appendix — action inventory
 
 Built in step 1 from `EditTextWindow.xaml` (menus and the selection context menu), `ButtonInfo.AllButtons`, `PostGrabActionManager`, `StringMethods` and the Windows AI utilities.
