@@ -71,6 +71,41 @@ public class EditorSessionSyncTests
     }
 
     [WpfFact]
+    public void ApplyEditFromCodeEditor_ReplacesOnlyTheEditedRangeAndIsNotPushedBack()
+    {
+        Harness harness = new("int x = 1;");
+        harness.Mode = EtwEditorMode.Code;
+        List<bool> flaggedDuringChange = [];
+        harness.Session.TextChanged += (_, _) =>
+        {
+            flaggedDuringChange.Add(harness.Session.IsSyncingTextFromCode);
+            harness.Session.SyncEditorFromText(EtwEditorMode.Code);
+        };
+
+        harness.Session.ApplyEditFromCodeEditor(new TextEdit(new TextSpan(8, 1), "42"));
+
+        Assert.Equal("int x = 42;", harness.Session.Text);
+        Assert.Equal(new TextSpan(10, 0), harness.Session.Selection);
+        Assert.Equal([true], flaggedDuringChange);
+        Assert.Empty(harness.Code.Loaded);
+        Assert.False(harness.Session.IsSyncingTextFromCode);
+    }
+
+    [WpfFact]
+    public void SetTextFromEditor_SkipsTheCodeEditorsTextWhenItAlreadyMatches()
+    {
+        Harness harness = new("same");
+        int changes = 0;
+        harness.Session.TextChanged += (_, _) => changes++;
+
+        harness.Session.SetTextFromEditor(EtwEditorMode.Code, "same");
+        harness.Session.SetTextFromEditor(EtwEditorMode.Code, "different");
+
+        Assert.Equal("different", harness.Session.Text);
+        Assert.Equal(1, changes);
+    }
+
+    [WpfFact]
     public void SyncActiveEditorFromText_PushesTheTextIntoTheVisibleEditorOnly()
     {
         Harness harness = new("raw");
@@ -89,7 +124,7 @@ public class EditorSessionSyncTests
         {
             TextBox textBox = new() { Text = text };
             TextBoxSurface textSurface = new(textBox);
-            Session = new EditorSession(textSurface, Markdown, Spreadsheet, () => Mode);
+            Session = new EditorSession(textSurface, Markdown, Spreadsheet, Code, () => Mode);
         }
 
         public EtwEditorMode Mode { get; set; } = EtwEditorMode.Text;
@@ -97,6 +132,8 @@ public class EditorSessionSyncTests
         public FakeSurface Markdown { get; } = new(EtwEditorMode.Markdown);
 
         public FakeSurface Spreadsheet { get; } = new(EtwEditorMode.Spreadsheet);
+
+        public FakeSurface Code { get; } = new(EtwEditorMode.Code);
 
         public EditorSession Session { get; }
     }

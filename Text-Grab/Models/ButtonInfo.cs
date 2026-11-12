@@ -669,6 +669,13 @@ public class ButtonInfo
         },
         new()
         {
+            OrderNumber = 6.99,
+            ButtonText = "Enter Code Mode",
+            ClickEvent = "EnterCodeMode_Click",
+            SymbolIcon = SymbolRegular.Code24
+        },
+        new()
+        {
             OrderNumber = 7.1,
             ButtonText = "Toggle Show Calc Errors",
             ClickEvent = "ToggleShowMathErrors_Click",

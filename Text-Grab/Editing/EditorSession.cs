@@ -10,8 +10,10 @@ namespace Text_Grab.Editing;
 /// <remarks>
 /// <para>
 /// The raw text editor holds the document in every mode, so text and selection always go to
-/// <see cref="TextBoxSurface"/>, even while the Markdown or spreadsheet editor is showing.
-/// <see cref="SelectInEditor"/> goes to the surface for the current mode.
+/// <see cref="TextBoxSurface"/>, even while the Markdown, spreadsheet or code editor is showing.
+/// <see cref="SelectInEditor"/> goes to the surface for the current mode. In code mode the window also
+/// mirrors the selection between the code editor and the text box, so selection-based commands see
+/// what the person selected.
 /// </para>
 /// <para>
 /// The Markdown and spreadsheet editors are kept in step with the text in both directions: the
@@ -27,19 +29,23 @@ internal sealed class EditorSession : IEditorSession
     private readonly TextBoxSurface textSurface;
     private readonly IEditorSurface markdownSurface;
     private readonly IEditorSurface spreadsheetSurface;
+    private readonly IEditorSurface codeSurface;
     private readonly Func<EtwEditorMode> getMode;
     private bool isSyncingTextFromSpreadsheet = false;
     private bool isSyncingTextFromMarkdown = false;
+    private bool isSyncingTextFromCode = false;
 
     public EditorSession(
         TextBoxSurface textSurface,
         IEditorSurface markdownSurface,
         IEditorSurface spreadsheetSurface,
+        IEditorSurface codeSurface,
         Func<EtwEditorMode> getMode)
     {
         this.textSurface = textSurface;
         this.markdownSurface = markdownSurface;
         this.spreadsheetSurface = spreadsheetSurface;
+        this.codeSurface = codeSurface;
         this.getMode = getMode;
 
         textSurface.TextChanged += (_, _) => TextChanged?.Invoke(this, EventArgs.Empty);
@@ -89,7 +95,14 @@ internal sealed class EditorSession : IEditorSession
 
     public void SelectInEditor(TextSpan range) => ActiveSurface.SelectAndShow(range);
 
-    public void ScrollToEnd() => textSurface.ScrollToEnd();
+    public void ScrollToEnd()
+    {
+        textSurface.ScrollToEnd();
+
+        // The code editor is the only other editor that shows the text as text; the rest re-render it.
+        if (Mode == EtwEditorMode.Code && codeSurface is CodeSurface code)
+            code.ScrollToEnd();
+    }
 
     /// <summary>Called by the window after it switches editors.</summary>
     internal void RaiseModeChanged() => ModeChanged?.Invoke(this, EventArgs.Empty);
@@ -99,6 +112,35 @@ internal sealed class EditorSession : IEditorSession
 
     /// <summary>True while <see cref="Text"/> is being written from the Markdown editor.</summary>
     internal bool IsSyncingTextFromMarkdown => isSyncingTextFromMarkdown;
+
+    /// <summary>True while <see cref="Text"/> is being written from the code editor.</summary>
+    internal bool IsSyncingTextFromCode => isSyncingTextFromCode;
+
+    /// <summary>True while <see cref="Text"/> is being written from any editor other than the text box.</summary>
+    internal bool IsSyncingTextFromEditor => isSyncingTextFromSpreadsheet || isSyncingTextFromMarkdown || isSyncingTextFromCode;
+
+    /// <summary>
+    /// Applies one edit the code editor just made to its own document to <see cref="Text"/>, with the
+    /// code editor's flag set, and leaves the caret after the inserted text.
+    /// </summary>
+    /// <remarks>
+    /// The code editor holds the same plain text as the text box, so it is synced edit by edit rather
+    /// than by copying the whole document on every keystroke as the other editors are. Copying the whole
+    /// text would also add a whole-text undo unit to the hidden text box per keystroke.
+    /// </remarks>
+    internal void ApplyEditFromCodeEditor(TextEdit edit)
+    {
+        isSyncingTextFromCode = true;
+        try
+        {
+            ReplaceRange(edit.Removed, edit.Inserted);
+            Selection = new TextSpan(edit.Removed.Start + edit.Inserted.Length, 0);
+        }
+        finally
+        {
+            isSyncingTextFromCode = false;
+        }
+    }
 
     /// <summary>
     /// Copies what the visible editor shows into <see cref="Text"/>. A no-op in text mode, where the
@@ -149,8 +191,17 @@ internal sealed class EditorSession : IEditorSession
                 Text = text;
                 isSyncingTextFromMarkdown = false;
                 break;
+            case EtwEditorMode.Code:
+                // Normally already equal: the code editor syncs edit by edit (ApplyEditFromCodeEditor).
+                if (Text == text)
+                    return;
+
+                isSyncingTextFromCode = true;
+                Text = text;
+                isSyncingTextFromCode = false;
+                break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(source), source, "Only the Markdown and spreadsheet editors sync into the text.");
+                throw new ArgumentOutOfRangeException(nameof(source), source, "Only the Markdown, spreadsheet and code editors sync into the text.");
         }
     }
 
@@ -164,9 +215,11 @@ internal sealed class EditorSession : IEditorSession
         {
             case EtwEditorMode.Spreadsheet when isSyncingTextFromSpreadsheet:
             case EtwEditorMode.Markdown when isSyncingTextFromMarkdown:
+            case EtwEditorMode.Code when isSyncingTextFromCode:
                 return;
             case EtwEditorMode.Spreadsheet:
             case EtwEditorMode.Markdown:
+            case EtwEditorMode.Code:
                 SurfaceFor(target).SetText(Text);
                 return;
             default:
@@ -180,6 +233,7 @@ internal sealed class EditorSession : IEditorSession
     {
         EtwEditorMode.Markdown => markdownSurface,
         EtwEditorMode.Spreadsheet => spreadsheetSurface,
+        EtwEditorMode.Code => codeSurface,
         _ => textSurface,
     };
 }
