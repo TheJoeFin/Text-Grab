@@ -156,7 +156,7 @@ public partial class EditTextWindow
             // updating. Syncing the other way (as this used to) pushed the markdown document / table
             // back over Session.Text, round-tripping the whole transcript through the
             // serializer for nothing.
-            SyncActiveEditorFromText();
+            SessionImpl.SyncActiveEditorFromText();
         }
 
         AudioDebugLog.Write($"TranscribeAudioFilesAsync: END (cancelled={cancelled}, error={errorMessage is not null})");
@@ -256,7 +256,7 @@ public partial class EditTextWindow
         // Same as the file path: the phrase went into the raw text box, so the sync has to run in that
         // direction. Pulling from the active editor instead round-tripped every phrase through the
         // markdown/table serializer.
-        SyncActiveEditorFromText();
+        SessionImpl.SyncActiveEditorFromText();
     }
 
     private async Task StopLiveTranscriptionAndCloseAsync()

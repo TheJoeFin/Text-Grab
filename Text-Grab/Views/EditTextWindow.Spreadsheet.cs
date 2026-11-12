@@ -519,23 +519,34 @@ public partial class EditTextWindow
         isApplyingSpreadsheetLayout = false;
     }
 
-    private void RefreshSpreadsheetFromText(bool rebuildTable = true)
+    /// <summary>
+    /// <see cref="Editing.SpreadsheetSurface"/>'s half of syncing the spreadsheet from the text: rebuilds the
+    /// table document (keeping its column widths and row heights) and the grid. The session skips it
+    /// while the text is being written from the spreadsheet.
+    /// </summary>
+    private void RefreshSpreadsheetFromText(string text)
     {
-        if (isSyncingTextFromSpreadsheet)
-            return;
-
         EditTextTableDocument? existingDocument = tableDocument;
         tableDocument = EditTextTableDocument.CreateFromText(
-            Session.Text,
+            text,
             existingDocument?.MinimumRowCount ?? EditTextTableDocument.DefaultMinimumRowCount,
             existingDocument?.MinimumColumnCount ?? EditTextTableDocument.DefaultMinimumColumnCount);
 
         if (existingDocument is not null)
             tableDocument.ApplyViewMetricsFrom(existingDocument);
 
-        if (rebuildTable)
-            RebuildSpreadsheetTable();
+        RebuildSpreadsheetTable();
         UpdateLineAndColumnText();
+    }
+
+    /// <summary>
+    /// <see cref="Editing.SpreadsheetSurface"/>'s half of syncing the text from the spreadsheet: commits the
+    /// grid into the table document and serializes it.
+    /// </summary>
+    private string? GetSpreadsheetTextFromTable()
+    {
+        SyncSpreadsheetDocumentFromTable(writeText: false);
+        return tableDocument?.SerializeToText();
     }
 
     private void SpreadsheetDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
@@ -1711,14 +1722,16 @@ public partial class EditTextWindow
         UpdateLineAndColumnText();
     }
 
+    /// <summary>
+    /// Copies the table document, serialized, into the text. For callers that just changed the
+    /// document themselves, so the grid has nothing newer to commit.
+    /// </summary>
     private void UpdateTextFromSpreadsheetDocument()
     {
         if (tableDocument is null)
             return;
 
-        isSyncingTextFromSpreadsheet = true;
-        Session.Text = tableDocument.SerializeToText();
-        isSyncingTextFromSpreadsheet = false;
+        SessionImpl.SetTextFromEditor(EtwEditorMode.Spreadsheet, tableDocument.SerializeToText());
     }
 
     private static string GetSpreadsheetSaveExtension(EditTextTableDocument? tableDocument)

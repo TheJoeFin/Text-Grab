@@ -13,6 +13,15 @@ internal interface IEditorSurface
     EtwEditorMode Mode { get; }
 
     /// <summary>
+    /// What this editor shows, as session text, or <c>null</c> when it has nothing to give (no
+    /// document has been built yet). The session copies it into its text when it syncs from this editor.
+    /// </summary>
+    string? GetText();
+
+    /// <summary>Rebuilds what this editor shows from session text.</summary>
+    void SetText(string text);
+
+    /// <summary>
     /// Selects <paramref name="range"/> of the session's text in this editor, focuses the editor and
     /// brings the range into view.
     /// </summary>

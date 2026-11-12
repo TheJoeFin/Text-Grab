@@ -292,14 +292,14 @@ public partial class EditTextWindow
                 Session.Text = TextContent;
 
                 if (IsLoaded && editorMode == EtwEditorMode.Spreadsheet)
-                    RefreshSpreadsheetFromText();
+                    SessionImpl.SyncEditorFromText(EtwEditorMode.Spreadsheet);
                 else if (IsLoaded && editorMode == EtwEditorMode.Markdown)
-                    RefreshMarkdownFromText();
+                    SessionImpl.SyncEditorFromText(EtwEditorMode.Markdown);
             }
             finally
             {
                 isLoadingOpenedFile = false;
-                SyncTextFromActiveEditor();
+                SessionImpl.SyncTextFromActiveEditor();
                 SetOpenedFileState(shouldTrackOpenedFile ? pathOfFileToOpen : null);
             }
             Singleton<HistoryService>.Instance.RecordRecentFile(pathOfFileToOpen, KindOpened);
@@ -497,7 +497,7 @@ public partial class EditTextWindow
 
     private bool SaveCurrentDocument(bool saveAs = false)
     {
-        SyncTextFromActiveEditor();
+        SessionImpl.SyncTextFromActiveEditor();
 
         string fileText = Session.Text;
         string? targetFilePath = saveAs ? null : OpenedFilePath;

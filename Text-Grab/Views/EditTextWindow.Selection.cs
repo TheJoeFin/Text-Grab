@@ -19,7 +19,6 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Core.Editing;
-using Text_Grab.Editing;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -126,7 +125,7 @@ public partial class EditTextWindow
     public void SelectInEditor(int index, int length) => Session.SelectInEditor(new TextSpan(index, length));
 
     /// <summary>
-    /// <see cref="MarkdownSurface"/>'s half of <see cref="IEditorSession.SelectInEditor"/>: selecting
+    /// <see cref="Editing.MarkdownSurface"/>'s half of <see cref="IEditorSession.SelectInEditor"/>: selecting
     /// in the raw text box alone has no visible effect while it is hidden behind the rendered document.
     /// </summary>
     /// <remarks>

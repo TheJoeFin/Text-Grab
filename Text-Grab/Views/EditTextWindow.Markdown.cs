@@ -38,12 +38,13 @@ namespace Text_Grab;
 
 public partial class EditTextWindow
 {
-    private void RefreshMarkdownFromText()
+    /// <summary>
+    /// <see cref="Editing.MarkdownSurface"/>'s half of syncing the Markdown editor from the text. The session
+    /// skips it while the text is being written from the Markdown editor.
+    /// </summary>
+    private void RefreshMarkdownFromText(string text)
     {
-        if (isSyncingTextFromMarkdown)
-            return;
-
-        LoadMarkdownDocumentFromText(Session.Text);
+        LoadMarkdownDocumentFromText(text);
         UpdateLineAndColumnText();
     }
 
@@ -63,17 +64,8 @@ public partial class EditTextWindow
         isApplyingMarkdownDocument = false;
     }
 
-    private void SyncMarkdownTextFromDocument()
-    {
-        if (MarkdownEditorControl.Document is null)
-            return;
-
-        isSyncingTextFromMarkdown = true;
-        Session.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
-            MarkdownEditorControl.Document,
-            preserveLiteralMarkdown: true);
-        isSyncingTextFromMarkdown = false;
-    }
+    /// <summary>Copies the rendered document, serialized back to Markdown, into the text.</summary>
+    private void SyncMarkdownTextFromDocument() => SessionImpl.SyncTextFromEditor(EtwEditorMode.Markdown);
 
     private void ApplyMarkdownTheme()
     {

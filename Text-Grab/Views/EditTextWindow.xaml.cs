@@ -128,8 +128,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private string lastSpreadsheetCellEditorSelectedText = string.Empty;
     private EtwEditorMode editorMode = EtwEditorMode.Text;
     private SpellCheckMode spellCheckMode = SpellCheckMode.Auto;
-    private bool isSyncingTextFromSpreadsheet = false;
-    private bool isSyncingTextFromMarkdown = false;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
     private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
@@ -222,7 +220,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// <c>InitializeComponent</c> (<c>Window_Initialized</c> re-themes the Markdown document, which
     /// raises its TextChanged) already need it, and by then the editors it wraps exist.
     /// </remarks>
-    public IEditorSession Session => editorSession ??= CreateEditorSession();
+    public IEditorSession Session => SessionImpl;
+
+    /// <summary><see cref="Session"/> with the sync calls only this window makes.</summary>
+    private EditorSession SessionImpl => editorSession ??= CreateEditorSession();
 
     #endregion Properties
 
@@ -233,8 +234,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         TextBoxSurface textSurface = new(PassedTextControl);
         EditorSession session = new(
             textSurface,
-            new MarkdownSurface(range => SelectInMarkdownEditor(range.Start, range.Length)),
-            new SpreadsheetSurface(textSurface),
+            new MarkdownSurface(
+                MarkdownEditorControl,
+                RefreshMarkdownFromText,
+                range => SelectInMarkdownEditor(range.Start, range.Length)),
+            new SpreadsheetSurface(textSurface, GetSpreadsheetTextFromTable, RefreshSpreadsheetFromText),
             () => editorMode);
         EditorModeChanged += (_, _) => session.RaiseModeChanged();
         return session;
@@ -1463,9 +1467,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Schedule after layout so offsets are accurate
         Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
 
-        if (isSyncingTextFromSpreadsheet || isSyncingTextFromMarkdown)
+        if (SessionImpl.IsSyncingTextFromSpreadsheet || SessionImpl.IsSyncingTextFromMarkdown)
         {
-            if (isSyncingTextFromMarkdown)
+            if (SessionImpl.IsSyncingTextFromMarkdown)
                 ResetSpreadsheetUndoHistory();
 
             UpdatePendingFileEditState();
@@ -1474,7 +1478,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (editorMode == EtwEditorMode.Spreadsheet)
         {
-            RefreshSpreadsheetFromText();
+            SessionImpl.SyncEditorFromText(EtwEditorMode.Spreadsheet);
             UpdatePendingFileEditState();
             return;
         }
@@ -1483,7 +1487,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // OpenPath builds the document once itself after setting the text.
             if (!(isLoadingOpenedFile && IsLoaded))
-                RefreshMarkdownFromText();
+                SessionImpl.SyncEditorFromText(EtwEditorMode.Markdown);
 
             UpdatePendingFileEditState();
             return;
@@ -1708,28 +1712,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetSpellCheckMode(savedSpellCheckMode);
 
         SetBottomBarButtons();
-    }
-
-    private void SyncTextFromActiveEditor()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-            SyncSpreadsheetDocumentFromTable();
-        else if (editorMode == EtwEditorMode.Markdown)
-            SyncMarkdownTextFromDocument();
-    }
-
-    /// <summary>
-    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>Session.Text</c> out
-    /// to whichever editor is showing, the same way <see cref="PassedTextControl_TextChanged"/> does.
-    /// Used by anything that writes straight into the raw text box while another editor is active —
-    /// streamed audio transcription, most of all. A no-op in raw-text mode.
-    /// </summary>
-    private void SyncActiveEditorFromText()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-            RefreshSpreadsheetFromText();
-        else if (editorMode == EtwEditorMode.Markdown)
-            RefreshMarkdownFromText();
     }
 
     private void SearchButton_Click(object sender, RoutedEventArgs e)
@@ -2179,7 +2161,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        SyncTextFromActiveEditor();
+        SessionImpl.SyncTextFromActiveEditor();
         UpdatePendingFileEditState();
 
         if (allowCloseAfterPendingFilePrompt)

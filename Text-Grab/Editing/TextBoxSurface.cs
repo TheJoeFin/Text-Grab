@@ -37,6 +37,11 @@ internal sealed class TextBoxSurface : IEditorSurface
 
     public event EventHandler? TextChanged;
 
+    /// <summary>The text box's text; it is the session's text, so there is nothing to sync.</summary>
+    public string? GetText() => Text;
+
+    public void SetText(string text) => Text = text;
+
     public void ReplaceSelection(string replacement) => textBox.SelectedText = replacement;
 
     public void AppendText(string text) => textBox.AppendText(text);
