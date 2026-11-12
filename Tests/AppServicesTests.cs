@@ -1,6 +1,7 @@
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
+using Text_Grab.Core.Actions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -204,6 +205,23 @@ public class AppServicesTests
         Assert.Same(
             AppServices.Provider.GetRequiredService<AppRuntimeState>(),
             AppServices.Provider.GetRequiredService<AppRuntimeState>());
+    }
+
+    [Fact]
+    public void ActionRegistry_IsOneSharedInstanceHoldingCoreAndWindowsActions()
+    {
+        IActionRegistry registry = AppServices.Provider.GetRequiredService<IActionRegistry>();
+
+        Assert.Same(registry, AppServices.Provider.GetRequiredService<IActionRegistry>());
+        Assert.Same(registry, ServiceAccess.GetRequired<IActionRegistry>());
+
+        ActionRegistry expected = new();
+        CoreActions.RegisterAll(expected);
+        WindowsActions.RegisterAll(expected);
+        Assert.Equal(expected.All.Select(d => d.Id), registry.All.Select(d => d.Id));
+
+        Assert.NotNull(registry.GetTransform("textgrab.text.trimLines"));
+        Assert.True(registry.TryGet("textgrab.ai.summarize", out _));
     }
 
     private static ServiceProvider BuildProviderWith<T>() where T : class, new()

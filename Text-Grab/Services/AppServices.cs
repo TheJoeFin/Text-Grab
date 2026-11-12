@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
+using Text_Grab.Core.Actions;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -78,6 +79,16 @@ internal static class AppServices
 
         // Global hotkey dispatch (v5 F5), built with the handlers the old switch had.
         services.AddSingleton(static _ => HotkeyActionRouter.CreateWithTrayActions());
+
+        // The action registry (v5 A1): every action Text Grab can perform, as data. Filled when first
+        // resolved. Nothing in the UI reads it yet; E2 moves the Edit Text Window onto it.
+        services.AddSingleton<IActionRegistry>(static _ =>
+        {
+            ActionRegistry registry = new();
+            CoreActions.RegisterAll(registry);
+            WindowsActions.RegisterAll(registry);
+            return registry;
+        });
     }
 
     /// <summary>
