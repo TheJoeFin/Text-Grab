@@ -872,6 +872,33 @@ public static partial class StringMethods
         return endsWithNewline ? $"{shuffledText}{Environment.NewLine}" : shuffledText;
     }
 
+    /// <summary>
+    /// Split Lines Before Each Selection: puts a line break before every occurrence of
+    /// <paramref name="selection"/> in <paramref name="fullText"/>. Occurrences are matched
+    /// ordinally (so case-sensitively) and without overlapping, from the left.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="selection"/> is empty.</exception>
+    public static string SplitOnSelection(string fullText, string selection)
+    {
+        ArgumentNullException.ThrowIfNull(fullText);
+        ArgumentException.ThrowIfNullOrEmpty(selection);
+
+        return new StringBuilder(fullText).Replace(selection, Environment.NewLine + selection).ToString();
+    }
+
+    /// <summary>
+    /// Split Lines After Each Selection: puts a line break after every occurrence of
+    /// <paramref name="selection"/> in <paramref name="fullText"/>, matched as in <see cref="SplitOnSelection"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="selection"/> is empty.</exception>
+    public static string SplitAfterSelection(string fullText, string selection)
+    {
+        ArgumentNullException.ThrowIfNull(fullText);
+        ArgumentException.ThrowIfNullOrEmpty(selection);
+
+        return new StringBuilder(fullText).Replace(selection, selection + Environment.NewLine).ToString();
+    }
+
     public static string RemoveAllInstancesOf(this string stringToBeEdited, string stringToRemove)
     {
         Regex regex = new(stringToRemove.EscapeSpecialRegexChars(false));

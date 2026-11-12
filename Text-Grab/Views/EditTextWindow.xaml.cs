@@ -1927,11 +1927,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        StringBuilder textToManipulate = new(Session.Text);
-
-        textToManipulate = textToManipulate.Replace(selectedText, Environment.NewLine + selectedText);
-
-        Session.Text = textToManipulate.ToString();
+        Session.Text = StringMethods.SplitOnSelection(Session.Text, selectedText);
     }
 
     private async void SplitAfterSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -1949,11 +1945,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        StringBuilder textToManipulate = new(Session.Text);
-
-        textToManipulate = textToManipulate.Replace(selectedText, selectedText + Environment.NewLine);
-
-        Session.Text = textToManipulate.ToString();
+        Session.Text = StringMethods.SplitAfterSelection(Session.Text, selectedText);
     }
 
     private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
