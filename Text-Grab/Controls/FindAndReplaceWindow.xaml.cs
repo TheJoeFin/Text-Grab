@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Text_Grab.Core.Editing;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using Wpf.Ui.Controls;
@@ -57,7 +58,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
     #region Properties
 
-    private bool IsSpreadsheetSearch => textEditWindow?.IsSpreadsheetMode is true;
+    private bool IsSpreadsheetSearch => textEditWindow?.Session.Mode is EtwEditorMode.Spreadsheet;
 
     private bool IsSmartPatternSearch =>
         SearchBar.SelectedPattern is { Kind: PatternKind.Recognizer, Recognizer: not null };
@@ -77,16 +78,16 @@ public partial class FindAndReplaceWindow : FluentWindow
         {
             if (textEditWindow is not null)
             {
-                textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
-                textEditWindow.EditorModeChanged -= EditTextWindow_EditorModeChanged;
+                textEditWindow.Session.TextChanged -= EditTextBoxChanged;
+                textEditWindow.Session.ModeChanged -= EditTextWindow_EditorModeChanged;
             }
 
             textEditWindow = value;
 
             if (textEditWindow is not null)
             {
-                textEditWindow.PassedTextControl.TextChanged += EditTextBoxChanged;
-                textEditWindow.EditorModeChanged += EditTextWindow_EditorModeChanged;
+                textEditWindow.Session.TextChanged += EditTextBoxChanged;
+                textEditWindow.Session.ModeChanged += EditTextWindow_EditorModeChanged;
             }
         }
     }
@@ -209,7 +210,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             && firstMatch is not null
             && this.IsFocused)
         {
-            textEditWindow.SelectInEditor(firstMatch.Index, firstMatch.Value.Length);
+            textEditWindow.Session.SelectInEditor(new TextSpan(firstMatch.Index, firstMatch.Value.Length));
             this.Focus();
         }
     }
@@ -262,7 +263,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (textEditWindow is not null && this.IsFocused)
         {
             RecognizerMatch first = recognizerMatches[0];
-            textEditWindow.SelectInEditor(first.Start, first.Length);
+            textEditWindow.Session.SelectInEditor(new TextSpan(first.Start, first.Length));
             this.Focus();
         }
     }
@@ -424,7 +425,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         SetWindowToLoading();
 
         IList selection2 = ResultsListView.SelectedItems;
-        StringBuilder stringBuilderOfText = new(textEditWindow.PassedTextControl.Text);
+        StringBuilder stringBuilderOfText = new(textEditWindow.Session.Text);
 
         await Task.Run(() =>
         {
@@ -440,19 +441,19 @@ public partial class FindAndReplaceWindow : FluentWindow
             }
         });
 
-        textEditWindow.PassedTextControl.Text = stringBuilderOfText.ToString();
+        textEditWindow.Session.Text = stringBuilderOfText.ToString();
 
         SearchForText();
         ResetWindowLoading();
     }
 
-    private void EditTextBoxChanged(object sender, TextChangedEventArgs e)
+    private void EditTextBoxChanged(object? sender, EventArgs e)
     {
         if (IsSpreadsheetSearch) return;
 
         ChangeFindTextTimer.Stop();
         if (textEditWindow is not null)
-            StringFromWindow = textEditWindow.PassedTextControl.Text;
+            StringFromWindow = textEditWindow.Session.Text;
 
         ChangeFindTextTimer.Start();
     }
@@ -467,7 +468,7 @@ public partial class FindAndReplaceWindow : FluentWindow
     {
         StringFromWindow = ResolveSearchSourceText(
             StringFromWindow,
-            textEditWindow?.PassedTextControl.Text,
+            textEditWindow?.Session.Text,
             IsSpreadsheetSearch);
     }
 
@@ -479,7 +480,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (IsSpreadsheetSearch) { e.CanExecute = false; return; }
 
         if (textEditWindow is not null
-            && textEditWindow.PassedTextControl.SelectedText.Length > 0)
+            && textEditWindow.Session.SelectedText.Length > 0)
             e.CanExecute = true;
         else
             e.CanExecute = false;
@@ -490,7 +491,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (textEditWindow is null)
             return;
 
-        string? selection = textEditWindow.PassedTextControl.SelectedText;
+        string? selection = textEditWindow.Session.SelectedText;
 
         // Generate all precision levels from the selected text
         // Use inverse of the exact-match toggle: when exact match is OFF, ignore case
@@ -650,8 +651,7 @@ public partial class FindAndReplaceWindow : FluentWindow
         if (ResultsListView.SelectedItem is not FindResult selectedResult)
             return;
 
-        textEditWindow.PassedTextControl.Select(selectedResult.Index, selectedResult.Length);
-        textEditWindow.PassedTextControl.SelectedText = ReplaceTextBox.Text;
+        textEditWindow.Session.ReplaceRange(new TextSpan(selectedResult.Index, selectedResult.Length), ReplaceTextBox.Text);
 
         SearchForText();
     }
@@ -684,7 +684,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         SetWindowToLoading();
 
-        StringBuilder stringBuilder = new(textEditWindow.PassedTextControl.Text);
+        StringBuilder stringBuilder = new(textEditWindow.Session.Text);
 
         IList selection2 = ResultsListView.SelectedItems;
         string newText = ReplaceTextBox.Text;
@@ -704,7 +704,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             }
         });
 
-        textEditWindow.PassedTextControl.Text = stringBuilder.ToString();
+        textEditWindow.Session.Text = stringBuilder.ToString();
 
         SearchForText();
         ResetWindowLoading();
@@ -782,7 +782,7 @@ public partial class FindAndReplaceWindow : FluentWindow
 
         SetWindowToLoading();
 
-        string originalText = textEditWindow.PassedTextControl.Text;
+        string originalText = textEditWindow.Session.Text;
         StringBuilder stringBuilder = new(originalText);
 
         IList selection = ResultsListView.SelectedItems;
@@ -806,7 +806,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             }
         });
 
-        textEditWindow.PassedTextControl.Text = stringBuilder.ToString();
+        textEditWindow.Session.Text = stringBuilder.ToString();
         GrabTemplateManager.RecordUsage(template.Id);
 
         SearchForText();
@@ -839,7 +839,7 @@ public partial class FindAndReplaceWindow : FluentWindow
             return;
         }
 
-        textEditWindow.SelectInEditor(selectedResult.Index, selectedResult.Length);
+        textEditWindow.Session.SelectInEditor(new TextSpan(selectedResult.Index, selectedResult.Length));
         this.Focus();
     }
 
@@ -869,8 +869,8 @@ public partial class FindAndReplaceWindow : FluentWindow
         PrecisionSliderTimer.Tick -= PrecisionSlider_Tick;
         if (textEditWindow is not null)
         {
-            textEditWindow.PassedTextControl.TextChanged -= EditTextBoxChanged;
-            textEditWindow.EditorModeChanged -= EditTextWindow_EditorModeChanged;
+            textEditWindow.Session.TextChanged -= EditTextBoxChanged;
+            textEditWindow.Session.ModeChanged -= EditTextWindow_EditorModeChanged;
         }
     }
     private void Window_KeyUp(object sender, KeyEventArgs e)
@@ -929,9 +929,9 @@ public partial class FindAndReplaceWindow : FluentWindow
         string sourceText = string.Empty;
         if (textEditWindow is not null)
         {
-            sourceText = !string.IsNullOrWhiteSpace(textEditWindow.PassedTextControl.SelectedText)
-                ? textEditWindow.PassedTextControl.SelectedText.MakeStringSingleLine().Truncate(30)
-                : textEditWindow.PassedTextControl.Text.MakeStringSingleLine().Truncate(30);
+            sourceText = !string.IsNullOrWhiteSpace(textEditWindow.Session.SelectedText)
+                ? textEditWindow.Session.SelectedText.MakeStringSingleLine().Truncate(30)
+                : textEditWindow.Session.Text.MakeStringSingleLine().Truncate(30);
         }
 
         // Open the RegexManager and start adding the pattern

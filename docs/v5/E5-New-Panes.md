@@ -90,12 +90,12 @@ A waveform with transport controls. During playback the matching text is highlig
 
 The data this needs does not exist yet. `AudioTranscriptionUtilities.TranscribeAudioFileAsync` returns one flat string; Whisper's per-segment timing (`SegmentData.Start` / `.End`) is discarded except for an optional `[hh:mm:ss]` text prefix. Build in this order:
 
-1. **`TranscriptDocument`** in `Text-Grab.Core` (`Text_Grab.Core.Editing`): an ordered list of `TranscriptSegment(TimeSpan Start, TimeSpan End, TextRange Range)` plus the audio source path. Pure, with tests.
+1. **`TranscriptDocument`** in `Text-Grab.Core` (`Text_Grab.Core.Editing`): an ordered list of `TranscriptSegment(TimeSpan Start, TimeSpan End, TextSpan Range)` plus the audio source path. Pure, with tests.
 2. **Anchors that survive edits:** a method that takes a text edit `(offset, removedLength, insertedLength)` and shifts or resizes segment ranges. Edits inside a segment resize it; edits spanning segments merge the affected ranges conservatively. Property-style tests: after any sequence of edits, ranges stay ordered, non-overlapping and within the text.
 3. **A transcription API that returns it:** a new overload in `Text-Grab.Core.Windows/Utilities/AudioTranscriptionUtilities.cs` returning a `TranscriptDocument` alongside the text. The existing string-returning method stays and becomes a projection of the new one. Do the same for `LiveAudioTranscriber` (it already tracks `SpeechSegment(Start, End)` internally) only if it falls out naturally; otherwise file-based transcription first.
 4. **Waveform peaks:** a headless function in Core.Windows that reduces an audio file to min/max peak pairs at a requested resolution, using NAudio (already referenced). Streamed, cancellable, tested against a short fixture.
 5. **Playback service** in Core.Windows over NAudio: play, pause, seek, rate, and a position event (~30 Hz).
-6. **Range highlighting (D3):** add `Highlight(IReadOnlyList<TextRange>)` / `ClearHighlight()` to `IEditorSurface`. Spike the adorner approach on the `TextBox` surface first and report its limits (wrapping, scrolling, selection overlap) before building on it.
+6. **Range highlighting (D3):** add `Highlight(IReadOnlyList<TextSpan>)` / `ClearHighlight()` to `IEditorSurface`. Spike the adorner approach on the `TextBox` surface first and report its limits (wrapping, scrolling, selection overlap) before building on it.
 7. **The pane:** waveform drawing, playhead, click and drag to seek, keyboard transport, current-segment highlight, click-in-text seeks.
 8. **Persistence:** save the `TranscriptDocument` as a sidecar next to the saved text file and with the history item, following how `HistoryFileUtilities` stores word-border sidecars. A document with no sidecar opens without the pane's sync features rather than failing.
 

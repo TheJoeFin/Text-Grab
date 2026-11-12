@@ -27,6 +27,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Core.Editing;
+using Text_Grab.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Pages;
@@ -126,8 +128,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private string lastSpreadsheetCellEditorSelectedText = string.Empty;
     private EtwEditorMode editorMode = EtwEditorMode.Text;
     private SpellCheckMode spellCheckMode = SpellCheckMode.Auto;
-    private bool isSyncingTextFromSpreadsheet = false;
-    private bool isSyncingTextFromMarkdown = false;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
     private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
@@ -145,27 +145,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private SpreadsheetUndoState? pendingSpreadsheetUndoState;
     private string savedFileText = string.Empty;
     private HwndSource? windowSource;
-
-    private enum PendingFileCloseAction
-    {
-        Cancel,
-        Save,
-        DontSave,
-        SaveToHistory,
-    }
-
-    private sealed class SpreadsheetCellTextWrappingConverter(EditTextWindow owner, int columnIndex) : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return owner.GetSpreadsheetCellTextWrapping(value, columnIndex);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return System.Windows.Data.Binding.DoNothing;
-        }
-    }
+    private EditorSession? editorSession;
 
     #endregion Fields
 
@@ -185,7 +165,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (isEncoded)
             ReadEncodedString(possiblyEncodedString);
         else
-            PassedTextControl.Text = possiblyEncodedString;
+            Session.Text = possiblyEncodedString;
 
         LaunchedFromNotification = true;
     }
@@ -195,7 +175,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         InitializeComponent();
         App.SetTheme();
 
-        PassedTextControl.Text = historyInfo.TextContent;
+        Session.Text = historyInfo.TextContent;
         editorMode = historyInfo.EditorMode;
         tableDocument = EditTextTableDocument.TryDeserialize(historyInfo.EditTextTableDocumentJson);
 
@@ -234,9 +214,35 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public bool WrapText { get; set; } = false;
     private bool IsAccessingClipboard { get; set; } = false;
 
+    /// <summary>The document in this window and the editor showing it.</summary>
+    /// <remarks>
+    /// Created on first use rather than in the constructors: handlers that run inside
+    /// <c>InitializeComponent</c> (<c>Window_Initialized</c> re-themes the Markdown document, which
+    /// raises its TextChanged) already need it, and by then the editors it wraps exist.
+    /// </remarks>
+    public IEditorSession Session => SessionImpl;
+
+    /// <summary><see cref="Session"/> with the sync calls only this window makes.</summary>
+    private EditorSession SessionImpl => editorSession ??= CreateEditorSession();
+
     #endregion Properties
 
     #region Methods
+
+    private EditorSession CreateEditorSession()
+    {
+        TextBoxSurface textSurface = new(PassedTextControl);
+        EditorSession session = new(
+            textSurface,
+            new MarkdownSurface(
+                MarkdownEditorControl,
+                RefreshMarkdownFromText,
+                range => SelectInMarkdownEditor(range.Start, range.Length)),
+            new SpreadsheetSurface(textSurface, GetSpreadsheetTextFromTable, RefreshSpreadsheetFromText),
+            () => editorMode);
+        EditorModeChanged += (_, _) => session.RaiseModeChanged();
+        return session;
+    }
 
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {
@@ -264,7 +270,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public void AddCharsToEditTextWindow(string stringToAdd, SpotInLine spotInLine)
     {
-        PassedTextControl.Text = PassedTextControl.Text.AddCharsToEachLine(stringToAdd, spotInLine);
+        Session.Text = Session.Text.AddCharsToEachLine(stringToAdd, spotInLine);
     }
 
     public void JoinLinesInEditTextWindow(string joiningText, bool trimLineBeforeJoining, string textAtBeginning = "", string textAtEnd = "")
@@ -274,7 +280,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public void AddThisText(string textToAdd)
     {
-        PassedTextControl.AppendText(textToAdd);
+        Session.AppendText(textToAdd);
     }
 
     public System.Windows.Controls.TextBox GetMainTextBox()
@@ -282,192 +288,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return PassedTextControl;
     }
 
-    internal void EnterSpreadsheetMode() => SetEditorMode(EtwEditorMode.Spreadsheet);
-
     public event EventHandler? EditorModeChanged;
-
-    /// <summary>
-    /// Pastes the clipboard into the spreadsheet editor, parsing HTML tables
-    /// (including colspan/rowspan) when present. Used by the text-grab://
-    /// paste-spreadsheet protocol activation.
-    /// </summary>
-    internal void PasteClipboardIntoSpreadsheet() => PasteIntoSpreadsheet();
-
-    public async Task OcrAllImagesInFolder(string folderPath, OcrDirectoryOptions options)
-    {
-        IEnumerable<string>? files = null;
-
-        if (string.IsNullOrWhiteSpace(folderPath) && string.IsNullOrWhiteSpace(options.Path))
-            return;
-
-        if (string.IsNullOrWhiteSpace(folderPath))
-            folderPath = options.Path;
-
-        SearchOption searchOption = SearchOption.TopDirectoryOnly;
-        if (options.IsRecursive)
-            searchOption = SearchOption.AllDirectories;
-
-        try
-        {
-            files = Directory.GetFiles(folderPath, "*.*", searchOption);
-        }
-        catch (Exception ex)
-        {
-            PassedTextControl.AppendText($"Failed to read directory: {ex.Message}{Environment.NewLine}");
-        }
-
-        if (files is null)
-            return;
-
-        List<string> imageFiles = [.. files.Where(x => IoUtilities.IsVisualDocumentFileExtension(Path.GetExtension(x).ToLower()))];
-
-        if (imageFiles.Count == 0)
-        {
-            PassedTextControl.AppendText($"{folderPath} contains no images or PDFs");
-            return;
-        }
-
-        ILanguage selectedLanguage = LanguageUtilities.GetOCRLanguage();
-        string tesseractLanguageTag = string.Empty;
-
-        if (LanguageMenuItem.Items.Count > 0)
-        {
-            foreach (MenuItem languageSubItem in LanguageMenuItem.Items)
-            {
-                if (languageSubItem.IsChecked)
-                {
-                    if (languageSubItem.Tag is ILanguage iLanguageFromTag) // Changed to ILanguage
-                    {
-                        selectedLanguage = iLanguageFromTag;
-                    }
-                    else if (languageSubItem.Tag is string langTag) // Fallback for simple string tags if any
-                        tesseractLanguageTag = langTag;
-                }
-            }
-        }
-
-        if (!CaptureLanguageUtilities.IsStaticImageCompatible(selectedLanguage))
-            selectedLanguage = CaptureLanguageUtilities.GetUiAutomationFallbackLanguage();
-
-        if (options.OutputHeader)
-        {
-            PassedTextControl.AppendText(folderPath);
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"{imageFiles.Count} files found");
-
-            if (!string.IsNullOrEmpty(tesseractLanguageTag))
-            {
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText($"Using {tesseractLanguageTag} from Tesseract.");
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText("Tesseract can only run single threaded,");
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText("May be slower if processing many images");
-                PassedTextControl.AppendText(Environment.NewLine);
-            }
-            else
-            {
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText($"Using {selectedLanguage.DisplayName} from Windows.");
-                PassedTextControl.AppendText(Environment.NewLine);
-            }
-
-            if (options.GrabTemplate is GrabTemplate headerTemplate)
-            {
-                PassedTextControl.AppendText($"Using template: {headerTemplate.Name}");
-                PassedTextControl.AppendText(Environment.NewLine);
-            }
-
-            PassedTextControl.AppendText("Press Escape to cancel");
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText(Environment.NewLine);
-        }
-
-        cancellationTokenForDirOCR = new();
-        Stopwatch stopwatch = new();
-        stopwatch.Start();
-        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-
-        List<AsyncOcrFileResult> ocrFileResults = [];
-        foreach (string path in imageFiles)
-        {
-            AsyncOcrFileResult ocrFileResult = new(path);
-            ocrFileResults.Add(ocrFileResult);
-        }
-
-        try
-        {
-            await OcrAllImagesInParallel(options, ocrFileResults, selectedLanguage, tesseractLanguageTag);
-
-            if (options.OutputFooter)
-            {
-                PassedTextControl.AppendText(Environment.NewLine);
-                PassedTextControl.AppendText($"----- COMPLETED OCR OF {imageFiles.Count} files");
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            PassedTextControl.AppendText(Environment.NewLine);
-            int countCompleted = ocrFileResults.Where(r => r.OcrResult is not null).Count();
-            PassedTextControl.AppendText($"----- CANCELLED OCR OF {ocrFileResults.Count - countCompleted}, Completed {countCompleted} files");
-        }
-        finally
-        {
-            cancellationTokenForDirOCR.Dispose();
-        }
-
-        Mouse.OverrideCursor = null;
-        stopwatch.Stop();
-
-        if (options.OutputFooter)
-        {
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"----- from {folderPath}");
-            PassedTextControl.AppendText(Environment.NewLine);
-            PassedTextControl.AppendText($"----- and took {stopwatch.Elapsed:c}");
-        }
-        PassedTextControl.ScrollToEnd();
-
-        GC.Collect();
-        cancellationTokenForDirOCR = null;
-    }
 
     public void RemoveCharsFromEditTextWindow(int numberOfChars, SpotInLine spotInLine)
     {
-        PassedTextControl.Text = PassedTextControl.Text.RemoveFromEachLine(numberOfChars, spotInLine);
-    }
-
-    public void SetBottomBarButtons()
-    {
-        BottomBarButtons.Children.Clear();
-
-        List<CollapsibleButton> buttons = CustomBottomBarUtilities.GetBottomBarButtons(this);
-
-        if (DefaultSettings.ScrollBottomBar)
-            BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-        else
-            BottomBarScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-
-        if (DefaultSettings.ShowCursorText)
-            BottomBarText.Visibility = Visibility.Visible;
-        else
-            BottomBarText.Visibility = Visibility.Collapsed;
-
-        LiveTranscriptionToggleButton.Visibility =
-            DefaultSettings.EtwShowTranscribe && AudioTranscriptionUtilities.IsAudioTranscriptionSupported()
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-
-        foreach (CollapsibleButton collapsibleButton in buttons)
-            BottomBarButtons.Children.Add(collapsibleButton);
-
-        if (DefaultSettings.EtwShowLangPicker)
-        {
-            LanguagePicker languagePicker = new();
-            languagePicker.LanguageChanged -= LanguagePicker_LanguageChanged;
-            languagePicker.LanguageChanged += LanguagePicker_LanguageChanged;
-            BottomBarButtons.Children.Add(languagePicker);
-        }
+        Session.Text = Session.Text.RemoveFromEachLine(numberOfChars, spotInLine);
     }
 
     private void LanguagePicker_LanguageChanged(object sender, RoutedEventArgs e)
@@ -507,621 +332,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Language = xmlDefaultLang;
     }
 
-    private void ApplySpreadsheetDocumentChange(
-        Action<EditTextTableDocument> changeAction,
-        int? focusRow = null,
-        int? focusColumn = null,
-        bool beginEdit = true)
-    {
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SpreadsheetUndoState? beforeChange = CreateCurrentSpreadsheetUndoState(syncFromTable: true);
-
-        if (tableDocument is null)
-            return;
-
-        changeAction(tableDocument);
-        tableDocument.EnsureMinimumSize();
-        RecordSpreadsheetUndoChange(beforeChange, CreateCurrentSpreadsheetUndoState(syncFromTable: false));
-        RebuildSpreadsheetTable();
-        UpdateTextFromSpreadsheetDocument();
-
-        if (focusRow.HasValue && focusColumn.HasValue)
-        {
-            Dispatcher.BeginInvoke(
-                () => FocusSpreadsheetCell(focusRow.Value, focusColumn.Value, beginEdit),
-                DispatcherPriority.Background);
-        }
-    }
-
-    private SpreadsheetUndoState? CreateCurrentSpreadsheetUndoState(bool syncFromTable = false)
-    {
-        if (syncFromTable && editorMode == EtwEditorMode.Spreadsheet)
-            SyncSpreadsheetDocumentFromTable(writeText: false);
-
-        if (tableDocument is null)
-            return null;
-
-        tableDocument.EnsureMinimumSize();
-        return new SpreadsheetUndoState(
-            tableDocument.SerializeToJson(),
-            GetSpreadsheetCurrentRowIndex(),
-            GetSpreadsheetCurrentColumnIndex());
-    }
-
-    private int? GetSpreadsheetCurrentRowIndex()
-    {
-        int rowIndex = SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        return rowIndex >= 0 ? rowIndex : null;
-    }
-
-    private int? GetSpreadsheetCurrentColumnIndex()
-    {
-        return SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex;
-    }
-
-    private void CommitSpreadsheetEditsAndCapturePendingHistory()
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return;
-
-        _ = SpreadsheetDataGrid.CommitEdit(DataGridEditingUnit.Cell, true);
-        _ = SpreadsheetDataGrid.CommitEdit(DataGridEditingUnit.Row, true);
-        CaptureCommittedSpreadsheetEditIfPending();
-    }
-
-    private void CaptureCommittedSpreadsheetEditIfPending()
-    {
-        if (pendingSpreadsheetUndoState is null || isRestoringSpreadsheetUndoState)
-            return;
-
-        SpreadsheetUndoState beforeChange = pendingSpreadsheetUndoState;
-        pendingSpreadsheetUndoState = null;
-        RecordSpreadsheetUndoChange(beforeChange, CreateCurrentSpreadsheetUndoState(syncFromTable: true));
-    }
-
-    private void RecordSpreadsheetUndoChange(SpreadsheetUndoState? beforeChange, SpreadsheetUndoState? afterChange)
-    {
-        spreadsheetUndoHistory.RecordChange(beforeChange, afterChange);
-        CommandManager.InvalidateRequerySuggested();
-    }
-
-    private void ResetSpreadsheetUndoHistory()
-    {
-        bool wasNonEmpty = spreadsheetUndoHistory.CanUndo || spreadsheetUndoHistory.CanRedo;
-        spreadsheetUndoHistory.Clear();
-        pendingSpreadsheetUndoState = null;
-        // Only invalidate when the undo/redo availability actually changed to avoid
-        // triggering all CanExecute handlers on every text change in text mode.
-        if (wasNonEmpty)
-            CommandManager.InvalidateRequerySuggested();
-    }
-
-    private void RestoreSpreadsheetUndoState(SpreadsheetUndoState stateToRestore)
-    {
-        EditTextTableDocument? restoredDocument = EditTextTableDocument.TryDeserialize(stateToRestore.DocumentJson);
-        if (restoredDocument is null)
-            return;
-
-        isRestoringSpreadsheetUndoState = true;
-        try
-        {
-            pendingSpreadsheetUndoState = null;
-            tableDocument = restoredDocument;
-            RebuildSpreadsheetTable();
-            UpdateTextFromSpreadsheetDocument();
-        }
-        finally
-        {
-            isRestoringSpreadsheetUndoState = false;
-        }
-
-        if (SpreadsheetDataGrid.Items.Count == 0 || SpreadsheetDataGrid.Columns.Count == 0)
-        {
-            UpdateLineAndColumnText();
-            return;
-        }
-
-        int focusRow = Math.Clamp(stateToRestore.FocusRow ?? 0, 0, SpreadsheetDataGrid.Items.Count - 1);
-        int focusColumn = Math.Clamp(stateToRestore.FocusColumn ?? 0, 0, SpreadsheetDataGrid.Columns.Count - 1);
-
-        Dispatcher.BeginInvoke(
-            () => FocusSpreadsheetCell(focusRow, focusColumn, beginEdit: false),
-            DispatcherPriority.Background);
-        UpdateLineAndColumnText();
-    }
-
-    private void CopySpreadsheetColumnMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        int columnIndex =
-            spreadsheetContextColumnIndex
-            ?? SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex
-            ?? -1;
-
-        if (columnIndex < 0)
-            return;
-        List<string> values = [];
-
-        foreach (DataRow row in spreadsheetTable.Rows)
-        {
-            if (columnIndex >= spreadsheetTable.Columns.Count)
-                break;
-
-            values.Add(row[columnIndex]?.ToString() ?? string.Empty);
-        }
-
-        TrySetClipboardText(string.Join(Environment.NewLine, values));
-    }
-
-    private void CopySpreadsheetRowsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        List<DataRowView> selectedRows = [.. SpreadsheetDataGrid.SelectedItems.OfType<DataRowView>()];
-
-        if (selectedRows.Count == 0 && SpreadsheetDataGrid.CurrentItem is DataRowView currentRow)
-            selectedRows.Add(currentRow);
-
-        if (selectedRows.Count == 0)
-            return;
-
-        string rowText = string.Join(
-            Environment.NewLine,
-            selectedRows.Select(row => string.Join("\t", row.Row.ItemArray.Select(value => value?.ToString() ?? string.Empty))));
-
-        TrySetClipboardText(rowText);
-    }
-
-    private void CopySpreadsheetSelectionMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        _ = TryCopySpreadsheetSelectionToClipboard(GetSelectedSpreadsheetCellCoordinates());
-    }
-
-    private void CopySpreadsheetAsMarkdownMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string markdownText = BuildSpreadsheetSelectionMarkdown(
-            spreadsheetTable,
-            GetSelectedOrPopulatedSpreadsheetCellCoordinates());
-
-        if (!string.IsNullOrEmpty(markdownText))
-            TrySetClipboardText(markdownText);
-    }
-
-    private void AddSpreadsheetColumnMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        int currentColumnIndex =
-            spreadsheetContextColumnIndex
-            ?? SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex
-            ?? ((tableDocument?.ColumnCount ?? 1) - 1);
-        int insertIndex = Math.Clamp(currentColumnIndex + 1, 0, Math.Max(tableDocument?.ColumnCount ?? 0, 0));
-
-        ApplySpreadsheetDocumentChange(
-            document => document.InsertColumn(insertIndex),
-            SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem),
-            insertIndex);
-    }
-
-    private void AddSpreadsheetRowMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        int currentRowIndex = spreadsheetContextRowIndex ?? SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        if (currentRowIndex < 0)
-            currentRowIndex = (tableDocument?.RowCount ?? 1) - 1;
-
-        int insertIndex = Math.Clamp(currentRowIndex + 1, 0, Math.Max(tableDocument?.RowCount ?? 0, 0));
-        int focusColumn = SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0;
-
-        ApplySpreadsheetDocumentChange(
-            document => document.InsertRow(insertIndex),
-            insertIndex,
-            focusColumn);
-    }
-
-    private void SplitSpreadsheetCellsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return;
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
-        if (targetCells.Count == 0)
-            return;
-
-        (int rowIndex, int columnIndex) = targetCells[0];
-        string sampleText = string.Empty;
-        if (rowIndex >= 0 && rowIndex < spreadsheetTable.Rows.Count
-            && columnIndex >= 0 && columnIndex < spreadsheetTable.Columns.Count)
-        {
-            sampleText = spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
-        }
-
-        SplitColumnWindow splitColumnWindow = new()
-        {
-            Owner = this,
-            SampleText = sampleText
-        };
-        splitColumnWindow.ShowDialog();
-    }
-
-    internal void SplitSelectedSpreadsheetCells(SplitColumnOptions options)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || tableDocument is null)
-            return;
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
-        if (targetCells.Count == 0)
-            return;
-
-        ApplySpreadsheetDocumentChange(document =>
-        {
-            // Compute the split for each target cell before mutating the table.
-            List<(int RowIndex, int ColumnIndex, IReadOnlyList<string> Parts)> splits = [];
-            int maxRequiredColumns = document.ColumnCount;
-
-            foreach ((int rowIndex, int columnIndex) in targetCells)
-            {
-                if (rowIndex < 0 || rowIndex >= document.Rows.Count
-                    || columnIndex < 0 || columnIndex >= document.ColumnCount)
-                {
-                    continue;
-                }
-
-                string cellValue = document.Rows[rowIndex][columnIndex] ?? string.Empty;
-                IReadOnlyList<string> parts = ColumnSplitUtilities.SplitCell(cellValue, options);
-                splits.Add((rowIndex, columnIndex, parts));
-                maxRequiredColumns = Math.Max(maxRequiredColumns, columnIndex + parts.Count);
-            }
-
-            // Grow the table so every row has room for the widest split, then pad all rows.
-            document.ColumnCount = Math.Max(document.ColumnCount, maxRequiredColumns);
-            document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, maxRequiredColumns);
-            document.EnsureMinimumSize();
-
-            // Overwrite the original cell and the cells to its right with the resulting parts.
-            foreach ((int rowIndex, int columnIndex, IReadOnlyList<string> parts) in splits)
-            {
-                for (int partIndex = 0; partIndex < parts.Count; partIndex++)
-                {
-                    int targetColumn = columnIndex + partIndex;
-                    if (rowIndex < document.Rows.Count && targetColumn < document.Rows[rowIndex].Count)
-                        document.Rows[rowIndex][targetColumn] = parts[partIndex];
-                }
-            }
-        });
-    }
-
     private void TransposeTableCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
     {
         e.CanExecute = editorMode == EtwEditorMode.Spreadsheet;
-    }
-
-    private void TransposeTableExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        int currentRowIndex = SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        int currentColumnIndex = SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0;
-
-        ApplySpreadsheetDocumentChange(document => document.Transpose());
-
-        if (SpreadsheetDataGrid.Items.Count == 0 || SpreadsheetDataGrid.Columns.Count == 0)
-            return;
-
-        int focusRow = Math.Clamp(currentColumnIndex, 0, SpreadsheetDataGrid.Items.Count - 1);
-        int focusColumn = Math.Clamp(Math.Max(0, currentRowIndex), 0, SpreadsheetDataGrid.Columns.Count - 1);
-
-        Dispatcher.BeginInvoke(
-            () => FocusSpreadsheetCell(focusRow, focusColumn),
-            DispatcherPriority.Background);
-    }
-
-    private void DeleteSpreadsheetColumnMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        int columnIndex = spreadsheetContextColumnIndex ?? SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? -1;
-        if (columnIndex < 0)
-            return;
-
-        int nextColumnIndex = Math.Max(0, Math.Min(columnIndex, (tableDocument?.ColumnCount ?? 1) - 2));
-        int rowIndex = SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-
-        ApplySpreadsheetDocumentChange(
-            document => document.DeleteColumn(columnIndex),
-            Math.Max(0, rowIndex),
-            nextColumnIndex);
-    }
-
-    private void DeleteSpreadsheetRowMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        int rowIndex = spreadsheetContextRowIndex ?? SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        if (rowIndex < 0)
-            return;
-
-        int nextRowIndex = Math.Max(0, Math.Min(rowIndex, (tableDocument?.RowCount ?? 1) - 2));
-        int columnIndex = SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0;
-
-        ApplySpreadsheetDocumentChange(
-            document => document.DeleteRow(rowIndex),
-            nextRowIndex,
-            columnIndex);
-    }
-
-    private void EnsureSpreadsheetDocumentFromText()
-    {
-        if (tableDocument is not null)
-        {
-            tableDocument.EnsureMinimumSize();
-            return;
-        }
-
-        tableDocument = EditTextTableDocument.CreateFromText(PassedTextControl.Text);
-    }
-
-    private void FocusSpreadsheetCell(int rowIndex, int columnIndex, bool beginEdit = true)
-    {
-        if (rowIndex < 0
-            || columnIndex < 0
-            || rowIndex >= SpreadsheetDataGrid.Items.Count
-            || columnIndex >= SpreadsheetDataGrid.Columns.Count)
-        {
-            return;
-        }
-
-        object rowItem = SpreadsheetDataGrid.Items[rowIndex];
-        DataGridColumn column = SpreadsheetDataGrid.Columns[columnIndex];
-
-        SelectSpreadsheetCell(rowItem, column, clearExistingSelection: true);
-
-        if (beginEdit)
-            SpreadsheetDataGrid.BeginEdit();
-    }
-
-    private void MoveSpreadsheetColumnLeftMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        MoveSpreadsheetColumn(-1);
-    }
-
-    private void MoveSpreadsheetColumnRightMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        MoveSpreadsheetColumn(1);
-    }
-
-    private void MoveSpreadsheetColumn(int direction)
-    {
-        int fromIndex = spreadsheetContextColumnIndex ?? SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? -1;
-        if (fromIndex < 0)
-            return;
-
-        int toIndex = fromIndex + direction;
-        if (toIndex < 0 || toIndex >= (tableDocument?.ColumnCount ?? 0))
-            return;
-
-        int rowIndex = SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        ApplySpreadsheetDocumentChange(
-            document => document.MoveColumn(fromIndex, toIndex),
-            Math.Max(0, rowIndex),
-            toIndex);
-    }
-
-    private void MoveSpreadsheetRowDownMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        MoveSpreadsheetRow(1);
-    }
-
-    private void MoveSpreadsheetRowUpMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        MoveSpreadsheetRow(-1);
-    }
-
-    private void MoveSpreadsheetRow(int direction)
-    {
-        int fromIndex = spreadsheetContextRowIndex ?? SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        if (fromIndex < 0)
-            return;
-
-        int toIndex = fromIndex + direction;
-        if (toIndex < 0 || toIndex >= (tableDocument?.RowCount ?? 0))
-            return;
-
-        int columnIndex = SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0;
-        ApplySpreadsheetDocumentChange(
-            document => document.MoveRow(fromIndex, toIndex),
-            toIndex,
-            columnIndex);
-    }
-
-    private void HideSelectionSpecificUi()
-    {
-        MatchCountButton.Visibility = Visibility.Collapsed;
-        RegexPatternButton.Visibility = Visibility.Collapsed;
-        SimilarMatchesButton.Visibility = Visibility.Collapsed;
-        CharDetailsButton.Visibility = Visibility.Collapsed;
-    }
-
-    private void RebuildSpreadsheetTable()
-    {
-        if (tableDocument is null)
-            return;
-
-        DetachSpreadsheetColumnWidthTracking();
-        isApplyingSpreadsheetLayout = true;
-        spreadsheetTable.BeginInit();
-        spreadsheetTable.Clear();
-        spreadsheetTable.Columns.Clear();
-
-        foreach (string columnName in tableDocument.ColumnNames)
-            spreadsheetTable.Columns.Add(columnName, typeof(string));
-
-        foreach (List<string> row in tableDocument.Rows)
-        {
-            DataRow dataRow = spreadsheetTable.NewRow();
-            for (int columnIndex = 0; columnIndex < tableDocument.ColumnNames.Count; columnIndex++)
-                dataRow[columnIndex] = columnIndex < row.Count ? row[columnIndex] ?? string.Empty : string.Empty;
-
-            spreadsheetTable.Rows.Add(dataRow);
-        }
-
-        spreadsheetTable.EndInit();
-
-        SpreadsheetDataGrid.ItemsSource = spreadsheetTable.DefaultView;
-        selectedSpreadsheetCellCoordinates = [];
-        SpreadsheetDataGrid.Columns.Clear();
-
-        for (int columnIndex = 0; columnIndex < spreadsheetTable.Columns.Count; columnIndex++)
-        {
-            DataColumn column = spreadsheetTable.Columns[columnIndex];
-            double width = tableDocument.ColumnWidths.ElementAtOrDefault(columnIndex) ?? SpreadsheetDefaultColumnWidth;
-            DataGridTextColumn gridColumn = new()
-            {
-                Header = EditTextTableDocument.GetSpreadsheetColumnLabel(columnIndex),
-                Binding = new System.Windows.Data.Binding($"[{column.ColumnName}]"),
-                ElementStyle = CreateSpreadsheetDisplayTextStyle(columnIndex),
-                EditingElementStyle = CreateSpreadsheetEditingTextStyle(columnIndex),
-                MinWidth = SpreadsheetDefaultColumnWidth,
-                Width = new DataGridLength(Math.Max(SpreadsheetDefaultColumnWidth, width)),
-            };
-
-            SpreadsheetDataGrid.Columns.Add(gridColumn);
-            TrackSpreadsheetColumnWidth(gridColumn);
-        }
-
-        SpreadsheetDataGrid.Items.Refresh();
-        isApplyingSpreadsheetLayout = false;
-    }
-
-    private void RefreshSpreadsheetFromText(bool rebuildTable = true)
-    {
-        if (isSyncingTextFromSpreadsheet)
-            return;
-
-        EditTextTableDocument? existingDocument = tableDocument;
-        tableDocument = EditTextTableDocument.CreateFromText(
-            PassedTextControl.Text,
-            existingDocument?.MinimumRowCount ?? EditTextTableDocument.DefaultMinimumRowCount,
-            existingDocument?.MinimumColumnCount ?? EditTextTableDocument.DefaultMinimumColumnCount);
-
-        if (existingDocument is not null)
-            tableDocument.ApplyViewMetricsFrom(existingDocument);
-
-        if (rebuildTable)
-            RebuildSpreadsheetTable();
-        UpdateLineAndColumnText();
-    }
-
-    private void RefreshMarkdownFromText()
-    {
-        if (isSyncingTextFromMarkdown)
-            return;
-
-        LoadMarkdownDocumentFromText(PassedTextControl.Text);
-        UpdateLineAndColumnText();
-    }
-
-    private void LoadMarkdownDocumentFromText(string? markdownText)
-    {
-        isApplyingMarkdownDocument = true;
-        MarkdownEditorControl.Document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
-            markdownText,
-            MarkdownEditorControl.FontFamily,
-            MarkdownEditorControl.FontSize,
-            OpenedFilePath);
-        markdownOffsetMap = MarkdownFlowDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
-        markdownOffsetMapSourceText = markdownText ?? string.Empty;
-        ApplyMarkdownTheme();
-        ApplyMarkdownWrapSetting();
-        SetMargins(MarginsMenuItem.IsChecked is true);
-        isApplyingMarkdownDocument = false;
-    }
-
-    private void SyncMarkdownTextFromDocument()
-    {
-        if (MarkdownEditorControl.Document is null)
-            return;
-
-        isSyncingTextFromMarkdown = true;
-        PassedTextControl.Text = MarkdownFlowDocumentUtilities.SerializeToMarkdown(
-            MarkdownEditorControl.Document,
-            preserveLiteralMarkdown: true);
-        isSyncingTextFromMarkdown = false;
-    }
-
-    private void ApplyMarkdownTheme()
-    {
-        if (MarkdownEditorControl.Document is null)
-            return;
-
-        bool isLightTheme = SystemThemeUtility.IsLightTheme();
-        MarkdownFlowDocumentUtilities.ApplyTheme(
-            MarkdownEditorControl.Document,
-            this,
-            isLightTheme);
-        markdownAppliedLightTheme = isLightTheme;
-    }
-
-    /// <summary>
-    /// Re-theming walks and restyles the whole document, which invalidates layout for every block.
-    /// On window activation it is only needed when the system theme changed while the window was inactive.
-    /// </summary>
-    private void ApplyMarkdownThemeIfChanged()
-    {
-        if (markdownAppliedLightTheme == SystemThemeUtility.IsLightTheme())
-            return;
-
-        ApplyMarkdownTheme();
-    }
-
-    private void ApplyMarkdownWrapSetting()
-    {
-        if (MarkdownEditorControl.Document is null)
-            return;
-
-        if (WrapTextMenuItem.IsChecked)
-        {
-            MarkdownEditorControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-            MarkdownEditorControl.Document.PageWidth = double.NaN;
-        }
-        else
-        {
-            MarkdownEditorControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-            MarkdownEditorControl.Document.PageWidth = 4000;
-        }
-    }
-
-    private void ReloadMarkdownDocumentAndRestoreCaret(int targetPlainTextOffset)
-    {
-        SyncMarkdownTextFromDocument();
-        LoadMarkdownDocumentFromText(PassedTextControl.Text);
-
-        if (MarkdownEditorControl.Document is null)
-            return;
-
-        TextPointer caretPosition = GetMarkdownTextPointerAtPlainTextOffset(targetPlainTextOffset);
-        MarkdownEditorControl.Selection.Select(caretPosition, caretPosition);
-    }
-
-    private int GetMarkdownPlainTextOffset(TextPointer position)
-    {
-        if (MarkdownEditorControl.Document is null)
-            return 0;
-
-        return new TextRange(MarkdownEditorControl.Document.ContentStart, position).Text.Length;
-    }
-
-    private TextPointer GetMarkdownTextPointerAtPlainTextOffset(int targetPlainTextOffset)
-    {
-        if (MarkdownEditorControl.Document is null)
-            return MarkdownEditorControl.CaretPosition;
-
-        TextPointer navigator = MarkdownEditorControl.Document.ContentStart;
-        TextPointer lastInsertionPosition = navigator;
-
-        while (navigator is not null)
-        {
-            int currentOffset = new TextRange(MarkdownEditorControl.Document.ContentStart, navigator).Text.Length;
-            if (currentOffset >= targetPlainTextOffset)
-                return navigator;
-
-            lastInsertionPosition = navigator;
-            TextPointer? next = navigator.GetNextInsertionPosition(LogicalDirection.Forward);
-            if (next is null)
-                break;
-
-            navigator = next;
-        }
-
-        return lastInsertionPosition;
     }
 
     private static T? FindParent<T>(DependencyObject? current) where T : DependencyObject
@@ -1189,7 +402,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 SyncSpreadsheetDocumentFromTable();
 
             if (!deferMarkdownLoad)
-                LoadMarkdownDocumentFromText(PassedTextControl.Text);
+                LoadMarkdownDocumentFromText(Session.Text);
 
             SpreadsheetDataGrid.Visibility = Visibility.Collapsed;
             PassedTextControl.Visibility = Visibility.Collapsed;
@@ -1216,905 +429,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EditorModeChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void SpreadsheetDataGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
-    {
-        if (isRestoringSpreadsheetUndoState)
-            return;
-
-        pendingSpreadsheetUndoState = CreateCurrentSpreadsheetUndoState(syncFromTable: true);
-    }
-
-    private void SpreadsheetDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
-    {
-        DetachSpreadsheetCellEditor();
-
-        if (e.EditAction == DataGridEditAction.Cancel)
-        {
-            pendingSpreadsheetUndoState = null;
-            return;
-        }
-
-        Dispatcher.BeginInvoke(
-            () =>
-            {
-                CaptureCommittedSpreadsheetEditIfPending();
-                UpdateLineAndColumnText();
-            },
-            DispatcherPriority.Background);
-    }
-
-    private void SpreadsheetDataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
-    {
-        DetachSpreadsheetCellEditor();
-
-        if (e.EditingElement is not System.Windows.Controls.TextBox cellTextBox)
-            return;
-
-        activeSpreadsheetCellEditor = cellTextBox;
-        lastSpreadsheetCellEditorSelectedText = cellTextBox.SelectedText;
-        cellTextBox.SelectionChanged += SpreadsheetCellEditor_SelectionChanged;
-    }
-
-    private void SpreadsheetCellEditor_SelectionChanged(object sender, RoutedEventArgs e)
-    {
-        if (sender is System.Windows.Controls.TextBox cellTextBox)
-            lastSpreadsheetCellEditorSelectedText = cellTextBox.SelectedText;
-    }
-
-    private void DetachSpreadsheetCellEditor()
-    {
-        activeSpreadsheetCellEditor?.SelectionChanged -= SpreadsheetCellEditor_SelectionChanged;
-
-        activeSpreadsheetCellEditor = null;
-    }
-
-    private void SpreadsheetDataGrid_CurrentCellChanged(object sender, EventArgs e)
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-            UpdateLineAndColumnText();
-    }
-
-    private void SpreadsheetDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
-    {
-        int rowIndex = e.Row.GetIndex();
-        e.Row.Header = (rowIndex + 1).ToString(CultureInfo.InvariantCulture);
-        e.Row.SizeChanged -= SpreadsheetRow_SizeChanged;
-        e.Row.SizeChanged += SpreadsheetRow_SizeChanged;
-
-        double? rowHeight = tableDocument?.RowHeights.ElementAtOrDefault(rowIndex);
-        if (rowHeight.HasValue)
-            e.Row.Height = rowHeight.Value;
-        else
-            e.Row.ClearValue(HeightProperty);
-    }
-
-    private void SpreadsheetDataGrid_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        if (e.Key == Key.Delete)
-        {
-            if (!ShouldHandleSpreadsheetDeleteKey(SpreadsheetDataGrid.SelectedCells.Count, IsSpreadsheetCellEditorFocused()))
-                return;
-
-            e.Handled = true;
-            ClearSelectedSpreadsheetCellValues();
-            return;
-        }
-
-        if (e.Key == Key.C
-            && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            && !IsSpreadsheetCellEditorFocused())
-        {
-            e.Handled = true;
-            _ = TryCopySpreadsheetSelectionToClipboard(GetSelectedSpreadsheetCellCoordinates());
-            return;
-        }
-
-        if (e.Key == Key.X
-            && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            && !IsSpreadsheetCellEditorFocused())
-        {
-            e.Handled = true;
-            _ = TryCutSelectedSpreadsheetCellValues();
-            return;
-        }
-
-        if (e.Key == Key.V
-            && (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            && !IsSpreadsheetCellEditorFocused())
-        {
-            e.Handled = true;
-            PasteIntoSpreadsheet();
-            return;
-        }
-
-    }
-
-    private void SpreadsheetDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        spreadsheetContextRowIndex = null;
-        spreadsheetContextColumnIndex = null;
-
-        if (FindVisualParent<Thumb>(e.OriginalSource as DependencyObject) is not null)
-            return;
-
-        if (FindVisualParent<DataGridColumnHeader>(e.OriginalSource as DependencyObject) is DataGridColumnHeader columnHeader
-            && columnHeader.Column is DataGridColumn dataGridColumn)
-        {
-            SelectSpreadsheetColumn(dataGridColumn.DisplayIndex);
-            e.Handled = true;
-            return;
-        }
-
-        if (FindVisualParent<DataGridRowHeader>(e.OriginalSource as DependencyObject) is DataGridRowHeader rowHeader
-            && rowHeader.DataContext is not null)
-        {
-            SelectSpreadsheetRow(rowHeader.DataContext);
-            e.Handled = true;
-        }
-    }
-
-    private void SpreadsheetDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        spreadsheetContextRowIndex = null;
-        spreadsheetContextColumnIndex = null;
-
-        if (FindVisualParent<Thumb>(e.OriginalSource as DependencyObject) is not null)
-            return;
-
-        if (FindVisualParent<DataGridColumnHeader>(e.OriginalSource as DependencyObject) is DataGridColumnHeader columnHeader
-            && columnHeader.Column is DataGridColumn dataGridColumn)
-        {
-            spreadsheetContextColumnIndex = dataGridColumn.DisplayIndex;
-            SelectSpreadsheetColumn(dataGridColumn.DisplayIndex);
-            SpreadsheetDataGrid.ContextMenu = FindResource("SpreadsheetColumnHeaderContextMenu") as ContextMenu;
-            return;
-        }
-
-        if (FindVisualParent<DataGridRowHeader>(e.OriginalSource as DependencyObject) is DataGridRowHeader rowHeader
-            && rowHeader.DataContext is not null)
-        {
-            spreadsheetContextRowIndex = SpreadsheetDataGrid.Items.IndexOf(rowHeader.DataContext);
-            SelectSpreadsheetRow(rowHeader.DataContext);
-            SpreadsheetDataGrid.ContextMenu = FindResource("SpreadsheetRowHeaderContextMenu") as ContextMenu;
-            return;
-        }
-
-        if (FindVisualParent<System.Windows.Controls.DataGridCell>(e.OriginalSource as DependencyObject) is System.Windows.Controls.DataGridCell dataGridCell
-            && dataGridCell.DataContext is not null
-            && dataGridCell.Column is DataGridColumn clickedCellColumn)
-        {
-            spreadsheetContextRowIndex = SpreadsheetDataGrid.Items.IndexOf(dataGridCell.DataContext);
-            spreadsheetContextColumnIndex = clickedCellColumn.DisplayIndex;
-
-            bool isCellAlreadySelected = GetSelectedSpreadsheetCellCoordinates().Contains((spreadsheetContextRowIndex.Value, spreadsheetContextColumnIndex.Value));
-            SelectSpreadsheetCell(dataGridCell.DataContext, clickedCellColumn, clearExistingSelection: !isCellAlreadySelected);
-            SpreadsheetDataGrid.ContextMenu = FindResource("SpreadsheetContextMenu") as ContextMenu;
-            return;
-        }
-
-        SpreadsheetDataGrid.ContextMenu = FindResource("SpreadsheetContextMenu") as ContextMenu;
-    }
-
-    private void SpreadsheetDataGrid_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
-    {
-        if (activeSpreadsheetCellEditor is null)
-            lastSpreadsheetCellEditorSelectedText = string.Empty;
-
-        UpdateSelectedSpreadsheetCellCoordinates();
-
-        if (editorMode == EtwEditorMode.Spreadsheet)
-        {
-            UpdateLineAndColumnText();
-
-            if (CalcResultsTextControl.Visibility == Visibility.Visible)
-            {
-                UpdateCalcPaneTextDisplay();
-                UpdateAggregateStatusDisplay();
-            }
-        }
-    }
-
-    private void ClearSelectedSpreadsheetCellValues()
-    {
-        ClearSpreadsheetCellValuesAndSync(GetSelectedSpreadsheetCellCoordinates());
-    }
-
-    internal static void ClearSpreadsheetCellValues(DataTable dataTable, IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        foreach ((int rowIndex, int columnIndex) in cellCoordinates.Distinct())
-        {
-            if (rowIndex < 0
-                || rowIndex >= dataTable.Rows.Count
-                || columnIndex < 0
-                || columnIndex >= dataTable.Columns.Count)
-            {
-                continue;
-            }
-
-            dataTable.Rows[rowIndex][columnIndex] = string.Empty;
-        }
-    }
-
-    internal static bool TryCutSpreadsheetCellValues(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates,
-        Func<string, bool> trySetClipboardText)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-        ArgumentNullException.ThrowIfNull(trySetClipboardText);
-
-        string selectionText = BuildSpreadsheetSelectionText(dataTable, cellCoordinates);
-        if (string.IsNullOrEmpty(selectionText) || !trySetClipboardText(selectionText))
-            return false;
-
-        ClearSpreadsheetCellValues(dataTable, cellCoordinates);
-        return true;
-    }
-
-    private void PasteIntoSpreadsheet()
-    {
-        string clipboardText;
-        try
-        {
-            if (!ClipboardUtilities.TryGetHtmlTableAsTabSeparated(out clipboardText))
-                clipboardText = System.Windows.Clipboard.GetText();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"PasteIntoSpreadsheet: clipboard read failed. {ex.Message}");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(clipboardText))
-            return;
-
-        if (AppUtilities.TextGrabSettings.EtwNormalizeLineEndingsOnPaste)
-            clipboardText = NormalizeLineEndings(clipboardText);
-
-        int startRow = Math.Max(0, SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem));
-        int startCol = Math.Max(0, SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0);
-
-        List<string[]> pastedRows = EditTextTableDocument.ParseTabSeparatedRows(clipboardText);
-        if (pastedRows.Count == 0)
-            return;
-
-        ApplySpreadsheetDocumentChange(
-            document => WriteGridIntoSpreadsheetDocument(document, pastedRows, startRow, startCol),
-            startRow,
-            startCol);
-    }
-
-    internal static void WriteGridIntoSpreadsheetDocument(
-        EditTextTableDocument document,
-        List<string[]> gridRows,
-        int startRow,
-        int startCol)
-    {
-        int maxGridCols = gridRows.Max(row => row.Length);
-
-        // Expand the document to fit the incoming data if necessary
-        int requiredRows = startRow + gridRows.Count;
-        int requiredCols = startCol + maxGridCols;
-        document.RowCount = Math.Max(document.RowCount, requiredRows);
-        document.ColumnCount = Math.Max(document.ColumnCount, requiredCols);
-        document.MinimumRowCount = Math.Max(document.MinimumRowCount, requiredRows);
-        document.MinimumColumnCount = Math.Max(document.MinimumColumnCount, requiredCols);
-        document.EnsureMinimumSize();
-
-        // Write values into the target cells
-        for (int r = 0; r < gridRows.Count; r++)
-        {
-            int targetRow = startRow + r;
-            for (int c = 0; c < gridRows[r].Length; c++)
-            {
-                int targetCol = startCol + c;
-                if (targetRow < document.Rows.Count && targetCol < document.Rows[targetRow].Count)
-                    document.Rows[targetRow][targetCol] = gridRows[r][c];
-            }
-        }
-    }
-
-    internal static void WriteAggregateResultIntoSpreadsheetDocument(
-        EditTextTableDocument document,
-        string resultText,
-        int targetRow,
-        int targetColumn)
-    {
-        // An aggregate is one result, not a per-cell transform or a pasted table. Keep even
-        // multiline/tabbed output in the anchor cell, leaving every other cell untouched.
-        WriteGridIntoSpreadsheetDocument(document, [[resultText]], targetRow, targetColumn);
-    }
-
-    /// <summary>
-    /// Inserts an OCR grab result into this Spreadsheet-mode window through the structured
-    /// table model rather than splicing raw text into the (hidden, while in this mode)
-    /// underlying text box — that box's selection/cursor doesn't track the DataGrid's current
-    /// cell, so splicing into it corrupts whatever row happens to sit at that stale position.
-    /// A single cell (no row/column structure) replaces the currently selected spreadsheet
-    /// cell; a real multi-cell table is appended as new rows at the bottom instead, landing
-    /// column-aware. Returns true when it handled the insert itself.
-    /// </summary>
-    internal bool TryInsertGrabbedTextIntoSpreadsheet(string grabbedText)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
-
-        List<string[]> parsedRows = EditTextTableDocument.ParseTabSeparatedRows(grabbedText);
-        if (parsedRows.Count == 0)
-            return false;
-
-        if (EditTextTableDocument.IsSingleCellGrid(parsedRows))
-        {
-            int targetRow = Math.Max(0, GetSpreadsheetCurrentRowIndex() ?? 0);
-            int targetColumn = Math.Max(0, GetSpreadsheetCurrentColumnIndex() ?? 0);
-
-            ApplySpreadsheetDocumentChange(document =>
-                WriteGridIntoSpreadsheetDocument(document, parsedRows, targetRow, targetColumn));
-
-            return true;
-        }
-
-        ApplySpreadsheetDocumentChange(document =>
-            WriteGridIntoSpreadsheetDocument(document, parsedRows, document.GetFirstFullyEmptyRowIndex(), 0));
-
-        return true;
-    }
-
-    internal static string BuildSpreadsheetSelectionText(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
-            .Distinct()
-            .Where(cell => cell.RowIndex >= 0
-                && cell.RowIndex < dataTable.Rows.Count
-                && cell.ColumnIndex >= 0
-                && cell.ColumnIndex < dataTable.Columns.Count)];
-
-        if (validCoordinates.Count == 0)
-            return string.Empty;
-
-        return string.Join(
-            Environment.NewLine,
-            validCoordinates
-                .GroupBy(cell => cell.RowIndex)
-                .OrderBy(group => group.Key)
-                .Select(group => string.Join(
-                    "\t",
-                    group.OrderBy(cell => cell.ColumnIndex)
-                        .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty))));
-    }
-
-    internal static string BuildSpreadsheetSelectionHtml(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
-            .Distinct()
-            .Where(cell => cell.RowIndex >= 0
-                && cell.RowIndex < dataTable.Rows.Count
-                && cell.ColumnIndex >= 0
-                && cell.ColumnIndex < dataTable.Columns.Count)];
-
-        if (validCoordinates.Count == 0)
-            return string.Empty;
-
-        List<List<string>> rows = [.. validCoordinates
-            .GroupBy(cell => cell.RowIndex)
-            .OrderBy(group => group.Key)
-            .Select(group => group
-                .OrderBy(cell => cell.ColumnIndex)
-                .Select(cell => dataTable.Rows[cell.RowIndex][cell.ColumnIndex]?.ToString() ?? string.Empty)
-                .ToList())];
-
-        return CfHtmlTableUtilities.BuildCfHtmlTable(rows);
-    }
-
-    internal static string BuildSpreadsheetSelectionMarkdown(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
-            .Distinct()
-            .Where(cell => cell.RowIndex >= 0
-                && cell.RowIndex < dataTable.Rows.Count
-                && cell.ColumnIndex >= 0
-                && cell.ColumnIndex < dataTable.Columns.Count)];
-
-        if (validCoordinates.Count == 0)
-            return string.Empty;
-
-        List<int> rowIndices = [.. validCoordinates.Select(cell => cell.RowIndex).Distinct().OrderBy(index => index)];
-        List<int> columnIndices = [.. validCoordinates.Select(cell => cell.ColumnIndex).Distinct().OrderBy(index => index)];
-
-        StringBuilder builder = new();
-
-        for (int rowPosition = 0; rowPosition < rowIndices.Count; rowPosition++)
-        {
-            int rowIndex = rowIndices[rowPosition];
-            IEnumerable<string> cellTexts = columnIndices.Select(columnIndex =>
-                EscapeMarkdownTableCell(dataTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty));
-
-            builder.Append($"| {string.Join(" | ", cellTexts)} |");
-            builder.Append(Environment.NewLine);
-
-            if (rowPosition == 0)
-            {
-                builder.Append($"| {string.Join(" | ", Enumerable.Repeat("---", columnIndices.Count))} |");
-                builder.Append(Environment.NewLine);
-            }
-        }
-
-        return builder.ToString().TrimEnd('\r', '\n');
-    }
-
-    private static string EscapeMarkdownTableCell(string value)
-    {
-        return value
-            .Replace("|", "\\|", StringComparison.Ordinal)
-            .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace("\r", "\n", StringComparison.Ordinal)
-            .Replace("\n", "<br />", StringComparison.Ordinal);
-    }
-
-    internal static List<double> ExtractSpreadsheetSelectionNumbers(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        List<double> numbers = [];
-
-        foreach ((int rowIndex, int columnIndex) in cellCoordinates.Distinct())
-        {
-            if (rowIndex < 0
-                || rowIndex >= dataTable.Rows.Count
-                || columnIndex < 0
-                || columnIndex >= dataTable.Columns.Count)
-            {
-                continue;
-            }
-
-            string cellText = dataTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
-            if (NumericUtilities.TryExtractFirstDouble(cellText, out double number))
-                numbers.Add(number);
-        }
-
-        return numbers;
-    }
-
-    internal static string BuildSpreadsheetSelectionNumbersPreviewText(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        return string.Join(
-            Environment.NewLine,
-            ExtractSpreadsheetSelectionNumbers(dataTable, cellCoordinates)
-                .Select(NumericUtilities.FormatNumber));
-    }
-
-    internal static List<(int RowIndex, int ColumnIndex)> GetSelectedOrPopulatedSpreadsheetCellCoordinates(
-        DataTable dataTable,
-        IEnumerable<(int RowIndex, int ColumnIndex)> selectedCellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(dataTable);
-        ArgumentNullException.ThrowIfNull(selectedCellCoordinates);
-
-        List<(int RowIndex, int ColumnIndex)> validSelectedCoordinates = [.. selectedCellCoordinates
-            .Distinct()
-            .Where(cell => cell.RowIndex >= 0
-                && cell.RowIndex < dataTable.Rows.Count
-                && cell.ColumnIndex >= 0
-                && cell.ColumnIndex < dataTable.Columns.Count)];
-
-        if (validSelectedCoordinates.Count > 0)
-            return validSelectedCoordinates;
-
-        List<(int RowIndex, int ColumnIndex)> populatedCoordinates = [];
-
-        for (int rowIndex = 0; rowIndex < dataTable.Rows.Count; rowIndex++)
-        {
-            for (int columnIndex = 0; columnIndex < dataTable.Columns.Count; columnIndex++)
-            {
-                string cellValue = dataTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(cellValue))
-                    populatedCoordinates.Add((rowIndex, columnIndex));
-            }
-        }
-
-        return populatedCoordinates;
-    }
-
-    internal static void TransformSpreadsheetDocumentCellValues(
-        EditTextTableDocument document,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates,
-        Func<string, string> transform)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-        ArgumentNullException.ThrowIfNull(transform);
-
-        document.EnsureMinimumSize();
-
-        foreach ((int rowIndex, int columnIndex) in cellCoordinates.Distinct())
-        {
-            if (rowIndex < 0
-                || rowIndex >= document.Rows.Count
-                || columnIndex < 0
-                || document.Rows[rowIndex] is null
-                || columnIndex >= document.Rows[rowIndex].Count)
-            {
-                continue;
-            }
-
-            string updatedValue = transform(document.Rows[rowIndex][columnIndex] ?? string.Empty);
-            ArgumentNullException.ThrowIfNull(updatedValue);
-            document.Rows[rowIndex][columnIndex] = updatedValue;
-        }
-    }
-
-    internal static void SetSpreadsheetDocumentCellValues(
-        EditTextTableDocument document,
-        IEnumerable<(int RowIndex, int ColumnIndex, string Value)> cellValues)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(cellValues);
-
-        document.EnsureMinimumSize();
-
-        foreach ((int rowIndex, int columnIndex, string value) in cellValues.Distinct())
-        {
-            if (rowIndex < 0
-                || rowIndex >= document.Rows.Count
-                || columnIndex < 0
-                || document.Rows[rowIndex] is null
-                || columnIndex >= document.Rows[rowIndex].Count)
-            {
-                continue;
-            }
-
-            document.Rows[rowIndex][columnIndex] = value ?? string.Empty;
-        }
-    }
-
-    internal static bool AreSpreadsheetDocumentCellsWrapped(
-        EditTextTableDocument document,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        document.EnsureMinimumSize();
-
-        List<(int RowIndex, int ColumnIndex)> validCoordinates = [.. cellCoordinates
-            .Distinct()
-            .Where(cell => cell.RowIndex >= 0
-                && cell.RowIndex < document.Rows.Count
-                && cell.ColumnIndex >= 0
-                && cell.ColumnIndex < document.ColumnNames.Count)];
-
-        return validCoordinates.Count > 0
-            && validCoordinates.All(cell => document.IsCellWrapped(cell.RowIndex, cell.ColumnIndex));
-    }
-
-    internal static void SetSpreadsheetDocumentCellWrapState(
-        EditTextTableDocument document,
-        IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates,
-        bool shouldWrap)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(cellCoordinates);
-
-        document.EnsureMinimumSize();
-
-        foreach ((int rowIndex, int columnIndex) in cellCoordinates.Distinct())
-            document.SetCellWrap(rowIndex, columnIndex, shouldWrap);
-    }
-
-    internal static void ClearSpreadsheetDocumentRowHeights(EditTextTableDocument document, IEnumerable<int> rowIndices)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(rowIndices);
-
-        document.EnsureMinimumSize();
-
-        foreach (int rowIndex in rowIndices.Distinct())
-            document.SetRowHeight(rowIndex, null);
-    }
-
-    internal static double? GetSpreadsheetPersistedRowHeight(double rowHeight)
-    {
-        if (double.IsNaN(rowHeight) || double.IsInfinity(rowHeight) || rowHeight <= 0)
-            return null;
-
-        return rowHeight;
-    }
-
-    private void UpdateSelectedSpreadsheetCellCoordinates()
-    {
-        selectedSpreadsheetCellCoordinates = [.. SpreadsheetDataGrid.SelectedCells
-            .Select(cell => (
-                RowIndex: SpreadsheetDataGrid.Items.IndexOf(cell.Item),
-                ColumnIndex: cell.Column?.DisplayIndex ?? -1))
-            .Where(cell => cell.RowIndex >= 0 && cell.ColumnIndex >= 0)
-            .Distinct()];
-    }
-
-    private List<(int RowIndex, int ColumnIndex)> GetSelectedSpreadsheetCellCoordinates()
-    {
-        return [.. selectedSpreadsheetCellCoordinates];
-    }
-
-    private List<(int RowIndex, int ColumnIndex)> GetSelectedOrCurrentSpreadsheetCellCoordinates()
-    {
-        List<(int RowIndex, int ColumnIndex)> selectedCells = GetSelectedSpreadsheetCellCoordinates();
-        if (selectedCells.Count > 0)
-            return selectedCells;
-
-        int rowIndex = spreadsheetContextRowIndex ?? SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        int columnIndex = spreadsheetContextColumnIndex ?? SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? -1;
-
-        if (rowIndex < 0 || columnIndex < 0)
-            return [];
-
-        return [(rowIndex, columnIndex)];
-    }
-
-    private List<(int RowIndex, int ColumnIndex)> GetSelectedOrPopulatedSpreadsheetCellCoordinates()
-    {
-        return GetSelectedOrPopulatedSpreadsheetCellCoordinates(spreadsheetTable, GetSelectedSpreadsheetCellCoordinates());
-    }
-
-    private IEnumerable<string> GetSelectedOrPopulatedSpreadsheetCellTexts()
-    {
-        foreach ((int rowIndex, int columnIndex) in GetSelectedOrPopulatedSpreadsheetCellCoordinates())
-            yield return spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
-    }
-
-    private bool TryApplySpreadsheetTextTransform(Func<string, string> transform)
-    {
-        ArgumentNullException.ThrowIfNull(transform);
-
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
-
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        EnsureSpreadsheetDocumentFromText();
-
-        if (tableDocument is null)
-            return true;
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrPopulatedSpreadsheetCellCoordinates();
-        if (targetCells.Count == 0)
-            return true;
-
-        int focusRow = Math.Max(0, SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem));
-        int focusColumn = Math.Max(0, SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0);
-
-        ApplySpreadsheetDocumentChange(
-            document => TransformSpreadsheetDocumentCellValues(document, targetCells, transform),
-            focusRow,
-            focusColumn);
-        UpdateLineAndColumnText();
-        return true;
-    }
-
-    private async Task<bool> TryApplySpreadsheetTextTransformAsync(Func<string, Task<string>> transformAsync)
-    {
-        ArgumentNullException.ThrowIfNull(transformAsync);
-
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
-
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        EnsureSpreadsheetDocumentFromText();
-
-        if (tableDocument is null)
-            return true;
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrPopulatedSpreadsheetCellCoordinates();
-        if (targetCells.Count == 0)
-            return true;
-
-        int focusRow = Math.Max(0, SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem));
-        int focusColumn = Math.Max(0, SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0);
-        List<(int RowIndex, int ColumnIndex, string Value)> transformedCells = [];
-
-        foreach ((int rowIndex, int columnIndex) in targetCells)
-        {
-            if (rowIndex < 0
-                || rowIndex >= tableDocument.Rows.Count
-                || columnIndex < 0
-                || columnIndex >= tableDocument.Rows[rowIndex].Count)
-            {
-                continue;
-            }
-
-            string updatedValue = await transformAsync(tableDocument.Rows[rowIndex][columnIndex] ?? string.Empty);
-            ArgumentNullException.ThrowIfNull(updatedValue);
-            transformedCells.Add((rowIndex, columnIndex, updatedValue));
-        }
-
-        ApplySpreadsheetDocumentChange(
-            document => SetSpreadsheetDocumentCellValues(document, transformedCells),
-            focusRow,
-            focusColumn);
-        UpdateLineAndColumnText();
-        return true;
-    }
-
-    private void SpreadsheetUndoCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        e.CanExecute = spreadsheetUndoHistory.CanUndo;
-        e.Handled = true;
-    }
-
-    private void SpreadsheetCopyCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        e.CanExecute = GetSelectedSpreadsheetCellCoordinates().Count > 0;
-        e.Handled = true;
-    }
-
-    private void SpreadsheetPasteCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        e.CanExecute = true;
-        e.Handled = true;
-    }
-
-    private void SpreadsheetRedoCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        e.CanExecute = spreadsheetUndoHistory.CanRedo;
-        e.Handled = true;
-    }
-
-    private void SpreadsheetUndoExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SpreadsheetUndoState? previousState = spreadsheetUndoHistory.Undo(CreateCurrentSpreadsheetUndoState(syncFromTable: true));
-        if (previousState is null)
-            return;
-
-        RestoreSpreadsheetUndoState(previousState);
-        CommandManager.InvalidateRequerySuggested();
-        e.Handled = true;
-    }
-
-    private void SpreadsheetRedoExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SpreadsheetUndoState? nextState = spreadsheetUndoHistory.Redo(CreateCurrentSpreadsheetUndoState(syncFromTable: true));
-        if (nextState is null)
-            return;
-
-        RestoreSpreadsheetUndoState(nextState);
-        CommandManager.InvalidateRequerySuggested();
-        e.Handled = true;
-    }
-
-    private void SpreadsheetCopyExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        _ = TryCopySpreadsheetSelectionToClipboard(GetSelectedSpreadsheetCellCoordinates());
-        e.Handled = true;
-    }
-
-    private void SpreadsheetCutExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        _ = TryCutSelectedSpreadsheetCellValues();
-        e.Handled = true;
-    }
-
-    private void SpreadsheetPasteExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet || IsSpreadsheetCellEditorFocused())
-            return;
-
-        PasteIntoSpreadsheet();
-        e.Handled = true;
-    }
-
-    private bool IsSpreadsheetCellEditorFocused()
-    {
-        if (Keyboard.FocusedElement is not DependencyObject focusedElement)
-            return false;
-
-        return FindVisualParent<System.Windows.Controls.DataGridCell>(focusedElement) is not null
-            && FindVisualParent<System.Windows.Controls.TextBox>(focusedElement) is not null;
-    }
-
-    private string GetSpreadsheetSelectedText()
-    {
-        if (activeSpreadsheetCellEditor is System.Windows.Controls.TextBox cellTextBox)
-            return cellTextBox.SelectedText;
-
-        if (lastSpreadsheetCellEditorSelectedText.Length > 0)
-            return lastSpreadsheetCellEditorSelectedText;
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
-        if (targetCells.Count != 1)
-            return string.Empty;
-
-        (int rowIndex, int columnIndex) = targetCells[0];
-        if (rowIndex < 0 || rowIndex >= spreadsheetTable.Rows.Count
-            || columnIndex < 0 || columnIndex >= spreadsheetTable.Columns.Count)
-        {
-            return string.Empty;
-        }
-
-        return spreadsheetTable.Rows[rowIndex][columnIndex]?.ToString() ?? string.Empty;
-    }
-
-    internal static bool ShouldHandleSpreadsheetDeleteKey(int selectedCellCount, bool isCellEditorFocused)
-    {
-        return !isCellEditorFocused && selectedCellCount > 0;
-    }
-
-    private void SpreadsheetColumnWidthChanged(object? sender, EventArgs e)
-    {
-        if (isApplyingSpreadsheetLayout || tableDocument is null || sender is not DataGridColumn column)
-            return;
-
-        int columnIndex = SpreadsheetDataGrid.Columns.IndexOf(column);
-        if (columnIndex < 0)
-            return;
-
-        double width = column.ActualWidth > 0 ? column.ActualWidth : column.Width.DisplayValue;
-        tableDocument.SetColumnWidth(columnIndex, width);
-    }
-
-    private void SpreadsheetRow_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (isApplyingSpreadsheetLayout || tableDocument is null || sender is not DataGridRow row)
-            return;
-
-        int rowIndex = row.GetIndex();
-        if (rowIndex < 0)
-            return;
-
-        double? height = GetSpreadsheetPersistedRowHeight(row.Height);
-        if (!height.HasValue)
-            return;
-
-        tableDocument.SetRowHeight(rowIndex, height.Value);
-    }
-
     private void EditorModeMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender == RawTextModeMenuItem)
@@ -2133,10 +447,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void EnterRawTextMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Text);
 
-    private void EnterSpreadsheetMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Spreadsheet);
-
-    private void EnterMarkdownMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Markdown);
-
     private void ToggleAlwaysOnTop_Click(object sender, RoutedEventArgs e) => ToggleMenuItem(AlwaysOnTop, AlwaysOnTop_Checked);
 
     private void ToggleHideBottomBar_Click(object sender, RoutedEventArgs e) => ToggleMenuItem(HideBottomBarMenuItem, HideBottomBarMenuItem_Click);
@@ -2151,95 +461,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void ToggleShowMathErrors_Click(object sender, RoutedEventArgs e) => ToggleMenuItem(ShowErrorsMenuItem, ShowErrorsMenuItem_Click);
 
-    private void ToggleWriteTxtFileForEachImage_Click(object sender, RoutedEventArgs e)
-    {
-        ReadFolderOfImagesWriteTxtFiles.IsChecked = !ReadFolderOfImagesWriteTxtFiles.IsChecked;
-    }
-
-    private void SyncSpreadsheetDocumentFromTable(bool writeText = true)
-    {
-        tableDocument ??= EditTextTableDocument.CreateFromText(PassedTextControl.Text);
-
-        tableDocument.ColumnNames = [.. spreadsheetTable.Columns
-            .Cast<DataColumn>()
-            .Select(column => column.ColumnName)];
-
-        tableDocument.Rows = [.. spreadsheetTable.Rows
-            .Cast<DataRow>()
-            .Select(row => spreadsheetTable.Columns
-                .Cast<DataColumn>()
-                .Select(column => row[column]?.ToString() ?? string.Empty)
-                .ToList())];
-
-        int furthestNonEmptyRowIndex = -1;
-        int furthestNonEmptyColumnIndex = -1;
-
-        for (int rowIndex = 0; rowIndex < tableDocument.Rows.Count; rowIndex++)
-        {
-            for (int columnIndex = 0; columnIndex < tableDocument.Rows[rowIndex].Count; columnIndex++)
-            {
-                if (string.IsNullOrWhiteSpace(tableDocument.Rows[rowIndex][columnIndex]))
-                    continue;
-
-                furthestNonEmptyRowIndex = Math.Max(furthestNonEmptyRowIndex, rowIndex);
-                furthestNonEmptyColumnIndex = Math.Max(furthestNonEmptyColumnIndex, columnIndex);
-            }
-        }
-
-        tableDocument.RowCount = Math.Max(tableDocument.RowCount, furthestNonEmptyRowIndex + 1);
-        tableDocument.ColumnCount = Math.Max(tableDocument.ColumnCount, furthestNonEmptyColumnIndex + 1);
-        tableDocument.MinimumColumnCount = Math.Max(tableDocument.MinimumColumnCount, spreadsheetTable.Columns.Count);
-        tableDocument.MinimumRowCount = Math.Max(tableDocument.MinimumRowCount, spreadsheetTable.Rows.Count);
-        CaptureSpreadsheetLayoutMetrics();
-        tableDocument.EnsureMinimumSize();
-
-        if (writeText)
-            UpdateTextFromSpreadsheetDocument();
-    }
-
-    private void CaptureSpreadsheetLayoutMetrics()
-    {
-        if (tableDocument is null)
-            return;
-
-        for (int columnIndex = 0; columnIndex < SpreadsheetDataGrid.Columns.Count; columnIndex++)
-        {
-            DataGridColumn column = SpreadsheetDataGrid.Columns[columnIndex];
-            double width = column.ActualWidth > 0 ? column.ActualWidth : column.Width.DisplayValue;
-            tableDocument.SetColumnWidth(columnIndex, width);
-        }
-
-        foreach (object item in SpreadsheetDataGrid.Items)
-        {
-            if (item == CollectionView.NewItemPlaceholder)
-                continue;
-
-            if (SpreadsheetDataGrid.ItemContainerGenerator.ContainerFromItem(item) is not DataGridRow row)
-                continue;
-
-            int rowIndex = row.GetIndex();
-            if (rowIndex < 0)
-                continue;
-
-            double? height = GetSpreadsheetPersistedRowHeight(row.Height);
-            tableDocument.SetRowHeight(rowIndex, height);
-        }
-    }
-
-    private void DetachSpreadsheetColumnWidthTracking()
-    {
-        foreach (DataGridColumn column in trackedSpreadsheetColumns)
-            DependencyPropertyDescriptor.FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn))?.RemoveValueChanged(column, SpreadsheetColumnWidthChanged);
-
-        trackedSpreadsheetColumns.Clear();
-    }
-
-    private void TrackSpreadsheetColumnWidth(DataGridColumn column)
-    {
-        trackedSpreadsheetColumns.Add(column);
-        DependencyPropertyDescriptor.FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn))?.AddValueChanged(column, SpreadsheetColumnWidthChanged);
-    }
-
     private bool TrySetClipboardText(string text)
     {
         try
@@ -2253,87 +474,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private bool TrySetSpreadsheetClipboardSelection(string plainText, string htmlClipboardData)
-    {
-        if (string.IsNullOrEmpty(plainText))
-            return false;
-
-        try
-        {
-            System.Windows.DataObject dataObject = new();
-            dataObject.SetText(plainText);
-            if (!string.IsNullOrEmpty(htmlClipboardData))
-                dataObject.SetData(System.Windows.DataFormats.Html, htmlClipboardData);
-
-            System.Windows.Clipboard.SetDataObject(dataObject, true);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private bool TryCopySpreadsheetSelectionToClipboard(IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        List<(int RowIndex, int ColumnIndex)> coordinates = [.. cellCoordinates];
-        string selectionText = BuildSpreadsheetSelectionText(spreadsheetTable, coordinates);
-        string selectionHtml = BuildSpreadsheetSelectionHtml(spreadsheetTable, coordinates);
-        return TrySetSpreadsheetClipboardSelection(selectionText, selectionHtml);
-    }
-
-    private void ClearSpreadsheetCellValuesAndSync(IEnumerable<(int RowIndex, int ColumnIndex)> cellCoordinates)
-    {
-        List<(int RowIndex, int ColumnIndex)> targetCellCoordinates = [.. cellCoordinates];
-        if (targetCellCoordinates.Count == 0)
-            return;
-
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SpreadsheetUndoState? beforeChange = CreateCurrentSpreadsheetUndoState(syncFromTable: true);
-
-        ClearSpreadsheetCellValues(spreadsheetTable, targetCellCoordinates);
-        SyncSpreadsheetDocumentFromTable();
-        RecordSpreadsheetUndoChange(beforeChange, CreateCurrentSpreadsheetUndoState(syncFromTable: false));
-        UpdateLineAndColumnText();
-    }
-
-    private bool TryCutSelectedSpreadsheetCellValues()
-    {
-        List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
-        if (selectedCellCoordinates.Count == 0)
-            return false;
-
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SpreadsheetUndoState? beforeChange = CreateCurrentSpreadsheetUndoState(syncFromTable: true);
-
-        string selectionHtml = BuildSpreadsheetSelectionHtml(spreadsheetTable, selectedCellCoordinates);
-        if (!TryCutSpreadsheetCellValues(
-                spreadsheetTable,
-                selectedCellCoordinates,
-                text => TrySetSpreadsheetClipboardSelection(text, selectionHtml)))
-            return false;
-
-        SyncSpreadsheetDocumentFromTable();
-        RecordSpreadsheetUndoChange(beforeChange, CreateCurrentSpreadsheetUndoState(syncFromTable: false));
-        UpdateLineAndColumnText();
-        return true;
-    }
-
-    private void UpdateSpreadsheetModeUi()
-    {
-        bool isSpreadsheetMode = editorMode == EtwEditorMode.Spreadsheet;
-        bool isMarkdownMode = editorMode == EtwEditorMode.Markdown;
-
-        AddSpreadsheetRowButton.Visibility = isSpreadsheetMode ? Visibility.Visible : Visibility.Collapsed;
-        AddSpreadsheetColumnButton.Visibility = isSpreadsheetMode ? Visibility.Visible : Visibility.Collapsed;
-        AddSpreadsheetRowMenuItem.Visibility = isSpreadsheetMode ? Visibility.Visible : Visibility.Collapsed;
-        AddSpreadsheetColumnMenuItem.Visibility = isSpreadsheetMode ? Visibility.Visible : Visibility.Collapsed;
-        RawTextModeMenuItem.IsChecked = editorMode == EtwEditorMode.Text;
-        SpreadsheetModeMenuItem.IsChecked = isSpreadsheetMode;
-        MarkdownModeMenuItem.IsChecked = isMarkdownMode;
-        CommandManager.InvalidateRequerySuggested();
-    }
-
     private static T? FindVisualParent<T>(DependencyObject? child) where T : DependencyObject
     {
         while (child is not null)
@@ -2345,132 +485,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         return null;
-    }
-
-    private System.Windows.Data.Binding CreateSpreadsheetCellTextWrappingBinding(int columnIndex)
-    {
-        return new System.Windows.Data.Binding
-        {
-            Converter = new SpreadsheetCellTextWrappingConverter(this, columnIndex),
-            Mode = BindingMode.OneWay
-        };
-    }
-
-    private Style CreateSpreadsheetDisplayTextStyle(int columnIndex)
-    {
-        Style style = new(typeof(TextBlock));
-        style.Setters.Add(new Setter(TextBlock.TextWrappingProperty, CreateSpreadsheetCellTextWrappingBinding(columnIndex)));
-        style.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Top));
-        return style;
-    }
-
-    private Style CreateSpreadsheetEditingTextStyle(int columnIndex)
-    {
-        Style style = new(typeof(System.Windows.Controls.TextBox));
-        style.Setters.Add(new Setter(System.Windows.Controls.TextBox.TextWrappingProperty, CreateSpreadsheetCellTextWrappingBinding(columnIndex)));
-        style.Setters.Add(new Setter(System.Windows.Controls.TextBox.AcceptsReturnProperty, false));
-        style.Setters.Add(new Setter(System.Windows.Controls.TextBox.VerticalContentAlignmentProperty, VerticalAlignment.Top));
-        return style;
-    }
-
-    private TextWrapping GetSpreadsheetCellTextWrapping(object? rowItem, int columnIndex)
-    {
-        if (tableDocument is null || rowItem is not DataRowView dataRowView)
-            return TextWrapping.NoWrap;
-
-        int rowIndex = dataRowView.Row.Table.Rows.IndexOf(dataRowView.Row);
-        if (rowIndex < 0)
-            return TextWrapping.NoWrap;
-
-        return tableDocument.IsCellWrapped(rowIndex, columnIndex)
-            ? TextWrapping.Wrap
-            : TextWrapping.NoWrap;
-    }
-
-    private static MenuItem? GetContextMenuItem(ContextMenu contextMenu, string itemTag)
-    {
-        return contextMenu.Items
-            .OfType<MenuItem>()
-            .FirstOrDefault(item => string.Equals(item.Tag as string, itemTag, StringComparison.Ordinal));
-    }
-
-    private void SelectSpreadsheetColumn(int columnIndex)
-    {
-        if (columnIndex < 0 || columnIndex >= SpreadsheetDataGrid.Columns.Count)
-            return;
-
-        SpreadsheetDataGrid.SelectedItems.Clear();
-        SpreadsheetDataGrid.SelectedCells.Clear();
-
-        DataGridColumn column = SpreadsheetDataGrid.Columns[columnIndex];
-        object? firstRowItem = null;
-
-        foreach (object item in SpreadsheetDataGrid.Items)
-        {
-            if (ReferenceEquals(item, CollectionView.NewItemPlaceholder))
-                continue;
-
-            firstRowItem ??= item;
-            SpreadsheetDataGrid.SelectedCells.Add(new DataGridCellInfo(item, column));
-        }
-
-        if (firstRowItem is not null)
-        {
-            SpreadsheetDataGrid.CurrentCell = new DataGridCellInfo(firstRowItem, column);
-            SpreadsheetDataGrid.ScrollIntoView(firstRowItem, column);
-        }
-
-        UpdateSelectedSpreadsheetCellCoordinates();
-        SpreadsheetDataGrid.Focus();
-        UpdateLineAndColumnText();
-    }
-
-    private void SelectSpreadsheetCell(object rowItem, DataGridColumn column, bool clearExistingSelection)
-    {
-        if (clearExistingSelection)
-        {
-            SpreadsheetDataGrid.SelectedItems.Clear();
-            SpreadsheetDataGrid.SelectedCells.Clear();
-        }
-
-        SpreadsheetDataGrid.CurrentCell = new DataGridCellInfo(rowItem, column);
-
-        if (!SpreadsheetDataGrid.SelectedCells.Any(cell => ReferenceEquals(cell.Item, rowItem) && cell.Column == column))
-            SpreadsheetDataGrid.SelectedCells.Add(new DataGridCellInfo(rowItem, column));
-
-        SpreadsheetDataGrid.ScrollIntoView(rowItem, column);
-        UpdateSelectedSpreadsheetCellCoordinates();
-        SpreadsheetDataGrid.Focus();
-        UpdateLineAndColumnText();
-    }
-
-    private void SelectSpreadsheetRow(object rowItem)
-    {
-        SpreadsheetDataGrid.SelectedItems.Clear();
-        SpreadsheetDataGrid.SelectedCells.Clear();
-
-        if (SpreadsheetDataGrid.Columns.Count == 0)
-            return;
-
-        DataGridColumn firstColumn = SpreadsheetDataGrid.Columns[0];
-        foreach (DataGridColumn column in SpreadsheetDataGrid.Columns)
-            SpreadsheetDataGrid.SelectedCells.Add(new DataGridCellInfo(rowItem, column));
-
-        SpreadsheetDataGrid.CurrentCell = new DataGridCellInfo(rowItem, firstColumn);
-        SpreadsheetDataGrid.ScrollIntoView(rowItem, firstColumn);
-        UpdateSelectedSpreadsheetCellCoordinates();
-        SpreadsheetDataGrid.Focus();
-        UpdateLineAndColumnText();
-    }
-
-    private void UpdateTextFromSpreadsheetDocument()
-    {
-        if (tableDocument is null)
-            return;
-
-        isSyncingTextFromSpreadsheet = true;
-        PassedTextControl.Text = tableDocument.SerializeToText();
-        isSyncingTextFromSpreadsheet = false;
     }
 
     internal HistoryInfo AsHistoryItem()
@@ -2495,7 +509,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             LanguageTag = LanguageUtilities.GetCurrentInputLanguage().LanguageTag,
             LanguageKind = LanguageKind.Global,
             CaptureDateTime = DateTimeOffset.Now,
-            TextContent = PassedTextControl.Text,
+            TextContent = Session.Text,
             SourceMode = TextGrabMode.EditText,
             CalcPaneWidth = calcPaneWidth,
             HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true,
@@ -2509,146 +523,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return historyInfo;
     }
 
-    internal static string GetWindowTitle(string? openedFilePath, bool hasPendingEdits)
-    {
-        if (string.IsNullOrWhiteSpace(openedFilePath))
-            return EditTextWindowTitle;
-
-        string fileName = Path.GetFileName(openedFilePath);
-        if (hasPendingEdits)
-            fileName = $"*{fileName}";
-
-        return $"{EditTextWindowTitle} | {fileName}";
-    }
-
-    internal static bool ShouldShowPendingFileEdits(string? openedFilePath, string savedText, string currentText)
-    {
-        return !string.IsNullOrWhiteSpace(openedFilePath)
-            && !string.Equals(savedText, currentText, StringComparison.Ordinal);
-    }
-
-    internal static string GetDefaultSaveExtension(string? openedFilePath, EtwEditorMode editorMode, EditTextTableDocument? tableDocument)
-    {
-        string existingExtension = Path.GetExtension(openedFilePath ?? string.Empty);
-        if (!string.IsNullOrWhiteSpace(existingExtension))
-            return existingExtension;
-
-        return editorMode switch
-        {
-            EtwEditorMode.Spreadsheet => GetSpreadsheetSaveExtension(tableDocument),
-            EtwEditorMode.Markdown => ".md",
-            _ => ".txt"
-        };
-    }
-
-    internal static int GetSaveDocumentFilterIndex(string? openedFilePath, EtwEditorMode editorMode)
-    {
-        string existingExtension = Path.GetExtension(openedFilePath ?? string.Empty);
-        if (IoUtilities.IsSpreadsheetFileExtension(existingExtension))
-            return 1;
-
-        if (IoUtilities.IsMarkdownFileExtension(existingExtension))
-            return 2;
-
-        if (string.Equals(existingExtension, ".txt", StringComparison.OrdinalIgnoreCase))
-            return 3;
-
-        if (!string.IsNullOrWhiteSpace(existingExtension))
-            return 4;
-
-        return editorMode switch
-        {
-            EtwEditorMode.Spreadsheet => 1,
-            EtwEditorMode.Markdown => 2,
-            _ => 3
-        };
-    }
-
-    private static string GetSpreadsheetSaveExtension(EditTextTableDocument? tableDocument)
-    {
-        if (tableDocument is null)
-            return ".tsv";
-
-        return tableDocument.Format switch
-        {
-            EtwStructuredTextFormat.Csv => ".csv",
-            EtwStructuredTextFormat.Tsv => ".tsv",
-            EtwStructuredTextFormat.DelimitedText when string.Equals(tableDocument.Delimiter, ",", StringComparison.Ordinal) => ".csv",
-            _ => ".tsv"
-        };
-    }
-
     internal void LimitNumberOfCharsPerLine(int numberOfChars, SpotInLine spotInLine)
     {
-        PassedTextControl.Text = PassedTextControl.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
-    }
-
-    internal async Task OpenPath(string pathOfFileToOpen, bool isMultipleFiles = false)
-    {
-        if (GrabFrameFileUtilities.IsGrabFrameFile(pathOfFileToOpen))
-        {
-            if (!await App.TryToOpenFilePathAsync(pathOfFileToOpen))
-                System.Windows.MessageBox.Show($"Failed to open Grab Frame file:\n{pathOfFileToOpen}");
-            return;
-        }
-
-        // Audio files are transcribed on-device rather than opened as text. Routing this here means
-        // CLI arguments, File > Open, and drag/drop all reach the same transcription path.
-        if (AudioTranscriptionUtilities.IsAudioFile(pathOfFileToOpen))
-        {
-            AudioDebugLog.Write($"OpenPath: audio file detected, routing to transcription: {pathOfFileToOpen}");
-            await TranscribeAudioFilesAsync([pathOfFileToOpen]);
-            return;
-        }
-
-        SetToLoading("Loading file...");
-        try
-        {
-            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Render);
-            var result = await FileOpenUtilities.GetContentFromPath(pathOfFileToOpen, isMultipleFiles, selectedILanguage);
-            if (_isClosed || result is not (string TextContent, OpenContentKind KindOpened))
-                return;
-
-            ResetSpreadsheetUndoHistory();
-            bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
-            OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
-
-            if (KindOpened == OpenContentKind.TextFile)
-            {
-                EtwEditorMode targetMode = isMultipleFiles
-                    ? EtwEditorMode.Text
-                    : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
-
-                // The text and Markdown document are replaced just below, so don't build the old text's document.
-                if (IsLoaded)
-                    SetEditorMode(targetMode, deferMarkdownLoad: true);
-                else
-                    editorMode = targetMode;
-            }
-
-            isLoadingOpenedFile = true;
-            try
-            {
-                PassedTextControl.Text = TextContent;
-
-                if (IsLoaded && editorMode == EtwEditorMode.Spreadsheet)
-                    RefreshSpreadsheetFromText();
-                else if (IsLoaded && editorMode == EtwEditorMode.Markdown)
-                    RefreshMarkdownFromText();
-            }
-            finally
-            {
-                isLoadingOpenedFile = false;
-                SyncTextFromActiveEditor();
-                SetOpenedFileState(shouldTrackOpenedFile ? pathOfFileToOpen : null);
-            }
-            Singleton<HistoryService>.Instance.RecordRecentFile(pathOfFileToOpen, KindOpened);
-        }
-        finally
-        {
-            if (!_isClosed)
-                SetToLoaded();
-        }
+        Session.Text = Session.Text.LimitCharactersPerLine(numberOfChars, spotInLine);
     }
 
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2664,91 +541,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (AppUtilities.TextGrabSettings.EtwNormalizeLineEndingsOnPaste)
             textToAdd = NormalizeLineEndings(textToAdd);
 
-        PassedTextControl.SelectedText = textToAdd;
-        int currentSelectionIndex = PassedTextControl.SelectionStart;
-        int currentSelectionLength = PassedTextControl.SelectionLength;
+        Session.ReplaceSelection(textToAdd);
+        int currentSelectionIndex = Session.Selection.Start;
+        int currentSelectionLength = Session.Selection.Length;
 
-        PassedTextControl.Select(currentSelectionIndex + currentSelectionLength, 0);
-    }
-
-    private void AddPossibleMailToToRightClickMenu(int caretIndex)
-    {
-        string possibleEmail = PassedTextControl.SelectedText;
-
-        if (string.IsNullOrEmpty(possibleEmail))
-            possibleEmail = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
-
-        if (!possibleEmail.IsValidEmailAddress())
-            return;
-
-        if (ExternalLinkLauncher.CreateMenuItem($"mailto:{possibleEmail}") is not MenuItem emailMi)
-            return;
-
-        PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
-        PassedTextControl.ContextMenu?.Items.Insert(0, emailMi);
-    }
-
-    private void AddPossibleSpellingErrorsToRightClickMenu(int caretIndex)
-    {
-        int cmdIndex = 0;
-        SpellingError spellingError;
-        spellingError = PassedTextControl.GetSpellingError(caretIndex);
-        if (spellingError is not null
-            && PassedTextControl.ContextMenu is not null)
-        {
-            foreach (string str in spellingError.Suggestions)
-            {
-                MenuItem mi = new()
-                {
-                    Header = str,
-                    FontWeight = FontWeights.Bold,
-                    Command = System.Windows.Documents.EditingCommands.CorrectSpellingError,
-                    CommandParameter = str,
-                    CommandTarget = PassedTextControl
-                };
-                PassedTextControl.ContextMenu.Items.Insert(cmdIndex, mi);
-                cmdIndex++;
-            }
-
-            if (cmdIndex == 0)
-            {
-                MenuItem mi = new()
-                {
-                    Header = "no suggestions",
-                    IsEnabled = false
-                };
-                PassedTextControl.ContextMenu.Items.Insert(cmdIndex, mi);
-                cmdIndex++;
-            }
-
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
-            cmdIndex++;
-            MenuItem ignoreAllMI = new()
-            {
-                Header = "Ignore All",
-                Command = System.Windows.Documents.EditingCommands.IgnoreSpellingError,
-                CommandTarget = PassedTextControl
-            };
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, ignoreAllMI);
-            cmdIndex++;
-            PassedTextControl.ContextMenu.Items.Insert(cmdIndex, new Separator());
-        }
-    }
-
-    private void AddPossibleURLToRightClickMenu(int caretIndex)
-    {
-        string possibleURL = PassedTextControl.SelectedText;
-
-        if (string.IsNullOrEmpty(possibleURL))
-        {
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(caretIndex);
-        }
-
-        if (ExternalLinkLauncher.CreateMenuItem(possibleURL) is MenuItem urlMi)
-        {
-            PassedTextControl.ContextMenu?.Items.Insert(0, new Separator());
-            PassedTextControl.ContextMenu?.Items.Insert(0, urlMi);
-        }
+        Session.Selection = new TextSpan(currentSelectionIndex + currentSelectionLength, 0);
     }
 
     private void AddRemoveAtMenuItem_Click(object sender, RoutedEventArgs e)
@@ -2756,7 +553,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         AddOrRemoveWindow addRemoveWindow = new()
         {
             Owner = this,
-            SelectedTextFromEditTextWindow = PassedTextControl.SelectedText
+            SelectedTextFromEditTextWindow = Session.SelectedText
         };
         addRemoveWindow.ShowDialog();
     }
@@ -2793,10 +590,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Spreadsheet)
             return GetSpreadsheetSelectedText().Trim();
 
-        string possibleURL = PassedTextControl.SelectedText;
+        string possibleURL = Session.SelectedText;
 
         if (string.IsNullOrEmpty(possibleURL))
-            possibleURL = PassedTextControl.Text.GetWordAtCursorPosition(PassedTextControl.CaretIndex);
+            possibleURL = Session.Text.GetWordAtCursorPosition(Session.Selection.Start);
 
         return possibleURL;
     }
@@ -2825,16 +622,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
     }
 
-    private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        LoadLanguageMenuItems(LanguageMenuItem);
-    }
-
-    private void GrabTemplateMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        LoadGrabTemplateMenuItems(GrabTemplateMenuItem);
-    }
-
     private void CheckForGrabFrameOrLaunch()
     {
         WindowCollection allWindows = System.Windows.Application.Current.Windows;
@@ -2849,7 +636,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         Keyboard.Focus(PassedTextControl);
         PassedTextControl.IsInactiveSelectionHighlightEnabled = true;
-        PassedTextControl.SelectedText = " ";
+        Session.ReplaceSelection(" ");
         if (BottomBarButtons.Children.Count > 0
             && BottomBarButtons.Children[0] is CollapsibleButton collapsibleButton)
             collapsibleButton.Focus();
@@ -2917,14 +704,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void CopyCloseBTN_Click(object sender, RoutedEventArgs e)
     {
-        string clipboardText = PassedTextControl.Text;
+        string clipboardText = Session.Text;
         try { System.Windows.Clipboard.SetDataObject(clipboardText, true); } catch { }
         this.Close();
     }
 
     private async void CopyClosePasteBTN_Click(object sender, RoutedEventArgs e)
     {
-        string clipboardText = PassedTextControl.Text;
+        string clipboardText = Session.Text;
         try { System.Windows.Clipboard.SetDataObject(clipboardText, true); } catch { }
         this.Close();
         await WindowUtilities.TryInsertString(clipboardText);
@@ -2932,17 +719,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void DeleteAllSelectionExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selectionToDelete = PassedTextControl.SelectedText;
+        string selectionToDelete = Session.SelectedText;
 
-        PassedTextControl.Text = PassedTextControl.Text.RemoveAllInstancesOf(selectionToDelete);
+        Session.Text = Session.Text.RemoveAllInstancesOf(selectionToDelete);
     }
 
     private void DeleteAllSelectionPatternExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selectionToDelete = PassedTextControl.SelectedText;
+        string selectionToDelete = Session.SelectedText;
         string Pattern = selectionToDelete.ExtractSimplePattern();
-        MatchCollection Matches = Regex.Matches(PassedTextControl.Text, Pattern, RegexOptions.Multiline);
-        StringBuilder sb = new(PassedTextControl.Text);
+        MatchCollection Matches = Regex.Matches(Session.Text, Pattern, RegexOptions.Multiline);
+        StringBuilder sb = new(Session.Text);
         for (int i = Matches.Count - 1; i >= 0; i--)
         {
             Match match = Matches[i];
@@ -2950,21 +737,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             sb.Remove(match.Index, match.Length);
         }
 
-        PassedTextControl.Text = sb.ToString();
+        Session.Text = sb.ToString();
     }
 
     private void DeleteSelectedTextMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        PassedTextControl.SelectedText = String.Empty;
-    }
-
-    private void EditBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        BottomBarSettings bbs = new()
-        {
-            Owner = this
-        };
-        bbs.ShowDialog();
+        Session.ReplaceSelection(String.Empty);
     }
 
     private void EditTextWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -2980,319 +758,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (EscapeKeyTimerCount == 1)
                 EscapeKeyTimer.Start();
         }
-    }
-
-    private void ProcessBottomBarKeyPress(System.Windows.Input.KeyEventArgs e)
-    {
-        UIElementCollection bottomBarButtons = BottomBarButtons.Children;
-
-        int keyNumberPressed = (int)e.Key - 35;
-
-        // D1 is 35
-        // ...
-        // D9 is 43
-        // D0 is 34
-
-        if (keyNumberPressed is < -1
-            or > 8)
-            return;
-
-        // since D9 is next to D0 it makes sense
-        // to call buttons next to each other as well
-        if (keyNumberPressed == -1)
-            keyNumberPressed += 10;
-
-        if (bottomBarButtons.Count <= keyNumberPressed)
-            return;
-
-        if (bottomBarButtons[keyNumberPressed] is not CollapsibleButton correspondingButton)
-            return;
-
-        e.Handled = true;
-
-        if (correspondingButton.Command is ICommand buttonCommand)
-            buttonCommand.Execute(null);
-        else
-            correspondingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-    }
-
-    private void ETWindow_DragOver(object sender, System.Windows.DragEventArgs e)
-    {
-        // If dropping raw text onto the ETW let the default drag/drop events occur
-        bool isText = e.Data.GetDataPresent("Text");
-
-        if (isText)
-        {
-            e.Handled = false;
-            return;
-        }
-
-        // After here we will now allow the dropping of "non-text" content
-        e.Effects = System.Windows.DragDropEffects.Copy;
-        e.Handled = true;
-    }
-
-    private async void ETWindow_Drop(object sender, System.Windows.DragEventArgs e)
-    {
-        if (e.Data.GetDataPresent("Text"))
-            return;
-
-        // Mark the event as handled, so TextBox's native Drop handler is not called.
-        e.Handled = true;
-        Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-
-        try
-        {
-            if (!e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop, true))
-                return;
-
-            if (e.Data.GetData(System.Windows.DataFormats.FileDrop, true) is not string[] fileNames)
-                return;
-
-            List<string> existingFiles = [.. fileNames.Where(File.Exists)];
-            if (existingFiles.Count == 0)
-                return;
-
-            // Audio files are transcribed on-device rather than opened as text.
-            List<string> audioFiles = [.. existingFiles.Where(AudioTranscriptionUtilities.IsAudioFile)];
-            List<string> otherFiles = [.. existingFiles.Where(path => !AudioTranscriptionUtilities.IsAudioFile(path))];
-
-            bool openAsMultiple = existingFiles.Count > 1;
-            foreach (string possibleFilePath in otherFiles)
-                await OpenPath(possibleFilePath, openAsMultiple);
-
-            if (audioFiles.Count > 0)
-            {
-                // Drop the wait cursor; TranscribeAudioFilesAsync shows the loading overlay instead.
-                Mouse.OverrideCursor = null;
-                await TranscribeAudioFilesAsync(audioFiles);
-            }
-        }
-        finally
-        {
-            Mouse.OverrideCursor = null;
-        }
-    }
-
-    /// <summary>
-    /// Transcribes one or more dropped audio files on-device, streaming each Whisper segment into the
-    /// editor as it is recognized. The status bar stays non-blocking so the user can cancel; because
-    /// every segment is inserted as it arrives, cancelling keeps all text transcribed so far.
-    /// <paramref name="hotWords"/> (if provided) biases Whisper toward names/jargon it might otherwise
-    /// mishear; it applies only to this call, nothing is persisted.
-    /// <paramref name="overallProgress"/> (if provided) reports progress across all files combined
-    /// (0.0-1.0), so a caller such as <see cref="OpenMediaWindow"/> can drive its own progress bar.
-    /// </summary>
-    internal async Task TranscribeAudioFilesAsync(IList<string> audioFiles, string? hotWords = null, IProgress<double>? overallProgress = null)
-    {
-        AudioDebugLog.Write($"TranscribeAudioFilesAsync: START with {audioFiles.Count} file(s). Log: {AudioDebugLog.LogPath}");
-
-        if (!AudioTranscriptionUtilities.IsAudioTranscriptionSupported())
-        {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Audio Transcription Unavailable",
-                Content = "Audio transcription isn't available on this device.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-            return;
-        }
-
-        // Guard against a second transcription starting while one is already running.
-        if (_transcriptionCts is not null)
-        {
-            AudioDebugLog.Write("TranscribeAudioFilesAsync: ignored — a transcription is already in progress");
-            return;
-        }
-
-        bool multiple = audioFiles.Count > 1;
-        bool previousIsReadOnly = PassedTextControl.IsReadOnly;
-        string? errorMessage = null;
-        bool cancelled = false;
-
-        // Everything from here runs inside the try: the guard above keys off _transcriptionCts, so a
-        // throw during setup that left it assigned would block every later transcription in this window.
-        try
-        {
-            _transcriptionCts = new CancellationTokenSource();
-            CancellationToken cancellationToken = _transcriptionCts.Token;
-
-            // Make the editor read-only (not disabled) so segments can stream in but the user can't type
-            // in the middle of the stream. AppendText still works while read-only.
-            PassedTextControl.IsReadOnly = true;
-            TranscriptionCancelButton.IsEnabled = true;
-            TranscriptionStatusText.Text = multiple ? "Transcribing audio files…" : "Transcribing audio…";
-            TranscriptionProgressBar.Visibility = Visibility.Collapsed;
-            TranscriptionProgressBar.Value = 0;
-            TranscriptionStatusBar.Visibility = Visibility.Visible;
-
-            // Status text (model download, "Transcribing…") updates the status bar; each recognized
-            // segment is appended straight into the editor as it arrives.
-            Progress<string> statusProgress = new(message => TranscriptionStatusText.Text = message);
-            Progress<string> segmentProgress = new(AppendTranscriptionText);
-
-            // Give the caret a clean starting line so streamed text doesn't run into existing content.
-            EnsureTranscriptionInsertionPoint();
-
-            for (int i = 0; i < audioFiles.Count; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                string audioFile = audioFiles[i];
-
-                if (multiple)
-                    AppendTranscriptionText($"# {Path.GetFileName(audioFile)}{Environment.NewLine}");
-
-                int fileIndex = i;
-                Progress<double> clipProgress = new(fraction =>
-                {
-                    double overall = (fileIndex + fraction) / audioFiles.Count;
-                    TranscriptionProgressBar.Visibility = Visibility.Visible;
-                    TranscriptionProgressBar.Value = overall * 100;
-                    TranscriptionStatusText.Text = multiple
-                        ? $"Transcribing audio files… ({fileIndex + 1}/{audioFiles.Count}) {fraction:P0}"
-                        : $"Transcribing audio… {fraction:P0}";
-                    overallProgress?.Report(overall);
-                });
-
-                string transcription = await AudioTranscriptionUtilities.TranscribeAudioFileAsync(
-                    audioFile, hotWords, statusProgress, segmentProgress,
-                    includeTimecodes: DefaultSettings.IncludeTimecodesInTranscription,
-                    clipProgress: clipProgress, cancellationToken);
-
-                Singleton<HistoryService>.Instance.RecordRecentFile(audioFile, OpenContentKind.TextFile);
-
-                if (string.IsNullOrWhiteSpace(transcription))
-                    AppendTranscriptionText("(no speech recognized)");
-
-                // Blank line between files (and after the last, trimmed on sync).
-                AppendTranscriptionText(Environment.NewLine + Environment.NewLine);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // User cancelled: everything already streamed into the editor is kept — no error dialog.
-            cancelled = true;
-            AudioDebugLog.Write("TranscribeAudioFilesAsync: cancelled by user; keeping transcribed-so-far text");
-        }
-        catch (Exception ex)
-        {
-            // Surface the real reason (model not ready, unsupported format, etc.) instead of failing silently.
-            Debug.WriteLine($"Audio transcription error: {ex}");
-            AudioDebugLog.Write($"TranscribeAudioFilesAsync: ERROR {ex}");
-            errorMessage = ex.Message;
-        }
-        finally
-        {
-            PassedTextControl.IsReadOnly = previousIsReadOnly;
-            TranscriptionStatusBar.Visibility = Visibility.Collapsed;
-            _transcriptionCts?.Dispose();
-            _transcriptionCts = null;
-
-            // The transcript was streamed into the raw text box, so the active editor is what needs
-            // updating. Syncing the other way (as this used to) pushed the markdown document / table
-            // back over PassedTextControl.Text, round-tripping the whole transcript through the
-            // serializer for nothing.
-            SyncActiveEditorFromText();
-        }
-
-        AudioDebugLog.Write($"TranscribeAudioFilesAsync: END (cancelled={cancelled}, error={errorMessage is not null})");
-
-        if (errorMessage is not null)
-        {
-            // A failure raised as the window closes has nowhere to show: the dialog would be owned by
-            // a torn-down window.
-            if (IsLoaded)
-                await new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = "Audio Transcription Failed",
-                    Content = errorMessage,
-                    CloseButtonText = "OK"
-                }.ShowDialogAsync();
-        }
-        else if (!cancelled && DefaultSettings.NotifyOnTranscriptionComplete)
-        {
-            string fileDescription = multiple
-                ? $"{audioFiles.Count} files"
-                : Path.GetFileName(audioFiles[0]);
-            NotificationUtilities.ShowTranscriptionCompleteToast(fileDescription, WindowId);
-        }
-    }
-
-    private void TranscriptionCancelButton_Click(object sender, RoutedEventArgs e) => CancelAudioTranscription();
-
-    /// <summary>
-    /// Requests cancellation of the running audio-file transcription. Text already streamed into the
-    /// editor is preserved. Called from the status bar's own Cancel button, and externally by
-    /// <see cref="OpenMediaWindow"/> so its Cancel button can stop a transcription it started.
-    /// </summary>
-    internal void CancelAudioTranscription()
-    {
-        if (_transcriptionCts is null)
-            return;
-
-        TranscriptionCancelButton.IsEnabled = false;
-        TranscriptionStatusText.Text = "Cancelling…";
-        _transcriptionCts.Cancel();
-    }
-
-    /// <summary>
-    /// Ensures the caret sits on a fresh line at the end of the document before streaming begins, so
-    /// the first transcribed segment doesn't run into whatever text is already there.
-    /// </summary>
-    private void EnsureTranscriptionInsertionPoint()
-    {
-        string existingText = PassedTextControl.Text;
-        if (!string.IsNullOrEmpty(existingText) && existingText[^1] is not '\n' and not '\r')
-            PassedTextControl.AppendText(Environment.NewLine);
-
-        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
-        PassedTextControl.ScrollToEnd();
-    }
-
-    /// <summary>
-    /// Appends a streamed transcription fragment to the end of the editor. Works while the editor is
-    /// read-only (AppendText bypasses the read-only guard), keeping the caret and view at the end.
-    /// </summary>
-    private void AppendTranscriptionText(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return;
-
-        PassedTextControl.AppendText(text);
-        PassedTextControl.CaretIndex = PassedTextControl.Text.Length;
-        PassedTextControl.ScrollToEnd();
-    }
-
-    /// <summary>
-    /// Inserts transcribed text into the raw-text editor at the caret, adding a leading separator
-    /// when appending to existing content.
-    /// </summary>
-    private void InsertTranscribedText(string text, bool separateWithSpace = false)
-    {
-        if (string.IsNullOrEmpty(text))
-            return;
-
-        string existingText = PassedTextControl.Text;
-        if (!string.IsNullOrEmpty(existingText) && PassedTextControl.SelectionStart == existingText.Length)
-        {
-            char lastChar = existingText[^1];
-            if (separateWithSpace)
-            {
-                if (!char.IsWhiteSpace(lastChar))
-                    text = " " + text;
-            }
-            else if (lastChar is not '\n' and not '\r')
-            {
-                text = Environment.NewLine + text;
-            }
-        }
-
-        AddCopiedTextToTextBox(text);
-
-        // Same as the file path: the phrase went into the raw text box, so the sync has to run in that
-        // direction. Pulling from the active editor instead round-tripped every phrase through the
-        // markdown/table serializer.
-        SyncActiveEditorFromText();
     }
 
     private void FeedbackMenuItem_Click(object sender, RoutedEventArgs ev)
@@ -3341,15 +806,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         WindowUtilities.LaunchFullScreenGrab(PassedTextControl);
     }
 
-    public string GetSelectedTextOrAllText()
-    {
-        string textToModify;
-        if (PassedTextControl.SelectionLength == 0)
-            textToModify = PassedTextControl.Text;
-        else
-            textToModify = PassedTextControl.SelectedText;
-        return textToModify;
-    }
+    public string GetSelectedTextOrAllText() => Session.GetSelectedTextOrAllText();
 
     internal IEnumerable<string> GetSelectedOrAllTextSegmentsForPreview()
     {
@@ -3361,169 +818,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public bool IsSpreadsheetMode => editorMode == EtwEditorMode.Spreadsheet;
 
-    /// <summary>
-    /// Selects the given range of <see cref="PassedTextControl"/>'s raw text in whichever editor is
-    /// currently visible and scrolls it into view. Used by Find &amp; Replace to show the active match,
-    /// since selecting in <see cref="PassedTextControl"/> alone has no visible effect while it is
-    /// hidden behind <see cref="MarkdownEditorControl"/> in markdown mode.
-    /// </summary>
-    /// <remarks>
-    /// In markdown mode the rendered document's plain text is not the same string as the raw
-    /// markdown <paramref name="index"/>/<paramref name="length"/> are measured against — bold
-    /// markers, heading <c>#</c>s, list bullets, link brackets, etc. are stripped on render. The
-    /// index is translated through the offset map built alongside the rendered document
-    /// (<see cref="MarkdownFlowDocumentUtilities.BuildOffsetMap"/>) rather than applied directly.
-    /// </remarks>
-    public void SelectInEditor(int index, int length)
-    {
-        if (editorMode == EtwEditorMode.Markdown)
-        {
-            SyncMarkdownTextFromDocument();
-            if (markdownOffsetMapSourceText != PassedTextControl.Text)
-                LoadMarkdownDocumentFromText(PassedTextControl.Text);
-
-            if (MarkdownEditorControl.Document is not null)
-            {
-                TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
-                TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
-                MarkdownEditorControl.Selection.Select(start, end);
-                MarkdownEditorControl.Focus();
-                start.Paragraph?.BringIntoView();
-            }
-            return;
-        }
-
-        PassedTextControl.Select(index, length);
-        PassedTextControl.Focus();
-    }
-
-    public void CommitSpreadsheetAndSync()
-    {
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SyncSpreadsheetDocumentFromTable(writeText: false);
-    }
-
-    public void NavigateToSpreadsheetCell(int rowIndex, int columnIndex)
-    {
-        Dispatcher.BeginInvoke(
-            () => FocusSpreadsheetCell(rowIndex, columnIndex, beginEdit: false),
-            DispatcherPriority.Background);
-    }
-
-    public List<FindResult> SearchSpreadsheetCells(Regex pattern)
-    {
-        ArgumentNullException.ThrowIfNull(pattern);
-
-        return tableDocument is null
-            ? []
-            : FindSpreadsheetDocumentMatches(
-                tableDocument,
-                cellValue =>
-                [
-                    .. pattern.Matches(cellValue)
-                        .Cast<Match>()
-                        .Select(match => new RecognizerMatch(match.Index, match.Length, match.Value, match.Value))
-                ]);
-    }
-
-    public List<FindResult> SearchSpreadsheetCells(PatternItem pattern, string narrowText = "")
-    {
-        ArgumentNullException.ThrowIfNull(pattern);
-
-        return tableDocument is null
-            ? []
-            : SearchSpreadsheetDocumentCells(tableDocument, pattern, narrowText);
-    }
-
-    internal static List<FindResult> SearchSpreadsheetDocumentCells(
-        EditTextTableDocument document,
-        PatternItem pattern,
-        string narrowText = "")
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(pattern);
-
-        return FindSpreadsheetDocumentMatches(
-            document,
-            cellValue =>
-            [
-                .. PatternExecutor.GetMatches(pattern, cellValue)
-                    .Where(match => string.IsNullOrEmpty(narrowText)
-                        || match.Text.Contains(narrowText, StringComparison.CurrentCultureIgnoreCase))
-            ]);
-    }
-
-    private static List<FindResult> FindSpreadsheetDocumentMatches(
-        EditTextTableDocument document,
-        Func<string, IReadOnlyList<RecognizerMatch>> getMatches)
-    {
-        document.EnsureMinimumSize();
-        List<FindResult> results = [];
-        int count = 1;
-
-        for (int row = 0; row < document.RowCount; row++)
-        {
-            List<string> rowData = document.Rows[row];
-            for (int col = 0; col < document.ColumnCount; col++)
-            {
-                string cellValue = col < rowData.Count ? rowData[col] ?? string.Empty : string.Empty;
-                foreach (RecognizerMatch match in getMatches(cellValue))
-                {
-                    int previewStart = Math.Max(0, match.Start - 12);
-                    int previewEnd = Math.Min(cellValue.Length, match.Start + match.Length + 12);
-                    results.Add(new FindResult
-                    {
-                        RowIndex = row,
-                        ColumnIndex = col,
-                        Index = match.Start,
-                        Text = TextSearchUtilities.FormatMatchTextForDisplay(match.Text),
-                        RawText = match.Text,
-                        PreviewLeft = cellValue[previewStart..match.Start],
-                        PreviewRight = cellValue[(match.Start + match.Length)..previewEnd],
-                        Length = match.Length,
-                        Count = count++
-                    });
-                }
-            }
-        }
-
-        return results;
-    }
-
-    public void ReplaceInSpreadsheetCells(
-        IEnumerable<FindResult> targets,
-        string replaceWith,
-        Regex pattern)
-    {
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-        SyncSpreadsheetDocumentFromTable(writeText: false);
-
-        if (tableDocument is null) return;
-
-        SpreadsheetUndoState? beforeState = CreateCurrentSpreadsheetUndoState(syncFromTable: false);
-
-        IEnumerable<(int RowIndex, int ColumnIndex, string Value)> updates = targets
-            .Where(r => r.RowIndex.HasValue && r.ColumnIndex.HasValue)
-            .GroupBy(r => (r.RowIndex!.Value, r.ColumnIndex!.Value))
-            .Select(g =>
-            {
-                int row = g.Key.Item1, col = g.Key.Item2;
-                string oldValue = row < tableDocument.Rows.Count && col < tableDocument.Rows[row].Count
-                    ? tableDocument.Rows[row][col] ?? string.Empty : string.Empty;
-
-                HashSet<int> indicesToReplace = [.. g.Select(r => r.Index)];
-                string newValue = pattern.Replace(oldValue, m =>
-                    indicesToReplace.Contains(m.Index) ? m.Result(replaceWith) : m.Value);
-
-                return (RowIndex: row, ColumnIndex: col, Value: newValue);
-            });
-
-        SetSpreadsheetDocumentCellValues(tableDocument, updates);
-        RebuildSpreadsheetTable();
-        UpdateTextFromSpreadsheetDocument();
-        RecordSpreadsheetUndoChange(beforeState, CreateCurrentSpreadsheetUndoState(syncFromTable: false));
-    }
-
     private IEnumerable<string> GetSelectedOrAllTextSegmentsForEdit()
     {
         if (editorMode == EtwEditorMode.Spreadsheet)
@@ -3532,15 +826,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return [GetSelectedTextOrAllText()];
     }
 
-    private void ReplaceSelectedTextOrAllText(string updatedText)
-    {
-        ArgumentNullException.ThrowIfNull(updatedText);
-
-        if (PassedTextControl.SelectionLength == 0)
-            PassedTextControl.Text = updatedText;
-        else
-            PassedTextControl.SelectedText = updatedText;
-    }
+    private void ReplaceSelectedTextOrAllText(string updatedText) => Session.ReplaceSelectedTextOrAllText(updatedText);
 
     private void ApplySelectedTextOrAllTextTransform(Func<string, string> transform)
     {
@@ -3562,150 +848,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         string updatedText = await transformAsync(GetSelectedTextOrAllText());
         ReplaceSelectedTextOrAllText(updatedText);
-    }
-
-    private void EditMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        // Load text-only templates fresh each time the Edit menu opens and use them to
-        // populate the Grab Templates group in both apply flyouts.
-        List<GrabTemplate> textOnlyTemplates = [.. GrabTemplateManager.GetAllTemplates().Where(template => template.IsTextOnly && template.IsValid)];
-
-        PopulateTemplateMenu(ApplyGrabTemplateMenuItem, textOnlyTemplates, ApplyGrabTemplateItem_Click);
-        PopulateTemplateMenu(ApplyGrabTemplatePerLineMenuItem, textOnlyTemplates, ApplyGrabTemplatePerLineItem_Click);
-
-        List<PatternItem> patterns = [.. PatternItemCatalog.GetAll()];
-        PopulatePatternMenu(
-            ApplyPatternMenuItem,
-            patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
-            ApplyPatternItem_Click);
-        PopulatePatternMenu(
-            ApplySmartPatternMenuItem,
-            patterns.Where(pattern => pattern.Kind == PatternKind.Recognizer),
-            ApplyPatternItem_Click);
-        PopulatePatternMenu(
-            ApplyPatternPerLineMenuItem,
-            patterns.Where(pattern => pattern.Kind == PatternKind.SavedRegex),
-            ApplyPatternPerLineItem_Click);
-        PopulatePatternMenu(
-            ApplySmartPatternPerLineMenuItem,
-            patterns.Where(pattern => pattern.Kind == PatternKind.Recognizer),
-            ApplyPatternPerLineItem_Click);
-    }
-
-    private static void PopulatePatternMenu(
-        MenuItem parent,
-        IEnumerable<PatternItem> patterns,
-        RoutedEventHandler clickHandler)
-    {
-        // Rebuild each time the menu opens so newly saved regexes appear.
-        parent.Items.Clear();
-
-        foreach (PatternItem pattern in patterns)
-        {
-            MenuItem patternItem = new()
-            {
-                Header = pattern.Name,
-                ToolTip = string.IsNullOrWhiteSpace(pattern.Description) ? null : pattern.Description,
-                Tag = pattern,
-            };
-            patternItem.Click += clickHandler;
-            parent.Items.Add(patternItem);
-        }
-
-        parent.Visibility = parent.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private void ApplyPatternItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: PatternItem pattern })
-            return;
-
-        ApplySelectedTextOrAllTextTransform(text => PatternExecutor.Apply(pattern, text));
-    }
-
-    private void ApplyPatternPerLineItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: PatternItem pattern })
-            return;
-
-        ApplySelectedTextOrAllTextTransform(text => ApplyPatternPerLine(pattern, text));
-    }
-
-    /// <summary>
-    /// Splits <paramref name="text"/> into lines and applies the pattern to each
-    /// non-blank line independently, preserving blank lines and line structure.
-    /// </summary>
-    private static string ApplyPatternPerLine(PatternItem pattern, string text)
-    {
-        string[] lines = text.Split(Environment.NewLine);
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            if (!string.IsNullOrWhiteSpace(lines[i]))
-                lines[i] = PatternExecutor.Apply(pattern, lines[i]);
-        }
-
-        return string.Join(Environment.NewLine, lines);
-    }
-
-    private static void PopulateTemplateMenu(MenuItem parent, List<GrabTemplate> templates, RoutedEventHandler clickHandler)
-    {
-        parent.Items.Clear();
-
-        if (templates.Count == 0)
-        {
-            parent.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        foreach (GrabTemplate template in templates)
-        {
-            MenuItem templateItem = new()
-            {
-                Header = template.Name,
-                ToolTip = string.IsNullOrWhiteSpace(template.Description) ? null : template.Description,
-                Tag = template,
-            };
-            templateItem.Click += clickHandler;
-            parent.Items.Add(templateItem);
-        }
-
-        parent.Visibility = Visibility.Visible;
-    }
-
-    private void ApplyGrabTemplateItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: GrabTemplate template })
-            return;
-
-        ApplySelectedTextOrAllTextTransform(text => GrabTemplateExecutor.ApplyTextOnlyTemplate(template, text));
-        GrabTemplateManager.RecordUsage(template.Id);
-    }
-
-    private void ApplyGrabTemplatePerLineItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: GrabTemplate template })
-            return;
-
-        ApplySelectedTextOrAllTextTransform(text => ApplyTemplatePerLine(template, text));
-        GrabTemplateManager.RecordUsage(template.Id);
-    }
-
-    /// <summary>
-    /// Splits <paramref name="text"/> into lines and applies the text-only template to each
-    /// non-blank line independently, preserving blank lines and the overall line structure.
-    /// </summary>
-    private static string ApplyTemplatePerLine(GrabTemplate template, string text)
-    {
-        string[] lines = text.Split(Environment.NewLine);
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            if (!string.IsNullOrWhiteSpace(lines[i]))
-                lines[i] = GrabTemplateExecutor.ApplyTextOnlyTemplate(template, lines[i]);
-        }
-
-        return string.Join(Environment.NewLine, lines);
     }
 
     private void GrabFrameMenuItem_Click(object sender, RoutedEventArgs e)
@@ -3802,50 +944,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         catch { /* no-op */ }
     }
 
-    private void SyncCalcScrollToMain()
-    {
-        try
-        {
-            if (CalcResultsTextControl.Visibility != Visibility.Visible)
-                return;
-
-            ScrollViewer? mainSv = WindowUtilities.GetScrollViewer(PassedTextControl);
-            ScrollViewer? calcSv = WindowUtilities.GetScrollViewer(CalcResultsTextControl);
-            if (mainSv is null || calcSv is null)
-                return;
-
-            if (!NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
-                calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
-        }
-        catch { /* no-op */ }
-    }
-
-    private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (!IsLoaded)
-            return;
-
-        if (sender is MenuItem bbMi && bbMi.IsChecked)
-        {
-            BottomBar.Visibility = Visibility.Collapsed;
-            DefaultSettings.EditWindowBottomBarIsHidden = true;
-        }
-        else
-        {
-            BottomBar.Visibility = Visibility.Visible;
-            DefaultSettings.EditWindowBottomBarIsHidden = false;
-        }
-    }
-
     private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string[] splitString = PassedTextControl.Text.Split([Environment.NewLine], StringSplitOptions.None);
-        string selectionText = PassedTextControl.SelectedText;
-        int initialSelectionStart = PassedTextControl.SelectionStart;
-        int selectionPositionInLine = PassedTextControl.SelectionStart;
+        string[] splitString = Session.Text.Split([Environment.NewLine], StringSplitOptions.None);
+        string selectionText = Session.SelectedText;
+        int initialSelectionStart = Session.Selection.Start;
+        int selectionPositionInLine = Session.Selection.Start;
         for (int i = initialSelectionStart; i >= 0; i--)
         {
-            if (PassedTextControl.Text[i] is '\n'
+            if (Session.Text[i] is '\n'
                 or '\r')
             {
                 selectionPositionInLine = initialSelectionStart - i - 1;
@@ -3853,7 +960,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
         }
 
-        int selectionLength = PassedTextControl.SelectionLength;
+        int selectionLength = Session.Selection.Length;
 
         if (string.IsNullOrEmpty(splitString.Last()))
             splitString = [.. splitString.SkipLast(1)];
@@ -3879,7 +986,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             sb.Append(Environment.NewLine);
         }
 
-        PassedTextControl.Text = sb.ToString();
+        Session.Text = sb.ToString();
     }
 
     private void InsertSelectionOnEveryLineCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -3887,10 +994,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Operates on absolute character positions within the flat document text, which
         // has no meaningful equivalent in Spreadsheet mode, so keep it disabled there.
         if (editorMode == EtwEditorMode.Spreadsheet
-            || string.IsNullOrEmpty(PassedTextControl.SelectedText)
-            || PassedTextControl.SelectedText.Contains(Environment.NewLine)
-            || PassedTextControl.SelectedText.Contains('\r')
-            || PassedTextControl.SelectedText.Contains('\n'))
+            || string.IsNullOrEmpty(Session.SelectedText)
+            || Session.SelectedText.Contains(Environment.NewLine)
+            || Session.SelectedText.Contains('\r')
+            || Session.SelectedText.Contains('\n'))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -3901,7 +1008,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Isolate/Delete-All-Instances act on the flat document text, which has no
         // meaningful per-cell equivalent in Spreadsheet mode, so keep them disabled there.
         e.CanExecute = editorMode != EtwEditorMode.Spreadsheet
-            && !string.IsNullOrEmpty(PassedTextControl.SelectedText);
+            && !string.IsNullOrEmpty(Session.SelectedText);
     }
 
     private void CanSearchSelectionExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -3909,44 +1016,36 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.CanExecute = !string.IsNullOrEmpty(GetSpreadsheetAwareSelectedText());
     }
 
-    private string GetSpreadsheetAwareSelectedText()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-            return GetSpreadsheetSelectedText();
-
-        return PassedTextControl.SelectedText;
-    }
-
     private void IsolateSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(PassedTextControl.SelectedText))
-            PassedTextControl.Text = PassedTextControl.SelectedText;
+        if (!string.IsNullOrEmpty(Session.SelectedText))
+            Session.Text = Session.SelectedText;
     }
 
     private async void GoogleSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.google.com/search?q={searchStringUrlSafe}")));
     }
 
     private async void BingSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://www.bing.com/search?q={searchStringUrlSafe}")));
     }
 
     private async void DuckDuckGoSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://duckduckgo.com/?va=d&t=he&q={searchStringUrlSafe}&ia=web")));
     }
 
     private async void GitHubSearchExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string possibleSearch = PassedTextControl.SelectedText;
+        string possibleSearch = Session.SelectedText;
         string searchStringUrlSafe = WebUtility.UrlEncode(possibleSearch);
         _ = await Windows.System.Launcher.LaunchUriAsync(new Uri(string.Format($"https://github.com/search?q={searchStringUrlSafe}")));
     }
@@ -3989,123 +1088,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         cancellationTokenForDirOCR?.Cancel();
     }
 
-    private void OpenRecentEditWindowExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        string currentText = PassedTextControl.Text;
-
-        HistoryInfo? historyInfo = Singleton<HistoryService>.Instance.GetEditWindows().LastOrDefault();
-
-        if (historyInfo is null)
-        {
-            // No history available, just open a new window
-            EditTextWindow etw = new();
-            etw.Show();
-            return;
-        }
-
-        EditTextWindow etwHistory = new(historyInfo);
-        etwHistory.Show();
-        etwHistory.Activate();
-
-        if (string.IsNullOrWhiteSpace(currentText))
-            Close();
-    }
-
-    private void LanguageMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (LanguageMenuItem is null || sender is not MenuItem clickedMenuItem)
-            return;
-
-        if (clickedMenuItem.Tag is not ILanguage ILang)
-            return;
-
-        selectedILanguage = ILang;
-        CaptureLanguageUtilities.PersistSelectedLanguage(selectedILanguage);
-
-        if (selectedILanguage is not GlobalLang)
-        {
-            SetCultureAndLanguageToDefault();
-        }
-        else
-        {
-            try
-            {
-                CultureInfo cultureInfo = new(selectedILanguage.LanguageTag);
-                selectedCultureInfo = cultureInfo;
-                XmlLanguage xmlLang = XmlLanguage.GetLanguage(cultureInfo.IetfLanguageTag);
-                Language = xmlLang;
-            }
-            catch (CultureNotFoundException)
-            {
-                SetCultureAndLanguageToDefault();
-            }
-        }
-
-        foreach (object? child in BottomBarButtons.Children)
-            if (child is LanguagePicker languagePicker)
-                languagePicker.Select(selectedILanguage.LanguageTag);
-
-        foreach (MenuItem menuItem in LanguageMenuItem.Items)
-            menuItem.IsChecked = false;
-
-        clickedMenuItem.IsChecked = true;
-    }
-
-    private void LoadGrabTemplateMenuItems(MenuItem grabTemplateMenuItem)
-    {
-        // Remember which template (if any) was previously selected
-        GrabTemplate? previouslySelected = grabTemplateMenuItem.Items
-            .OfType<MenuItem>()
-            .FirstOrDefault(m => m.IsChecked && m.Tag is GrabTemplate)
-            ?.Tag as GrabTemplate;
-
-        grabTemplateMenuItem.Items.Clear();
-
-        MenuItem noneItem = new()
-        {
-            Header = "(None)",
-            IsCheckable = true,
-            IsChecked = previouslySelected is null,
-            StaysOpenOnClick = true,
-        };
-        noneItem.Click += GrabTemplateMenuItem_Click;
-        grabTemplateMenuItem.Items.Add(noneItem);
-
-        foreach (GrabTemplate template in GrabTemplateManager.GetAllTemplates())
-        {
-            MenuItem templateMenuItem = new()
-            {
-                Header = template.Name,
-                IsCheckable = true,
-                IsChecked = previouslySelected?.Id == template.Id,
-                Tag = template,
-                StaysOpenOnClick = true,
-            };
-            templateMenuItem.Click += GrabTemplateMenuItem_Click;
-            grabTemplateMenuItem.Items.Add(templateMenuItem);
-        }
-    }
-
-    private void GrabTemplateMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem clickedItem)
-            return;
-
-        foreach (MenuItem item in GrabTemplateMenuItem.Items)
-            item.IsChecked = false;
-
-        clickedItem.IsChecked = true;
-    }
-
     private void LaunchFindAndReplace()
     {
         FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
 
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
+        findAndReplaceWindow.StringFromWindow = Session.Text;
         findAndReplaceWindow.TextEditWindow = this;
         findAndReplaceWindow.Show();
 
-        string selectedText = IsSpreadsheetMode ? GetSpreadsheetSelectedText() : PassedTextControl.SelectedText;
+        string selectedText = IsSpreadsheetMode ? GetSpreadsheetSelectedText() : Session.SelectedText;
 
         if (selectedText.Length > 0)
         {
@@ -4133,138 +1124,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private async void LaunchUriExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
         await ExternalLinkLauncher.OpenAsync(GetPossibleUrlText());
-    }
-    private void ListFilesMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        FolderBrowserDialog folderBrowserDialog1 = new();
-        DialogResult result = folderBrowserDialog1.ShowDialog();
-
-        if (result is not System.Windows.Forms.DialogResult.OK)
-            return;
-
-        string chosenFolderPath = folderBrowserDialog1.SelectedPath;
-        try
-        {
-            PassedTextControl.AppendText(IoUtilities.ListFilesFoldersInDirectory(chosenFolderPath));
-        }
-        catch (Exception ex)
-        {
-            PassedTextControl.AppendText($"Failed: {ex.Message}{Environment.NewLine}");
-        }
-    }
-
-    private async void LoadLanguageMenuItems(MenuItem captureMenuItem)
-    {
-        if (captureMenuItem.Items.Count > 0)
-            return;
-
-        bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
-        List<ILanguage> availableLanguages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(usingTesseract);
-        availableLanguages = [.. availableLanguages.Where(CaptureLanguageUtilities.IsStaticImageCompatible)];
-        int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
-            availableLanguages,
-            DefaultSettings.LastUsedLang,
-            LanguageUtilities.GetOCRLanguage());
-
-        for (int i = 0; i < availableLanguages.Count; i++)
-        {
-            ILanguage language = availableLanguages[i];
-            MenuItem languageMenuItem = new()
-            {
-                Header = language.DisplayName,
-                Tag = language,
-                IsCheckable = true,
-                IsChecked = i == selectedIndex,
-                StaysOpenOnClick = true,
-            };
-            languageMenuItem.Click += LanguageMenuItem_Click;
-            captureMenuItem.Items.Add(languageMenuItem);
-        }
-    }
-
-    private void LoadRecentTextHistory()
-    {
-        List<HistoryInfo> grabsHistories = Singleton<HistoryService>.Instance.GetEditWindows();
-        grabsHistories = [.. grabsHistories.OrderByDescending(x => x.CaptureDateTime).Take(10)];
-
-        ClearRecentTextMenuItems();
-
-        if (grabsHistories.Count < 1)
-        {
-            OpenRecentMenuItem.IsEnabled = false;
-            return;
-        }
-
-        OpenRecentMenuItem.IsEnabled = true;
-
-        foreach (HistoryInfo history in grabsHistories)
-        {
-            MenuItem menuItem = new() { Tag = history.ID };
-            menuItem.Click += RecentTextHistoryMenuItem_Click;
-
-            if (PassedTextControl.Text == history.TextContent)
-                menuItem.IsEnabled = false;
-
-            string snippet = history.TextContent.Trim().Replace("\t", " ").MakeStringSingleLine().Truncate(40);
-            menuItem.Header = $"{history.CaptureDateTime.Humanize().Trim()} | {snippet}";
-            menuItem.Icon = new SymbolIcon
-            {
-                Symbol = history.EditorMode switch
-                {
-                    EtwEditorMode.Spreadsheet => SymbolRegular.Table24,
-                    EtwEditorMode.Markdown => SymbolRegular.Markdown20,
-                    _ => SymbolRegular.TextT24,
-                }
-            };
-            OpenRecentMenuItem.Items.Add(menuItem);
-        }
-    }
-
-    private void RecentTextHistoryMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not string historyId)
-            return;
-
-        HistoryInfo? selectedHistory = Singleton<HistoryService>.Instance.GetTextHistoryById(historyId);
-
-        if (selectedHistory is null)
-        {
-            menuItem.IsEnabled = false;
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(PassedTextControl.Text))
-        {
-            ResetSpreadsheetUndoHistory();
-            PassedTextControl.Text = selectedHistory.TextContent;
-            tableDocument = EditTextTableDocument.TryDeserialize(selectedHistory.EditTextTableDocumentJson);
-            editorMode = selectedHistory.EditorMode;
-            SetEditorMode(editorMode);
-            return;
-        }
-
-        EditTextWindow etw = new(selectedHistory);
-        etw.Show();
-    }
-
-    private void ClearRecentTextMenuItems()
-    {
-        foreach (object item in OpenRecentMenuItem.Items)
-        {
-            if (item is MenuItem oldItem)
-                oldItem.Click -= RecentTextHistoryMenuItem_Click;
-        }
-        OpenRecentMenuItem.Items.Clear();
-    }
-
-    private void ClearLanguageMenuItems()
-    {
-        foreach (object item in LanguageMenuItem.Items)
-        {
-            if (item is MenuItem oldItem)
-                oldItem.Click -= LanguageMenuItem_Click;
-        }
-        LanguageMenuItem.Items.Clear();
     }
 
     private void ClearGrabTemplateMenuItems()
@@ -4313,28 +1172,28 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void AddedLineAboveCommand(object sender, ExecutedRoutedEventArgs e)
     {
-        int replaceCaret = PassedTextControl.CaretIndex + Environment.NewLine.Length;
-        int selectionLength = PassedTextControl.SelectionLength;
+        int replaceCaret = Session.Selection.Start + Environment.NewLine.Length;
+        int selectionLength = Session.Selection.Length;
 
         SelectLine();
-        string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = $"{Environment.NewLine}{lineText}";
-        PassedTextControl.Select(replaceCaret, selectionLength);
+        string lineText = Session.SelectedText;
+        Session.ReplaceSelection($"{Environment.NewLine}{lineText}");
+        Session.Selection = new TextSpan(replaceCaret, selectionLength);
     }
 
     private void DuplicateSelectedLine(object sender, ExecutedRoutedEventArgs e)
     {
-        int replaceCaret = PassedTextControl.CaretIndex;
-        int selectionLength = PassedTextControl.SelectionLength;
+        int replaceCaret = Session.Selection.Start;
+        int selectionLength = Session.Selection.Length;
         SelectLine();
-        string lineText = PassedTextControl.SelectedText;
+        string lineText = Session.SelectedText;
         bool lineEndsInNewLine = lineText.EndsWithNewline();
-        PassedTextControl.SelectedText = $"{lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{lineText}";
+        Session.ReplaceSelection($"{lineText}{(lineEndsInNewLine ? "" : Environment.NewLine)}{lineText}");
         int length = lineText.Length;
         if (!lineEndsInNewLine)
             length += Environment.NewLine.Length;
 
-        PassedTextControl.Select(replaceCaret + length, selectionLength);
+        Session.Selection = new TextSpan(replaceCaret + length, selectionLength);
     }
 
     private void MarginsMenuItem_Checked(object sender, RoutedEventArgs e)
@@ -4346,26 +1205,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetMargins(MarginsMenuItem.IsChecked);
     }
 
-    private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        LoadRecentTextHistory();
-        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
-        Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentFiles(OpenRecentPdfsMenuItem, this);
-    }
-
     private void MoveLineDown(object? sender, ExecutedRoutedEventArgs? e)
     {
         SelectLine(sender, e);
 
-        string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = "";
-        string textBoxText = PassedTextControl.Text;
-        int selectionIndex = PassedTextControl.SelectionStart;
+        string lineText = Session.SelectedText;
+        Session.ReplaceSelection("");
+        string textBoxText = Session.Text;
+        int selectionIndex = Session.Selection.Start;
         int indexOfNextNewline = textBoxText.Length;
 
-        if (!PassedTextControl.Text.EndsWith(Environment.NewLine))
+        if (!Session.Text.EndsWith(Environment.NewLine))
         {
-            PassedTextControl.Text += Environment.NewLine;
+            Session.Text += Environment.NewLine;
         }
 
         IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
@@ -4380,8 +1232,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
         }
 
-        PassedTextControl.Select(indexOfNextNewline, 0);
-        PassedTextControl.SelectedText = lineText;
+        Session.ReplaceRange(new TextSpan(indexOfNextNewline, 0), lineText);
     }
 
     private void MoveLineDownMenuItem_Click(object sender, RoutedEventArgs e)
@@ -4392,10 +1243,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void MoveLineUp(object? sender, ExecutedRoutedEventArgs? e)
     {
         SelectLine(sender, e);
-        string lineText = PassedTextControl.SelectedText;
-        PassedTextControl.SelectedText = "";
-        string textBoxText = PassedTextControl.Text;
-        int selectionIndex = PassedTextControl.SelectionStart;
+        string lineText = Session.SelectedText;
+        Session.ReplaceSelection("");
+        string textBoxText = Session.Text;
+        int selectionIndex = Session.Selection.Start;
         int indexOfPreviousNewline = 0;
 
         IEnumerable<int> indicesOfNewLine = textBoxText.AllIndexesOf(Environment.NewLine);
@@ -4407,8 +1258,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 indexOfPreviousNewline = newLineEnd;
         }
 
-        PassedTextControl.Select(indexOfPreviousNewline, 0);
-        PassedTextControl.SelectedText = lineText;
+        Session.ReplaceRange(new TextSpan(indexOfPreviousNewline, 0), lineText);
     }
 
     private void MoveLineUpMenuItem_Click(object sender, RoutedEventArgs e)
@@ -4436,32 +1286,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return selectionWindow;
     }
 
-    private void OpenNewWindowWithSpreadsheetSelection()
-    {
-        CommitSpreadsheetEditsAndCapturePendingHistory();
-
-        List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
-        string selectedText = BuildSpreadsheetSelectionText(spreadsheetTable, selectedCellCoordinates);
-        bool hasSelection = selectedCellCoordinates.Count > 0;
-
-        EditTextWindow newEtwWithText = CreateSelectionWindow(
-            selectedText,
-            hasSelection ? EtwEditorMode.Spreadsheet : EtwEditorMode.Text);
-        newEtwWithText.Show();
-    }
-
-    private void OpenNewWindowWithMarkdownSelection()
-    {
-        TextSelection selection = MarkdownEditorControl.Selection;
-        bool hasSelection = !selection.IsEmpty;
-        string selectedText = selection.Text;
-
-        EditTextWindow newEtwWithText = CreateSelectionWindow(
-            selectedText,
-            hasSelection ? EtwEditorMode.Markdown : EtwEditorMode.Text);
-        newEtwWithText.Show();
-    }
-
     private void NewWindowWithText_Clicked(object sender, RoutedEventArgs e)
     {
         if (editorMode == EtwEditorMode.Spreadsheet)
@@ -4476,61 +1300,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
         EditTextWindow newEtwWithText = CreateSelectionWindow(selectedText, EtwEditorMode.Text);
         newEtwWithText.Show();
-    }
-
-    private async Task OcrAllImagesInParallel(OcrDirectoryOptions options, List<AsyncOcrFileResult> ocrFileResults, ILanguage selectedLanguage, string tesseractLanguageTag)
-    {
-        if (cancellationTokenForDirOCR is null)
-            return;
-
-        int degreesOfParallel = 6;
-
-        if (!string.IsNullOrEmpty(tesseractLanguageTag))
-            degreesOfParallel = 1;
-
-        ParallelOptions parallelOptions = new()
-        {
-            MaxDegreeOfParallelism = degreesOfParallel,
-            CancellationToken = cancellationTokenForDirOCR.Token
-        };
-
-        await Parallel.ForEachAsync(ocrFileResults, parallelOptions, async (ocrFile, ct) =>
-        {
-            ct.ThrowIfCancellationRequested();
-
-            ocrFile.OcrResult = await OcrSourceUtilities.OcrFile(ocrFile.FilePath, selectedLanguage, options);
-
-            // to get the TextBox to update whenever OCR Finishes:
-            if (!options.WriteTxtFiles)
-            {
-                await System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    PassedTextControl.AppendText(Environment.NewLine);
-                    PassedTextControl.AppendText(ocrFile.OcrResult);
-                    PassedTextControl.ScrollToEnd();
-                });
-            }
-        });
-    }
-
-    private async void OpenFileMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        // Create OpenFileDialog 
-        Microsoft.Win32.OpenFileDialog dlg = new()
-        {
-            // Set filter for file extension and default file extension 
-            DefaultExt = ".txt",
-            Filter = FileUtilities.GetOpenDocumentFilter(),
-            DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-        };
-
-        bool? result = dlg.ShowDialog();
-
-        if (result is true && File.Exists(dlg.FileName))
-            await OpenPath(dlg.FileName);
     }
 
     private void OpenGrabFrame_Click(object sender, RoutedEventArgs e)
@@ -4555,7 +1327,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         PassedTextControl.ContextMenu = baseContextMenu;
 
-        int caretIndex = PassedTextControl.CaretIndex;
+        int caretIndex = Session.Selection.Start;
 
         AddPossibleSpellingErrorsToRightClickMenu(caretIndex);
 
@@ -4638,7 +1410,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// </summary>
     private void ApplySpellCheckMode()
     {
-        bool shouldSpellCheck = ShouldEnableSpellCheck(spellCheckMode, PassedTextControl.Text);
+        bool shouldSpellCheck = ShouldEnableSpellCheck(spellCheckMode, Session.Text);
 
         if (SpellCheck.GetIsEnabled(PassedTextControl) != shouldSpellCheck)
             SpellCheck.SetIsEnabled(PassedTextControl, shouldSpellCheck);
@@ -4695,9 +1467,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Schedule after layout so offsets are accurate
         Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
 
-        if (isSyncingTextFromSpreadsheet || isSyncingTextFromMarkdown)
+        if (SessionImpl.IsSyncingTextFromSpreadsheet || SessionImpl.IsSyncingTextFromMarkdown)
         {
-            if (isSyncingTextFromMarkdown)
+            if (SessionImpl.IsSyncingTextFromMarkdown)
                 ResetSpreadsheetUndoHistory();
 
             UpdatePendingFileEditState();
@@ -4706,7 +1478,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (editorMode == EtwEditorMode.Spreadsheet)
         {
-            RefreshSpreadsheetFromText();
+            SessionImpl.SyncEditorFromText(EtwEditorMode.Spreadsheet);
             UpdatePendingFileEditState();
             return;
         }
@@ -4715,7 +1487,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             // OpenPath builds the document once itself after setting the text.
             if (!(isLoadingOpenedFile && IsLoaded))
-                RefreshMarkdownFromText();
+                SessionImpl.SyncEditorFromText(EtwEditorMode.Markdown);
 
             UpdatePendingFileEditState();
             return;
@@ -4728,205 +1500,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         UpdatePendingFileEditState();
     }
 
-    private void MarkdownEditorControl_SelectionChanged(object sender, RoutedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Markdown)
-            return;
-
-        UpdateLineAndColumnText();
-    }
-
-    private void MarkdownEditorControl_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Markdown)
-            return;
-
-        UpdateLineAndColumnText();
-        SetMargins(MarginsMenuItem.IsChecked is true);
-    }
-
-    private void MarkdownEditorControl_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (isApplyingMarkdownDocument)
-            return;
-
-        int caretOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.CaretPosition);
-        string currentParagraphText = FindParent<Paragraph>(MarkdownEditorControl.CaretPosition.Parent) is Paragraph currentParagraph
-            ? new TextRange(currentParagraph.ContentStart, currentParagraph.ContentEnd).Text
-            : string.Empty;
-        bool shouldPromoteMarkdown = MarkdownDocumentUtilities.ShouldPromoteLiveMarkdown(currentParagraphText);
-
-        SyncMarkdownTextFromDocument();
-        UpdateLineAndColumnText();
-
-        if (!shouldPromoteMarkdown)
-            return;
-
-        Dispatcher.BeginInvoke(
-            () =>
-            {
-                if (editorMode != EtwEditorMode.Markdown || isApplyingMarkdownDocument)
-                    return;
-
-                ReloadMarkdownDocumentAndRestoreCaret(caretOffset);
-                UpdateLineAndColumnText();
-            },
-            DispatcherPriority.Background);
-    }
-
-    private void MarkdownTaskListCheckBox_Changed(object sender, RoutedEventArgs e)
-    {
-        if (isApplyingMarkdownDocument || e.OriginalSource is not DependencyObject source
-            || !MarkdownFlowDocumentUtilities.IsTaskListCheckBox(source))
-            return;
-
-        SyncMarkdownTextFromDocument();
-        UpdateLineAndColumnText();
-    }
-
-    private void MarkdownEditorControl_PreviewTextInput(object sender, TextCompositionEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Markdown || e.Text != " ")
-            return;
-
-        Paragraph? paragraph = FindParent<Paragraph>(MarkdownEditorControl.CaretPosition.Parent);
-        if (paragraph is null)
-            return;
-
-        string lineTextBeforeSpace = new TextRange(paragraph.ContentStart, MarkdownEditorControl.CaretPosition).Text;
-        if (!MarkdownDocumentUtilities.ShouldPromoteLiveBlock(lineTextBeforeSpace))
-            return;
-
-        int paragraphStartOffset = GetMarkdownPlainTextOffset(paragraph.ContentStart);
-        Dispatcher.BeginInvoke(
-            () =>
-            {
-                if (editorMode != EtwEditorMode.Markdown || isApplyingMarkdownDocument)
-                    return;
-
-                ReloadMarkdownDocumentAndRestoreCaret(paragraphStartOffset);
-                UpdateLineAndColumnText();
-            },
-            DispatcherPriority.Background);
-    }
-
-    private void MarkdownEditorControl_Pasting(object sender, DataObjectPastingEventArgs e)
-    {
-        if (editorMode != EtwEditorMode.Markdown)
-            return;
-
-        string? pastedText = e.DataObject.GetData(System.Windows.DataFormats.UnicodeText) as string
-            ?? e.DataObject.GetData(System.Windows.DataFormats.Text) as string;
-        if (string.IsNullOrEmpty(pastedText))
-            return;
-
-        e.CancelCommand();
-
-        bool shouldParseAsMarkdown = MarkdownDocumentUtilities.LooksLikeMarkdown(pastedText);
-        int selectionStartOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.Selection.Start);
-        int renderedPasteLength = shouldParseAsMarkdown
-            ? MarkdownFlowDocumentUtilities.GetDocumentPlainText(
-                MarkdownFlowDocumentUtilities.CreateFlowDocument(
-                    pastedText,
-                    MarkdownEditorControl.FontFamily,
-                    MarkdownEditorControl.FontSize,
-                    OpenedFilePath)).Length
-            : pastedText.Length;
-
-        MarkdownEditorControl.Selection.Text = pastedText;
-
-        if (shouldParseAsMarkdown)
-        {
-            Dispatcher.BeginInvoke(
-                () =>
-                {
-                    if (editorMode != EtwEditorMode.Markdown || isApplyingMarkdownDocument)
-                        return;
-
-                    ReloadMarkdownDocumentAndRestoreCaret(selectionStartOffset + renderedPasteLength);
-                    UpdateLineAndColumnText();
-                },
-                DispatcherPriority.Background);
-        }
-    }
-
-    private async void MarkdownEditorControl_RequestNavigate(object sender, RequestNavigateEventArgs e)
-    {
-        e.Handled = true;
-        await ExternalLinkLauncher.OpenAsync(e.Uri.OriginalString);
-    }
-
     private DispatcherTimer? _debounceTimer = null;
     private const int DEBOUNCE_DELAY_MS = 300;
     private readonly CalculationService _calculationService = new();
-
-    // Aggregate tracking for calc pane status display
-    private enum AggregateType { None, Sum, Average, Count, Min, Max, Median, Product }
     private AggregateType _selectedAggregate = AggregateType.None;
-
-    private void InitializeExpressionEvaluator()
-    {
-        // Set up debounce timer to avoid excessive calculations
-        _debounceTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(DEBOUNCE_DELAY_MS)
-        };
-        _debounceTimer.Tick += DebounceTimer_Tick;
-    }
-
-    private async void DebounceTimer_Tick(object? sender, EventArgs e)
-    {
-        _debounceTimer?.Stop();
-
-        if (CalcResultsTextControl.Visibility != Visibility.Visible)
-            return;
-
-        await EvaluateExpressions();
-    }
-
-    private async Task EvaluateExpressions()
-    {
-        // Don't waste cycles if the pane isn't visible
-        if (CalcResultsTextControl.Visibility != Visibility.Visible)
-            return;
-
-        string input = PassedTextControl.Text;
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            calculationResult = null;
-            UpdateCalcPaneTextDisplay();
-            _calculationService.ClearParameters();
-            UpdateAggregateStatusDisplay();
-            // Keep scrolls aligned even when clearing
-            await Dispatcher.InvokeAsync(SyncCalcScrollToMain, DispatcherPriority.Render);
-            return;
-        }
-
-        // Update calculation service settings
-        _calculationService.CultureInfo = selectedCultureInfo ?? CultureInfo.CurrentCulture;
-        _calculationService.ShowErrors = ShowErrorsMenuItem.IsChecked == true;
-
-        // Evaluate expressions using the service
-        calculationResult = await _calculationService.EvaluateExpressionsAsync(input);
-
-        // Update the text control with results or current spreadsheet selection preview
-        UpdateCalcPaneTextDisplay();
-
-        // Update the aggregate status display if an aggregate is selected
-        UpdateAggregateStatusDisplay();
-
-        // After updating calc text, its ScrollViewer resets; resync to main scroll
-        await Dispatcher.InvokeAsync(SyncCalcScrollToMain, DispatcherPriority.Render);
-
-        // Optional status (kept commented)
-        // if (result.ErrorCount == 0) { } else { }
-    }
-
-    private async void ShowErrorsCheckBox_Changed(object sender, RoutedEventArgs e)
-    {
-        // Re-evaluate expressions when toggle changes
-        await EvaluateExpressions();
-    }
 
     protected override void OnClosed(EventArgs e)
     {
@@ -5045,53 +1622,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             }
             byte[] encodedBytes = Convert.FromBase64String(rawEncodedString);
             string copiedText = Encoding.UTF8.GetString(encodedBytes);
-            PassedTextControl.Text = copiedText;
+            Session.Text = copiedText;
         }
         catch (Exception ex)
         {
-            PassedTextControl.Text = rawEncodedString;
-            PassedTextControl.Text += ex.Message;
+            Session.Text = rawEncodedString;
+            Session.Text += ex.Message;
         }
-    }
-
-    private async void ReadFolderOfImages_Click(object sender, RoutedEventArgs e)
-    {
-        FolderBrowserDialog folderBrowserDialog = new();
-        DialogResult result = folderBrowserDialog.ShowDialog();
-
-        if (result is not System.Windows.Forms.DialogResult.OK)
-            return;
-
-        string chosenFolderPath = folderBrowserDialog.SelectedPath;
-
-        GrabTemplate? selectedTemplate = null;
-        foreach (MenuItem item in GrabTemplateMenuItem.Items)
-        {
-            if (item.IsChecked && item.Tag is GrabTemplate grabTemplate)
-            {
-                selectedTemplate = grabTemplate;
-                break;
-            }
-        }
-
-        OcrDirectoryOptions ocrDirectoryOptions = new()
-        {
-            Path = chosenFolderPath,
-            IsRecursive = RecursiveFoldersCheck.IsChecked is true,
-            WriteTxtFiles = ReadFolderOfImagesWriteTxtFiles.IsChecked is true,
-            OutputFileNames = OutputFilenamesCheck.IsChecked is true,
-            OutputFooter = OutputFooterCheck.IsChecked is true,
-            OutputHeader = OutputHeaderCheck.IsChecked is true,
-            GrabTemplate = selectedTemplate,
-        };
-
-        if (Directory.Exists(chosenFolderPath))
-            await OcrAllImagesInFolder(chosenFolderPath, ocrDirectoryOptions);
     }
 
     private void RemoveDuplicateLines_Click(object sender, RoutedEventArgs e)
     {
-        PassedTextControl.Text = PassedTextControl.Text.RemoveDuplicateLines();
+        Session.Text = Session.Text.RemoveDuplicateLines();
     }
 
     private void ShuffleLinesMenuItem_Click(object sender, RoutedEventArgs e)
@@ -5172,314 +1714,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SetBottomBarButtons();
     }
 
-    private void SaveAsBTN_Click(object sender, RoutedEventArgs e)
-    {
-        _ = SaveCurrentDocument(saveAs: true);
-    }
-
-    private void SaveBTN_Click(object sender, RoutedEventArgs e)
-    {
-        _ = SaveCurrentDocument();
-    }
-
-    private string GetDefaultSaveExtension()
-    {
-        return GetDefaultSaveExtension(OpenedFilePath, editorMode, tableDocument);
-    }
-
-    private int GetSaveDocumentFilterIndex()
-    {
-        return GetSaveDocumentFilterIndex(OpenedFilePath, editorMode);
-    }
-
-    private void SyncTextFromActiveEditor()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-            SyncSpreadsheetDocumentFromTable();
-        else if (editorMode == EtwEditorMode.Markdown)
-            SyncMarkdownTextFromDocument();
-    }
-
-    /// <summary>
-    /// The mirror of <see cref="SyncTextFromActiveEditor"/>: pushes <c>PassedTextControl.Text</c> out
-    /// to whichever editor is showing, the same way <see cref="PassedTextControl_TextChanged"/> does.
-    /// Used by anything that writes straight into the raw text box while another editor is active —
-    /// streamed audio transcription, most of all. A no-op in raw-text mode.
-    /// </summary>
-    private void SyncActiveEditorFromText()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-            RefreshSpreadsheetFromText();
-        else if (editorMode == EtwEditorMode.Markdown)
-            RefreshMarkdownFromText();
-    }
-
-    private bool SaveCurrentDocument(bool saveAs = false)
-    {
-        SyncTextFromActiveEditor();
-
-        string fileText = PassedTextControl.Text;
-        string? targetFilePath = saveAs ? null : OpenedFilePath;
-
-        if (string.IsNullOrEmpty(targetFilePath))
-        {
-            Microsoft.Win32.SaveFileDialog dialog = new()
-            {
-                DefaultExt = GetDefaultSaveExtension(),
-                Filter = SaveDocumentFilter,
-                FilterIndex = GetSaveDocumentFilterIndex(),
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                RestoreDirectory = true,
-            };
-
-            if (dialog.ShowDialog() is not true)
-                return false;
-
-            targetFilePath = dialog.FileName;
-        }
-
-        bool refreshImagePaths = editorMode == EtwEditorMode.Markdown
-            && !string.Equals(OpenedFilePath, targetFilePath, StringComparison.OrdinalIgnoreCase);
-        int markdownCaretOffset = refreshImagePaths
-            ? GetMarkdownPlainTextOffset(MarkdownEditorControl.CaretPosition)
-            : 0;
-        File.WriteAllText(targetFilePath, fileText);
-        SetOpenedFileState(targetFilePath);
-        Singleton<HistoryService>.Instance.RecordRecentFile(targetFilePath, OpenContentKind.TextFile);
-        if (refreshImagePaths)
-            ReloadMarkdownDocumentAndRestoreCaret(markdownCaretOffset);
-        return true;
-    }
-
-    private void SetOpenedFileState(string? openedFilePath)
-    {
-        OpenedFilePath = openedFilePath;
-        savedFileText = string.IsNullOrWhiteSpace(openedFilePath) ? string.Empty : PassedTextControl.Text;
-        hasPendingFileEdits = false;
-        UpdateWindowTitle();
-    }
-
-    private void UpdateWindowTitle()
-    {
-        string windowTitle = GetWindowTitle(OpenedFilePath, hasPendingFileEdits);
-        Title = windowTitle;
-        UiTitleBar.Title = windowTitle;
-    }
-
-    private void UpdatePendingFileEditState()
-    {
-        if (isLoadingOpenedFile)
-            return;
-
-        hasPendingFileEdits = ShouldShowPendingFileEdits(OpenedFilePath, savedFileText, PassedTextControl.Text);
-        UpdateWindowTitle();
-    }
-
-    private async Task<PendingFileCloseAction> PromptForPendingFileEditsAsync()
-    {
-        if (string.IsNullOrWhiteSpace(OpenedFilePath))
-            return PendingFileCloseAction.Cancel;
-
-        string fileName = Path.GetFileName(OpenedFilePath);
-        PendingFileCloseAction closeButtonAction = PendingFileCloseAction.Cancel;
-        Wpf.Ui.Controls.ContentDialog promptDialog = new(PendingFileCloseDialogHost)
-        {
-            Title = $"Save changes to {fileName}?",
-            Content = "You have pending edits. Save the file, discard the changes, or keep the current version in Text Grab history.",
-            PrimaryButtonText = "Save",
-            SecondaryButtonText = "Don't Save",
-            CloseButtonText = "Save to History",
-            DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary,
-        };
-
-        promptDialog.ButtonClicked += (_, e) =>
-        {
-            if (e.Button == Wpf.Ui.Controls.ContentDialogButton.Close)
-                closeButtonAction = PendingFileCloseAction.SaveToHistory;
-        };
-
-        Wpf.Ui.Controls.ContentDialogResult result = await promptDialog.ShowAsync();
-
-        if (result == Wpf.Ui.Controls.ContentDialogResult.Primary)
-            return PendingFileCloseAction.Save;
-
-        if (result == Wpf.Ui.Controls.ContentDialogResult.Secondary)
-            return PendingFileCloseAction.DontSave;
-
-        if (closeButtonAction == PendingFileCloseAction.SaveToHistory)
-            return closeButtonAction;
-
-        return PendingFileCloseAction.Cancel;
-    }
-
-    private void SaveWindowTextToHistoryIfNeeded()
-    {
-        if (string.IsNullOrEmpty(OpenedFilePath)
-            && !string.IsNullOrWhiteSpace(PassedTextControl.Text))
-            Singleton<HistoryService>.Instance.SaveToHistory(this);
-    }
-
-    private void SaveWindowTextToHistoryNow()
-    {
-        Singleton<HistoryService>.Instance.SaveToHistory(this);
-        Singleton<HistoryService>.Instance.WriteHistory();
-    }
-
-    private async Task HandlePendingFileClosePromptAsync()
-    {
-        try
-        {
-            switch (await PromptForPendingFileEditsAsync())
-            {
-                case PendingFileCloseAction.Save:
-                    if (!SaveCurrentDocument())
-                        return;
-                    break;
-                case PendingFileCloseAction.DontSave:
-                    break;
-                case PendingFileCloseAction.SaveToHistory:
-                    SaveWindowTextToHistoryNow();
-                    break;
-                case PendingFileCloseAction.Cancel:
-                default:
-                    return;
-            }
-
-            allowCloseAfterPendingFilePrompt = true;
-            Close();
-        }
-        finally
-        {
-            isShowingPendingFileClosePrompt = false;
-        }
-    }
-
     private void SearchButton_Click(object sender, RoutedEventArgs e)
     {
         LaunchFindAndReplace();
-    }
-
-    private void SelectAllMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)
-    {
-        if (!IsLoaded)
-            return;
-
-        if (editorMode == EtwEditorMode.Spreadsheet)
-        {
-            SpreadsheetDataGrid.SelectAllCells();
-            SpreadsheetDataGrid.Focus();
-            return;
-        }
-
-        PassedTextControl.SelectAll();
-    }
-
-    private void SelectionContainsNewLinesCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
-    {
-        // Unstack reshapes the flat document text into rows, which is redundant with the
-        // grid structure Spreadsheet mode already provides, so keep it disabled there.
-        if (editorMode == EtwEditorMode.Spreadsheet)
-        {
-            e.CanExecute = false;
-            return;
-        }
-
-        if (PassedTextControl.SelectedText.Contains(Environment.NewLine)
-            || PassedTextControl.SelectedText.Contains('\r')
-            || PassedTextControl.SelectedText.Contains('\n'))
-            e.CanExecute = true;
-        else
-            e.CanExecute = false;
-    }
-
-    private void SelectLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
-    {
-        (int lineStart, int lineLength) = PassedTextControl.Text.GetStartAndLengthOfLineAtPosition(PassedTextControl.SelectionStart);
-
-        PassedTextControl.Select(lineStart, lineLength);
-    }
-
-    private void SelectLineMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SelectLine();
-    }
-
-    private void SelectNoneMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)
-    {
-        if (!IsLoaded)
-            return;
-
-        PassedTextControl.Select(0, 0);
-    }
-
-    private void SelectWord(object? sender = null, ExecutedRoutedEventArgs? e = null)
-    {
-        if (TrySelectSpreadsheetWord())
-            return;
-
-        (int wordStart, int wordLength) = PassedTextControl.Text.CursorWordBoundaries(PassedTextControl.CaretIndex);
-
-        PassedTextControl.Select(wordStart, wordLength);
-    }
-
-    private bool TrySelectSpreadsheetWord()
-    {
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
-
-        if (TryGetFocusedSpreadsheetCellEditor(out System.Windows.Controls.TextBox? focusedEditor))
-        {
-            (int editorWordStart, int editorWordLength) = focusedEditor.Text.CursorWordBoundaries(focusedEditor.CaretIndex);
-            focusedEditor.Select(editorWordStart, editorWordLength);
-            return true;
-        }
-
-        int rowIndex = SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-        int? columnIndex = SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex;
-        if (rowIndex < 0
-            || columnIndex is null
-            || rowIndex >= spreadsheetTable.Rows.Count
-            || columnIndex.Value < 0
-            || columnIndex.Value >= spreadsheetTable.Columns.Count)
-        {
-            return true;
-        }
-
-        string cellText = spreadsheetTable.Rows[rowIndex][columnIndex.Value]?.ToString() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(cellText))
-            return true;
-
-        (int wordStart, int wordLength) = cellText.CursorWordBoundaries(0);
-        FocusSpreadsheetCell(rowIndex, columnIndex.Value);
-
-        Dispatcher.BeginInvoke(
-            () =>
-            {
-                if (TryGetFocusedSpreadsheetCellEditor(out System.Windows.Controls.TextBox? editor))
-                    editor.Select(wordStart, wordLength);
-            },
-            DispatcherPriority.Background);
-
-        return true;
-    }
-
-    private bool TryGetFocusedSpreadsheetCellEditor([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Windows.Controls.TextBox? editor)
-    {
-        editor = null;
-
-        if (Keyboard.FocusedElement is not DependencyObject focusedElement)
-            return false;
-
-        if (FindVisualParent<System.Windows.Controls.DataGridCell>(focusedElement) is null)
-            return false;
-
-        editor = FindVisualParent<System.Windows.Controls.TextBox>(focusedElement);
-        return editor is not null;
-    }
-
-    private void SelectWordMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SelectWord();
     }
 
     private void SetFontFromSettings()
@@ -5669,7 +1906,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // Spreadsheet mode has its own cell-aware "Split Cells" feature
         // (SplitSelectedSpreadsheetCells); this flat-text version doesn't apply there.
         if (editorMode == EtwEditorMode.Spreadsheet
-            || string.IsNullOrEmpty(PassedTextControl.SelectedText))
+            || string.IsNullOrEmpty(Session.SelectedText))
             e.CanExecute = false;
         else
             e.CanExecute = true;
@@ -5677,7 +1914,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private async void SplitOnSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
 
         if (string.IsNullOrEmpty(selectedText))
         {
@@ -5690,16 +1927,16 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        StringBuilder textToManipulate = new(PassedTextControl.Text);
+        StringBuilder textToManipulate = new(Session.Text);
 
         textToManipulate = textToManipulate.Replace(selectedText, Environment.NewLine + selectedText);
 
-        PassedTextControl.Text = textToManipulate.ToString();
+        Session.Text = textToManipulate.ToString();
     }
 
     private async void SplitAfterSelectionCmdExecuted(object sender, ExecutedRoutedEventArgs e)
     {
-        string selectedText = PassedTextControl.SelectedText;
+        string selectedText = Session.SelectedText;
 
         if (string.IsNullOrEmpty(selectedText))
         {
@@ -5712,11 +1949,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        StringBuilder textToManipulate = new(PassedTextControl.Text);
+        StringBuilder textToManipulate = new(Session.Text);
 
         textToManipulate = textToManipulate.Replace(selectedText, selectedText + Environment.NewLine);
 
-        PassedTextControl.Text = textToManipulate.ToString();
+        Session.Text = textToManipulate.ToString();
     }
 
     private void ToggleCase(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -5763,10 +2000,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 break;
         }
 
-        if (PassedTextControl.SelectionLength == 0)
-            PassedTextControl.Text = textToModify;
+        if (Session.Selection.Length == 0)
+            Session.Text = textToModify;
         else
-            PassedTextControl.SelectedText = textToModify;
+            Session.ReplaceSelection(textToModify);
     }
 
     private void ToggleCaseCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
@@ -5784,7 +2021,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        PassedTextControl.Text = PassedTextControl.Text.TrimEachLine();
+        Session.Text = Session.Text.TrimEachLine();
     }
 
     private void CleanUpText_Click(object sender, RoutedEventArgs e)
@@ -5805,437 +2042,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void UnstackExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selection = NewlineReturns().Replace(PassedTextControl.SelectedText, Environment.NewLine);
+        string selection = NewlineReturns().Replace(Session.SelectedText, Environment.NewLine);
         string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
-        PassedTextControl.Text = PassedTextControl.Text.UnstackStrings(numberOfLines);
+        Session.Text = Session.Text.UnstackStrings(numberOfLines);
     }
 
     private void UnstackGroupExecuted(object? sender = null, ExecutedRoutedEventArgs? e = null)
     {
-        string selection = NewlineReturns().Replace(PassedTextControl.SelectedText, Environment.NewLine);
+        string selection = NewlineReturns().Replace(Session.SelectedText, Environment.NewLine);
         string[] selectionLines = selection.Split(Environment.NewLine);
         int numberOfLines = selectionLines.Length;
 
-        PassedTextControl.Text = PassedTextControl.Text.UnstackGroups(numberOfLines);
-    }
-
-    private void UpdateLineAndColumnText()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-        {
-            HideSelectionSpecificUi();
-
-            int rowCount = spreadsheetTable.Rows.Count;
-            int columnCount = spreadsheetTable.Columns.Count;
-
-            if (SpreadsheetDataGrid.SelectedCells.Count == 0)
-            {
-                if (SpreadsheetDataGrid.CurrentCell.Column is not null)
-                {
-                    int currentRowIndex = SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem);
-                    int currentColumnIndex = SpreadsheetDataGrid.CurrentCell.Column.DisplayIndex;
-
-                    BottomBarText.Text = currentRowIndex >= 0
-                        ? $"Rows {rowCount}, Cols {columnCount}, Row {currentRowIndex + 1}, Col {currentColumnIndex + 1}"
-                        : $"Rows {rowCount}, Cols {columnCount}";
-                }
-                else
-                {
-                    BottomBarText.Text = $"Rows {rowCount}, Cols {columnCount}";
-                }
-
-                return;
-            }
-
-            int selectedRowCount = SpreadsheetDataGrid.SelectedCells
-                .Select(cell => SpreadsheetDataGrid.Items.IndexOf(cell.Item))
-                .Where(index => index >= 0)
-                .Distinct()
-                .Count();
-            int selectedColumnCount = SpreadsheetDataGrid.SelectedCells
-                .Select(cell => cell.Column.DisplayIndex)
-                .Distinct()
-                .Count();
-
-            BottomBarText.Text =
-                $"Rows {rowCount}, Cols {columnCount}, Selected {SpreadsheetDataGrid.SelectedCells.Count} cells ({selectedRowCount} rows x {selectedColumnCount} cols)";
-            return;
-        }
-
-        if (editorMode == EtwEditorMode.Markdown)
-        {
-            HideSelectionSpecificUi();
-
-            string plainText = MarkdownEditorControl.Document is null
-                ? string.Empty
-                : MarkdownFlowDocumentUtilities.GetDocumentPlainText(MarkdownEditorControl.Document);
-            string selectedText = MarkdownEditorControl.Selection.Text.TrimEnd('\r', '\n');
-
-            BottomBarText.Text = string.IsNullOrEmpty(selectedText)
-                ? $"Markdown, Chars {plainText.Length}"
-                : $"Markdown, Selected {selectedText.Length} chars";
-            return;
-        }
-
-        char[] delimiters = [' ', '\r', '\n'];
-
-        if (PassedTextControl.SelectionLength < 1)
-        {
-            int lineNumber = PassedTextControl.GetLineIndexFromCharacterIndex(PassedTextControl.CaretIndex);
-            int columnNumber = PassedTextControl.CaretIndex - PassedTextControl.GetCharacterIndexFromLineIndex(lineNumber);
-            int words = PassedTextControl.Text.RemoveNonWordChars().Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
-
-            string text = DefaultSettings.EtwShowWordCount
-                ? $"Wrds {words}, Ln {lineNumber + 1}, Col {columnNumber}"
-                : $"Ln {lineNumber + 1}, Col {columnNumber}";
-
-            BottomBarText.Text = text;
-
-            // Hide selection-specific UI elements
-            MatchCountButton.Visibility = Visibility.Collapsed;
-            RegexPatternButton.Visibility = Visibility.Collapsed;
-            SimilarMatchesButton.Visibility = Visibility.Collapsed;
-            CharDetailsButton.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            int selectionStartIndex = PassedTextControl.SelectionStart;
-            int selectionStopIndex = PassedTextControl.SelectionStart + PassedTextControl.SelectionLength;
-            int words = PassedTextControl.Text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Length;
-
-            int selStartLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStartIndex);
-
-            if (selStartLine < 0)
-            {
-                BottomBarText.Text = $"Ln -, Col -";
-                return;
-            }
-
-            int selStartCol = selectionStartIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStartLine);
-            int selStopLine = PassedTextControl.GetLineIndexFromCharacterIndex(selectionStopIndex); ;
-            int selStopCol = selectionStopIndex - PassedTextControl.GetCharacterIndexFromLineIndex(selStopLine); ;
-            int selLength = PassedTextControl.SelectionLength;
-            int numbOfSelectedLines = selStopLine - selStartLine;
-
-            if (numbOfSelectedLines > 0)
-                BottomBarText.Text = $"Ln {selStartLine + 1}:{selStopLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}, Lines {numbOfSelectedLines + 1}";
-            else
-                BottomBarText.Text = $"Ln {selStartLine + 1}, Col {selStartCol}:{selStopCol}, Len {selLength}";
-
-            // Update selection-specific UI elements
-            UpdateSelectionSpecificUI();
-        }
-    }
-
-    private void UpdateSelectionSpecificUI()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-        {
-            HideSelectionSpecificUi();
-            return;
-        }
-
-        string selectedText = PassedTextControl.SelectedText;
-
-        if (string.IsNullOrEmpty(selectedText))
-        {
-            MatchCountButton.Visibility = Visibility.Collapsed;
-            SimilarMatchesButton.Visibility = Visibility.Collapsed;
-            RegexPatternButton.Visibility = Visibility.Collapsed;
-            CharDetailsButton.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        // Show character details for single character selection
-        if (DefaultSettings.EtwShowCharDetails && selectedText.Length == 1)
-        {
-            char selectedChar = selectedText[0];
-            int codePoint = char.ConvertToUtf32(selectedText, 0);
-            string unicodeHex = $"U+{codePoint:X4}";
-
-            CharDetailsButtonText.Text = unicodeHex;
-            CharDetailsButton.ToolTip = $"{unicodeHex}: {CharacterUtilities.GetUnicodeCategory(selectedChar)}";
-            CharDetailsButton.Visibility = Visibility.Visible;
-        }
-        else if (DefaultSettings.EtwShowCharDetails && selectedText.Length > 1)
-        {
-            CharDetailsButtonText.Text = $"{selectedText.Length} chars";
-            CharDetailsButton.ToolTip = "Click to see character details";
-            CharDetailsButton.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            CharDetailsButton.Visibility = Visibility.Collapsed;
-        }
-
-        // Show match count
-        if (DefaultSettings.EtwShowMatchCount && !string.IsNullOrEmpty(selectedText))
-        {
-            int matchCount = StringMethods.CountMatches(PassedTextControl.Text, selectedText);
-            if (MatchCountButton.Content is TextBlock matchButton)
-            {
-                matchButton.Text = matchCount == 1 ? "1 match" : $"{matchCount} matches";
-            }
-            MatchCountButton.Visibility = matchCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
-        else
-        {
-            MatchCountButton.Visibility = Visibility.Collapsed;
-        }
-
-        // Show similar matches count using regex pattern
-        if (DefaultSettings.EtwShowSimilarMatches && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
-        {
-            // Generate and store the ExtractedPattern if the selection changed
-            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
-            {
-                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
-                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
-            }
-
-            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-            int similarCount = StringMethods.CountRegexMatches(PassedTextControl.Text, regexPattern);
-            if (SimilarMatchesButton.Content is TextBlock similarButton)
-            {
-                similarButton.Text = similarCount == 1 ? "1 similar" : $"{similarCount} similar";
-            }
-            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
-            SimilarMatchesButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
-            SimilarMatchesButton.Visibility = similarCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
-        else
-        {
-            SimilarMatchesButton.Visibility = Visibility.Collapsed;
-        }
-
-        // Show regex pattern
-        if (DefaultSettings.EtwShowRegexPattern && !string.IsNullOrEmpty(selectedText) && selectedText.Length > 0 && selectedText.Length <= 50)
-        {
-            // Generate and store the ExtractedPattern if the selection changed
-            if (currentExtractedPattern is null || currentExtractedPattern.OriginalText != selectedText)
-            {
-                currentExtractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
-                currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
-            }
-
-            string regexPattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-            if (RegexPatternButton.Content is TextBlock regexButton)
-            {
-                regexButton.Text = regexPattern.Length > 30
-                    ? $"Regex: {regexPattern[..27]}..."
-                    : $"Regex: {regexPattern}";
-            }
-            string levelLabel = ExtractedPattern.GetLevelLabel(currentPrecisionLevel);
-            RegexPatternButton.ToolTip = $"Click to Find and Replace with: {regexPattern}\n(Precision: {levelLabel})\nScroll mouse wheel to adjust precision";
-            RegexPatternButton.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            RegexPatternButton.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private string GenerateRegexPattern(string text)
-    {
-        // Use the stored ExtractedPattern if available and matches current text
-        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == text)
-        {
-            return currentExtractedPattern.GetPattern(currentPrecisionLevel);
-        }
-
-        // Otherwise create new pattern at default precision
-        ExtractedPattern extractedPattern = new(text);
-        return extractedPattern.GetPattern(ExtractedPattern.DefaultPrecisionLevel);
-    }
-
-    private void MatchCountButton_Click(object sender, RoutedEventArgs e)
-    {
-        // Open find and replace with the selection pre-loaded
-        LaunchFindAndReplace();
-    }
-
-    private void SimilarMatchesButton_Click(object sender, RoutedEventArgs e)
-    {
-        string selectedText = PassedTextControl.SelectedText;
-        if (string.IsNullOrEmpty(selectedText))
-            return;
-
-        // Use the stored ExtractedPattern if available, otherwise create new one
-        ExtractedPattern extractedPattern;
-        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
-        {
-            extractedPattern = currentExtractedPattern;
-        }
-        else
-        {
-            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
-        }
-
-        // Launch Find and Replace with regex enabled and execute search
-        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
-        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
-        findAndReplaceWindow.Show();
-    }
-
-    private void RegexPatternButton_Click(object sender, RoutedEventArgs e)
-    {
-        string selectedText = PassedTextControl.SelectedText;
-        if (string.IsNullOrEmpty(selectedText))
-            return;
-
-        // Use the stored ExtractedPattern if available, otherwise create new one
-        ExtractedPattern extractedPattern;
-        if (currentExtractedPattern is not null && currentExtractedPattern.OriginalText == selectedText)
-        {
-            extractedPattern = currentExtractedPattern;
-        }
-        else
-        {
-            extractedPattern = new ExtractedPattern(selectedText, ignoreCase: true);
-        }
-
-        // Launch Find and Replace with regex enabled and execute search
-        FindAndReplaceWindow findAndReplaceWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findAndReplaceWindow.TextEditWindow = this;
-        findAndReplaceWindow.StringFromWindow = PassedTextControl.Text;
-        findAndReplaceWindow.FindByPattern(extractedPattern, currentPrecisionLevel);
-        findAndReplaceWindow.Show();
-    }
-
-    private void PatternButton_MouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        // Only handle if we have a valid ExtractedPattern
-        if (currentExtractedPattern is null)
-            return;
-
-        // Determine scroll direction for animation
-        bool scrollingUp = e.Delta > 0;
-
-        // Adjust precision level based on scroll direction
-        if (scrollingUp)
-        {
-            // Scroll up = increase precision (more specific pattern)
-            currentPrecisionLevel = Math.Min(currentPrecisionLevel + 1, ExtractedPattern.MaxPrecisionLevel);
-        }
-        else if (e.Delta < 0)
-        {
-            // Scroll down = decrease precision (more general pattern)
-            currentPrecisionLevel = Math.Max(currentPrecisionLevel - 1, ExtractedPattern.MinPrecisionLevel);
-        }
-
-        // Update the UI to reflect the new precision level
-        UpdateSelectionSpecificUI();
-
-        // Add visual feedback animation to make the precision change more obvious
-        AnimatePrecisionChange(sender, scrollingUp);
-
-        // Mark the event as handled so it doesn't bubble up
-        e.Handled = true;
-    }
-
-    private void AnimatePrecisionChange(object sender, bool scrollingUp)
-    {
-        if (sender is not System.Windows.Controls.Button button)
-            return;
-
-        // Ensure the button has a RenderTransform for translation
-        if (button.RenderTransform is not TranslateTransform)
-        {
-            button.RenderTransform = new TranslateTransform(0, 0);
-        }
-
-        TranslateTransform translateTransform = (TranslateTransform)button.RenderTransform;
-
-        // Create a slide animation based on scroll direction
-        // Scrolling up (increasing precision) = slide text up (negative Y)
-        // Scrolling down (decreasing precision) = slide text down (positive Y)
-        double slideDistance = 10;
-        double startY = scrollingUp ? slideDistance : -slideDistance;
-
-        DoubleAnimation slideAnimation = new()
-        {
-            From = startY,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(200),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        // Apply the animation to Y translation
-        translateTransform.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
-    }
-
-    private void CharDetailsButton_Click(object sender, RoutedEventArgs e)
-    {
-        string selectedText = PassedTextControl.SelectedText;
-
-        if (string.IsNullOrEmpty(selectedText))
-            return;
-
-        CharDetailsPopupContent.Children.Clear();
-
-        if (selectedText.Length == 1)
-        {
-            // Show details for single character in multi-line TextBox
-            char c = selectedText[0];
-            string details = CharacterUtilities.GetCharacterDetailsText(c);
-
-            System.Windows.Controls.TextBox detailsTextBox = new()
-            {
-                Text = details,
-                FontSize = 12,
-                IsReadOnly = true,
-                BorderThickness = new Thickness(0),
-                Background = Brushes.Transparent,
-                TextWrapping = TextWrapping.Wrap,
-                Cursor = System.Windows.Input.Cursors.Arrow,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-            };
-            CharDetailsPopupContent.Children.Add(detailsTextBox);
-        }
-        else
-        {
-            // Show details for multiple characters in one multi-line TextBox
-            StringBuilder allDetails = new();
-            allDetails.AppendLine($"Character Details ({selectedText.Length} characters)");
-            allDetails.AppendLine();
-
-            // Limit to first 10 characters to avoid huge popup
-            int charLimit = Math.Min(selectedText.Length, 10);
-            for (int i = 0; i < charLimit; i++)
-            {
-                char c = selectedText[i];
-                allDetails.AppendLine(CharacterUtilities.GetCharacterDetailsText(c));
-
-                if (i < charLimit - 1)
-                    allDetails.AppendLine(); // Add blank line between characters
-            }
-
-            if (selectedText.Length > charLimit)
-            {
-                allDetails.AppendLine();
-                allDetails.AppendLine($"... and {selectedText.Length - charLimit} more");
-            }
-
-            System.Windows.Controls.TextBox detailsTextBox = new()
-            {
-                Text = allDetails.ToString(),
-                FontSize = 12,
-                IsReadOnly = true,
-                BorderThickness = new Thickness(0),
-                Background = Brushes.Transparent,
-                TextWrapping = TextWrapping.Wrap,
-                Cursor = System.Windows.Input.Cursors.Arrow,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                MaxHeight = 400
-            };
-            CharDetailsPopupContent.Children.Add(detailsTextBox);
-        }
-
-        CharDetailsPopup.IsOpen = true;
+        Session.Text = Session.Text.UnstackGroups(numberOfLines);
     }
 
     private void Window_Activated(object sender, EventArgs e)
@@ -6341,7 +2161,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
-        SyncTextFromActiveEditor();
+        SessionImpl.SyncTextFromActiveEditor();
         UpdatePendingFileEditState();
 
         if (allowCloseAfterPendingFilePrompt)
@@ -6366,25 +2186,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         e.Cancel = true;
         isShowingPendingFileClosePrompt = true;
         _ = HandlePendingFileClosePromptAsync();
-    }
-
-    private async Task StopLiveTranscriptionAndCloseAsync()
-    {
-        try
-        {
-            // Invalidate a pending start before awaiting it, then flush before either the
-            // pending-file prompt or history snapshots read the document.
-            ++_liveTranscriptionRequest;
-            LiveTranscriptionToggleButton.IsChecked = false;
-            await StopLiveTranscriptionAsync(dispose: true);
-        }
-        finally
-        {
-            _isStoppingLiveTranscriptionForClose = false;
-        }
-
-        if (!_isClosed)
-            Close();
     }
 
     private void Window_Initialized(object sender, EventArgs e)
@@ -6494,442 +2295,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             UpdateSpreadsheetModeUi();
     }
 
-    private void HideCalcPaneContextItem_Click(object sender, RoutedEventArgs e)
-    {
-        ShowCalcPaneMenuItem.IsChecked = false;
-        DefaultSettings.CalcShowPane = false;
-        SetCalcPaneVisibility();
-    }
-
-    private void ShowCalcErrorsContextItem_Click(object sender, RoutedEventArgs e)
-    {
-        ShowErrorsMenuItem.IsChecked = !ShowErrorsMenuItem.IsChecked;
-        DefaultSettings.CalcShowErrors = ShowErrorsMenuItem.IsChecked;
-        _ = EvaluateExpressions();
-    }
-
-    private void CopyAllContextItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
-            return;
-
-        try
-        {
-            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
-        }
-    }
-
-    private void CalcResultsTextControl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-    {
-        UpdateCalcAggregates();
-    }
-
-    private void UpdateCalcAggregates()
-    {
-        List<double> numbers = GetCurrentAggregateNumbers();
-
-        // Update menu items based on whether we have numbers
-        if (numbers.Count == 0)
-        {
-            ShowSumContextItem.Header = "Sum: -";
-            ShowAverageContextItem.Header = "Average: -";
-            ShowMedianContextItem.Header = "Median: -";
-            ShowCountContextItem.Header = "Count: 0";
-            ShowMinContextItem.Header = "Min: -";
-            ShowMaxContextItem.Header = "Max: -";
-            ShowProductContextItem.Header = "Product: -";
-
-            ShowSumContextItem.IsEnabled = false;
-            ShowAverageContextItem.IsEnabled = false;
-            ShowMedianContextItem.IsEnabled = false;
-            ShowCountContextItem.IsEnabled = false;
-            ShowMinContextItem.IsEnabled = false;
-            ShowMaxContextItem.IsEnabled = false;
-            ShowProductContextItem.IsEnabled = false;
-        }
-        else
-        {
-            double sum = numbers.Sum();
-            double average = numbers.Average();
-            double median = NumericUtilities.CalculateMedian(numbers);
-            int count = numbers.Count;
-            double min = numbers.Min();
-            double max = numbers.Max();
-            double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
-
-            ShowSumContextItem.Header = $"Sum: {NumericUtilities.FormatNumber(sum)}";
-            ShowAverageContextItem.Header = $"Average: {NumericUtilities.FormatNumber(average)}";
-            ShowMedianContextItem.Header = $"Median: {NumericUtilities.FormatNumber(median)}";
-            ShowCountContextItem.Header = $"Count: {count}";
-            ShowMinContextItem.Header = $"Min: {NumericUtilities.FormatNumber(min)}";
-            ShowMaxContextItem.Header = $"Max: {NumericUtilities.FormatNumber(max)}";
-            ShowProductContextItem.Header = $"Product: {NumericUtilities.FormatNumber(product)}";
-
-            ShowSumContextItem.IsEnabled = true;
-            ShowAverageContextItem.IsEnabled = true;
-            ShowMedianContextItem.IsEnabled = true;
-            ShowCountContextItem.IsEnabled = true;
-            ShowMinContextItem.IsEnabled = true;
-            ShowMaxContextItem.IsEnabled = true;
-            ShowProductContextItem.IsEnabled = true;
-
-            // Wire up click handlers to copy values and track selection
-            ShowSumContextItem.Click -= SelectAggregate_Click;
-            ShowSumContextItem.Click += SelectAggregate_Click;
-            ShowSumContextItem.Tag = (AggregateType.Sum, sum);
-
-            ShowAverageContextItem.Click -= SelectAggregate_Click;
-            ShowAverageContextItem.Click += SelectAggregate_Click;
-            ShowAverageContextItem.Tag = (AggregateType.Average, average);
-
-            ShowMedianContextItem.Click -= SelectAggregate_Click;
-            ShowMedianContextItem.Click += SelectAggregate_Click;
-            ShowMedianContextItem.Tag = (AggregateType.Median, median);
-
-            ShowCountContextItem.Click -= SelectAggregate_Click;
-            ShowCountContextItem.Click += SelectAggregate_Click;
-            ShowCountContextItem.Tag = (AggregateType.Count, (double)count);
-
-            ShowMinContextItem.Click -= SelectAggregate_Click;
-            ShowMinContextItem.Click += SelectAggregate_Click;
-            ShowMinContextItem.Tag = (AggregateType.Min, min);
-
-            ShowMaxContextItem.Click -= SelectAggregate_Click;
-            ShowMaxContextItem.Click += SelectAggregate_Click;
-            ShowMaxContextItem.Tag = (AggregateType.Max, max);
-
-            ShowProductContextItem.Click -= SelectAggregate_Click;
-            ShowProductContextItem.Click += SelectAggregate_Click;
-            ShowProductContextItem.Tag = (AggregateType.Product, product);
-
-            // Update checked states based on current selection
-            ShowSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
-            ShowAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
-            ShowMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
-            ShowCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
-            ShowMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
-            ShowMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
-            ShowProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
-        }
-    }
-
-    private void SelectAggregate_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not ValueTuple<AggregateType, double> tagData)
-        {
-            return;
-        }
-
-        try
-        {
-            (AggregateType aggregateType, double value) = tagData;
-
-            // If clicking a checked item, uncheck it and clear selection
-            if (menuItem.IsChecked && _selectedAggregate == aggregateType)
-            {
-                menuItem.IsChecked = false;
-                _selectedAggregate = AggregateType.None;
-                UpdateAggregateStatusDisplay();
-                return;
-            }
-
-            // Uncheck all other aggregate menu items (both context menus)
-            ShowSumContextItem.IsChecked = false;
-            ShowAverageContextItem.IsChecked = false;
-            ShowMedianContextItem.IsChecked = false;
-            ShowCountContextItem.IsChecked = false;
-            ShowMinContextItem.IsChecked = false;
-            ShowMaxContextItem.IsChecked = false;
-            ShowProductContextItem.IsChecked = false;
-
-            AggregateSumContextItem.IsChecked = false;
-            AggregateAverageContextItem.IsChecked = false;
-            AggregateMedianContextItem.IsChecked = false;
-            AggregateCountContextItem.IsChecked = false;
-            AggregateMinContextItem.IsChecked = false;
-            AggregateMaxContextItem.IsChecked = false;
-            AggregateProductContextItem.IsChecked = false;
-
-            // Check the clicked item
-            menuItem.IsChecked = true;
-
-            // Store the selected aggregate type
-            _selectedAggregate = aggregateType;
-
-            // Copy value to clipboard
-            string valueToCopy = NumericUtilities.FormatNumber(value);
-            System.Windows.Clipboard.SetDataObject(valueToCopy, true);
-
-            // Update the status display
-            UpdateAggregateStatusDisplay();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to process aggregate selection: {ex.Message}");
-        }
-    }
-
-    private void UpdateAggregateStatusDisplay()
-    {
-        if (_selectedAggregate == AggregateType.None)
-        {
-            CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        List<double> numbers = GetCurrentAggregateNumbers();
-
-        if (numbers.Count == 0)
-        {
-            CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        // Calculate the selected aggregate
-        double value;
-        string aggregateName;
-
-        switch (_selectedAggregate)
-        {
-            case AggregateType.Sum:
-                value = numbers.Sum();
-                aggregateName = "Sum";
-                break;
-            case AggregateType.Average:
-                value = numbers.Average();
-                aggregateName = "Average";
-                break;
-            case AggregateType.Median:
-                value = NumericUtilities.CalculateMedian(numbers);
-                aggregateName = "Median";
-                break;
-            case AggregateType.Count:
-                value = numbers.Count;
-                aggregateName = "Count";
-                break;
-            case AggregateType.Min:
-                value = numbers.Min();
-                aggregateName = "Min";
-                break;
-            case AggregateType.Max:
-                value = numbers.Max();
-                aggregateName = "Max";
-                break;
-            case AggregateType.Product:
-                value = numbers.Aggregate(1.0, (acc, val) => acc * val);
-                aggregateName = "Product";
-                break;
-            default:
-                CalcAggregateStatusBorder.Visibility = Visibility.Collapsed;
-                return;
-        }
-
-        // Update the status text
-        CalcAggregateStatusText.Text = $"{aggregateName}: {NumericUtilities.FormatNumber(value)}";
-        CalcAggregateStatusBorder.Visibility = Visibility.Visible;
-    }
-
-    private void UpdateCalcPaneTextDisplay()
-    {
-        if (TryGetSpreadsheetSelectionNumbersPreviewText(out string selectionPreviewText))
-        {
-            CalcResultsTextControl.Text = selectionPreviewText;
-            return;
-        }
-
-        CalcResultsTextControl.Text = calculationResult?.Output ?? string.Empty;
-    }
-
-    private void CalcAggregateStatusBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(CalcAggregateStatusText.Text))
-            return;
-
-        try
-        {
-            // Extract just the numeric value from the text (e.g., "Sum: 123.45" -> "123.45")
-            string fullText = CalcAggregateStatusText.Text;
-            int colonIndex = fullText.IndexOf(':');
-            if (colonIndex >= 0 && colonIndex < fullText.Length - 1)
-            {
-                string valueToCopy = fullText[(colonIndex + 1)..].Trim();
-                System.Windows.Clipboard.SetDataObject(valueToCopy, true);
-            }
-            else
-            {
-                System.Windows.Clipboard.SetDataObject(fullText, true);
-            }
-
-            // Animate the copy action
-            AnimateAggregateCopy();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to copy aggregate value: {ex.Message}");
-        }
-
-        e.Handled = true;
-    }
-
-    private void CalcAggregateStatusBorder_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-    {
-        UpdateAggregateContextMenu();
-    }
-
-    private void UpdateAggregateContextMenu()
-    {
-        List<double> numbers = GetCurrentAggregateNumbers();
-
-        // Update menu items based on whether we have numbers
-        if (numbers.Count == 0)
-        {
-            AggregateSumContextItem.Header = "Sum: -";
-            AggregateAverageContextItem.Header = "Average: -";
-            AggregateMedianContextItem.Header = "Median: -";
-            AggregateCountContextItem.Header = "Count: 0";
-            AggregateMinContextItem.Header = "Min: -";
-            AggregateMaxContextItem.Header = "Max: -";
-            AggregateProductContextItem.Header = "Product: -";
-
-            AggregateSumContextItem.IsEnabled = false;
-            AggregateAverageContextItem.IsEnabled = false;
-            AggregateMedianContextItem.IsEnabled = false;
-            AggregateCountContextItem.IsEnabled = false;
-            AggregateMinContextItem.IsEnabled = false;
-            AggregateMaxContextItem.IsEnabled = false;
-            AggregateProductContextItem.IsEnabled = false;
-        }
-        else
-        {
-            double sum = numbers.Sum();
-            double average = numbers.Average();
-            double median = NumericUtilities.CalculateMedian(numbers);
-            int count = numbers.Count;
-            double min = numbers.Min();
-            double max = numbers.Max();
-            double product = numbers.Aggregate(1.0, (acc, val) => acc * val);
-
-            AggregateSumContextItem.Header = $"Sum: {NumericUtilities.FormatNumber(sum)}";
-            AggregateAverageContextItem.Header = $"Average: {NumericUtilities.FormatNumber(average)}";
-            AggregateMedianContextItem.Header = $"Median: {NumericUtilities.FormatNumber(median)}";
-            AggregateCountContextItem.Header = $"Count: {count}";
-            AggregateMinContextItem.Header = $"Min: {NumericUtilities.FormatNumber(min)}";
-            AggregateMaxContextItem.Header = $"Max: {NumericUtilities.FormatNumber(max)}";
-            AggregateProductContextItem.Header = $"Product: {NumericUtilities.FormatNumber(product)}";
-
-            AggregateSumContextItem.IsEnabled = true;
-            AggregateAverageContextItem.IsEnabled = true;
-            AggregateMedianContextItem.IsEnabled = true;
-            AggregateCountContextItem.IsEnabled = true;
-            AggregateMinContextItem.IsEnabled = true;
-            AggregateMaxContextItem.IsEnabled = true;
-            AggregateProductContextItem.IsEnabled = true;
-
-            // Wire up click handlers
-            AggregateSumContextItem.Click -= SelectAggregate_Click;
-            AggregateSumContextItem.Click += SelectAggregate_Click;
-            AggregateSumContextItem.Tag = (AggregateType.Sum, sum);
-
-            AggregateAverageContextItem.Click -= SelectAggregate_Click;
-            AggregateAverageContextItem.Click += SelectAggregate_Click;
-            AggregateAverageContextItem.Tag = (AggregateType.Average, average);
-
-            AggregateMedianContextItem.Click -= SelectAggregate_Click;
-            AggregateMedianContextItem.Click += SelectAggregate_Click;
-            AggregateMedianContextItem.Tag = (AggregateType.Median, median);
-
-            AggregateCountContextItem.Click -= SelectAggregate_Click;
-            AggregateCountContextItem.Click += SelectAggregate_Click;
-            AggregateCountContextItem.Tag = (AggregateType.Count, (double)count);
-
-            AggregateMinContextItem.Click -= SelectAggregate_Click;
-            AggregateMinContextItem.Click += SelectAggregate_Click;
-            AggregateMinContextItem.Tag = (AggregateType.Min, min);
-
-            AggregateMaxContextItem.Click -= SelectAggregate_Click;
-            AggregateMaxContextItem.Click += SelectAggregate_Click;
-            AggregateMaxContextItem.Tag = (AggregateType.Max, max);
-
-            AggregateProductContextItem.Click -= SelectAggregate_Click;
-            AggregateProductContextItem.Click += SelectAggregate_Click;
-            AggregateProductContextItem.Tag = (AggregateType.Product, product);
-
-            // Update checked states based on current selection
-            AggregateSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
-            AggregateAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
-            AggregateMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
-            AggregateCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
-            AggregateMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
-            AggregateMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
-            AggregateProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
-        }
-    }
-
-    private List<double> GetCurrentAggregateNumbers()
-    {
-        if (editorMode == EtwEditorMode.Spreadsheet)
-        {
-            List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
-            if (selectedCellCoordinates.Count > 0)
-                return ExtractSpreadsheetSelectionNumbers(spreadsheetTable, selectedCellCoordinates);
-        }
-
-        return calculationResult?.OutputNumbers ?? [];
-    }
-
-    private bool TryGetSpreadsheetSelectionNumbersPreviewText(out string previewText)
-    {
-        previewText = string.Empty;
-
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
-
-        List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
-        if (selectedCellCoordinates.Count == 0)
-            return false;
-
-        previewText = BuildSpreadsheetSelectionNumbersPreviewText(spreadsheetTable, selectedCellCoordinates);
-        return !string.IsNullOrEmpty(previewText);
-    }
-
-    private void AnimateAggregateCopy()
-    {
-        // Flash the copy icon to indicate the copy action
-        DoubleAnimation fadeInOutAnimation = new()
-        {
-            From = 0.0,
-            To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(300),
-            AutoReverse = true
-        };
-
-        CalcAggregateCopyIcon.BeginAnimation(OpacityProperty, fadeInOutAnimation);
-    }
-
-    private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(CalcResultsTextControl.Text))
-            return;
-
-        try
-        {
-            System.Windows.Clipboard.SetDataObject(CalcResultsTextControl.Text, true);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to copy calc results to clipboard: {ex.Message}");
-        }
-    }
-
-    private void CalcInfoButton_Click(object sender, RoutedEventArgs e)
-    {
-        CalcInfoPopup.IsOpen = !CalcInfoPopup.IsOpen;
-    }
-
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)
     {
         EscapeKeyTimer.Stop();
@@ -6938,63 +2303,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             Close();
 
         EscapeKeyTimerCount = 0;
-    }
-
-    private void CalcResultsTextControl_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        // Forward scrolling intent to the main text box so both stay aligned
-        if (Keyboard.Modifiers == ModifierKeys.Control)
-            return; // let zoom handler take it
-
-        // Drive the main pane with the same smooth scrolling; the calc pane mirrors it via ScrollChanged
-        if (SmoothScrollBehavior.ScrollBy(PassedTextControl, e.Delta))
-            e.Handled = true;
-    }
-
-    private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
-    {
-        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
-    }
-
-    private void SpreadsheetContextMenu_Opened(object sender, RoutedEventArgs e)
-    {
-        if (sender is not ContextMenu contextMenu)
-            return;
-
-        MenuItem? wrapTextMenuItem = GetContextMenuItem(contextMenu, "SpreadsheetWrapTextToggle");
-        if (wrapTextMenuItem is null)
-            return;
-
-        EnsureSpreadsheetDocumentFromText();
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
-        bool hasTargetCells = tableDocument is not null && targetCells.Count > 0;
-
-        wrapTextMenuItem.IsEnabled = hasTargetCells;
-        wrapTextMenuItem.IsChecked = hasTargetCells && AreSpreadsheetDocumentCellsWrapped(tableDocument!, targetCells);
-    }
-
-    private void ToggleSpreadsheetWrapTextMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-            return;
-
-        List<(int RowIndex, int ColumnIndex)> targetCells = GetSelectedOrCurrentSpreadsheetCellCoordinates();
-        if (targetCells.Count == 0)
-            return;
-
-        int focusRow = Math.Max(0, spreadsheetContextRowIndex ?? SpreadsheetDataGrid.Items.IndexOf(SpreadsheetDataGrid.CurrentItem));
-        int focusColumn = Math.Max(0, spreadsheetContextColumnIndex ?? SpreadsheetDataGrid.CurrentCell.Column?.DisplayIndex ?? 0);
-
-        ApplySpreadsheetDocumentChange(
-            document =>
-            {
-                SetSpreadsheetDocumentCellWrapState(document, targetCells, menuItem.IsChecked);
-                ClearSpreadsheetDocumentRowHeights(document, targetCells.Select(cell => cell.RowIndex));
-            },
-            focusRow,
-            focusColumn,
-            beginEdit: false);
     }
 
     private void WrapTextCHBX_Checked(object sender, RoutedEventArgs e)
@@ -7017,867 +2325,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ApplySelectedTextOrAllTextTransform(text => text.CorrectCommonGuidErrors());
     }
 
-    private async void SummarizeMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SetToLoading("Summarizing...");
-
-        WinAiGenerationResult? failure = null;
-        bool resultUnchanged = false;
-
-        try
-        {
-            string sourceText = GetSelectedTextOrAllText();
-            WinAiGenerationResult result = await WindowsAiUtilities.SummarizeParagraph(sourceText);
-
-            if (result.Text is null)
-                failure = result;
-            else
-                resultUnchanged = !DeliverLocalAiResult("Summarize", sourceText, result.Text);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Summarize exception: {ex.Message}");
-            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Summarizing failed: {ex.Message}");
-        }
-        finally
-        {
-            SetToLoaded();
-        }
-
-        if (failure is { } summaryFailure)
-        {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Summarize Failed",
-                Content = summaryFailure.Message ?? "The text could not be summarized.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-        }
-        else if (resultUnchanged)
-        {
-            await ShowLocalAiResultUnchangedAsync("Summarize");
-        }
-    }
-
-    private async void MeetingNotesMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SetToLoading("Writing meeting notes...");
-
-        WinAiGenerationResult? failure = null;
-        bool resultUnchanged = false;
-
-        try
-        {
-            string sourceText = GetSelectedTextOrAllText();
-
-            // A long transcript is summarized part by part, so say which part is being read.
-            void OnProgress(string stage) => Dispatcher.Invoke(() => SetToLoading(stage));
-
-            WinAiGenerationResult result = await WinAiMeetingNotes.SummarizeAsync(sourceText, OnProgress);
-
-            if (result.Text is null)
-                failure = result;
-            else
-                resultUnchanged = !DeliverLocalAiResult("Meeting notes", sourceText, result.Text);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Meeting notes exception: {ex.Message}");
-            failure = WinAiGenerationResult.Failed(WinAiFailure.ModelError, $"Meeting notes failed: {ex.Message}");
-        }
-        finally
-        {
-            SetToLoaded();
-        }
-
-        if (failure is { } notesFailure)
-        {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Meeting Notes Failed",
-                Content = notesFailure.Message ?? "The text could not be written up as meeting notes.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-        }
-        else if (resultUnchanged)
-        {
-            await ShowLocalAiResultUnchangedAsync("Meeting notes");
-        }
-    }
-
-    // Returns the new window's WindowId so a completion notification can reactivate it specifically
-    // (rather than the source window, which never gets the result text) — null if it failed to open.
-    private static Guid? OpenTextInNewEditTextWindow(string text, EtwEditorMode resultMode = EtwEditorMode.Text)
-    {
-        EditTextWindow resultWindow = new(text, isEncoded: false);
-
-        try
-        {
-            // Set before Show(), matching CreateSelectionWindow — the mode-switch logic in
-            // SetEditorMode only touches XAML elements, which InitializeComponent() already wired up.
-            if (resultMode != EtwEditorMode.Text)
-                resultWindow.SetEditorMode(resultMode);
-
-            resultWindow.Show();
-            return resultWindow.WindowId;
-        }
-        catch (Exception ex)
-        {
-            _ = new Wpf.Ui.Controls.MessageBox
-            {
-                Title = ex.Message,
-                Content = "An error occurred while trying to open a new window. Please try again.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Delivers a finished Local AI result (Summarize, Meeting Notes) per the
-    /// "Send Result to New Window" setting: either opened in a new window, leaving this window's text
-    /// untouched, or applied over the selected/all text in this window (one anchor cell in
-    /// spreadsheet mode, preserving the other cells) — then fires the completion
-    /// notification for whichever window actually ended up with the result. Returns false without
-    /// doing any of that when the result is the same as <paramref name="sourceText"/>: a new window
-    /// holding a copy of the input (or an in-place "edit" that changes nothing) would only look like
-    /// the task did something. The caller should tell the user instead, once the window is
-    /// re-enabled (see <see cref="ShowLocalAiResultUnchangedAsync"/>).
-    /// </summary>
-    private bool DeliverLocalAiResult(string taskDescription, string sourceText, string resultText)
-    {
-        if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
-            return false;
-
-        if (DefaultSettings.SendLocalAiResultToNewWindow)
-        {
-            if (OpenTextInNewEditTextWindow(resultText) is Guid resultWindowId)
-                NotifyLocalAiComplete(taskDescription, resultWindowId);
-        }
-        else
-        {
-            if (editorMode == EtwEditorMode.Spreadsheet)
-            {
-                int targetRow = Math.Max(0, GetSpreadsheetCurrentRowIndex() ?? 0);
-                int targetColumn = Math.Max(0, GetSpreadsheetCurrentColumnIndex() ?? 0);
-                ApplySpreadsheetDocumentChange(
-                    document => WriteAggregateResultIntoSpreadsheetDocument(document, resultText, targetRow, targetColumn),
-                    targetRow,
-                    targetColumn,
-                    beginEdit: false);
-            }
-            else
-            {
-                ReplaceSelectedTextOrAllText(resultText);
-            }
-
-            NotifyLocalAiComplete(taskDescription, WindowId);
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Tells the user a Local AI task finished but produced the same text it started with, so
-    /// nothing was opened or replaced. Show this after <see cref="SetToLoaded"/> — the window is
-    /// disabled while the task runs.
-    /// </summary>
-    private static async Task ShowLocalAiResultUnchangedAsync(string taskDescription)
-    {
-        await new Wpf.Ui.Controls.MessageBox
-        {
-            Title = "No Changes",
-            Content = $"{taskDescription} finished, but the result is the same as the original text, so nothing was changed.",
-            CloseButtonText = "OK"
-        }.ShowDialogAsync();
-    }
-
-    /// <summary>
-    /// Runs a Local AI text transform (Rewrite, Convert to Table) and delivers it per the "Send Result
-    /// to New Window" setting: either opened in a new window, leaving this window's text untouched, or
-    /// applied over the selected/all text in this window (via <see cref="ApplySelectedTextOrAllTextTransformAsync"/>,
-    /// which also handles spreadsheet mode) — then fires the completion notification for whichever
-    /// window actually ended up with the result. <paramref name="resultMode"/> switches whichever
-    /// window gets the result into that editor mode (e.g. Convert to Table switches to Spreadsheet);
-    /// pass <see cref="EtwEditorMode.Text"/> to leave the mode alone. Returns false, having opened
-    /// nothing and notified no one, when the model handed back the same text it was given (every
-    /// cell, in spreadsheet mode) — the caller should tell the user via
-    /// <see cref="ShowLocalAiResultUnchangedAsync"/> once the window is re-enabled.
-    /// </summary>
-    private async Task<bool> PerformLocalAiTransformAsync(string taskDescription, Func<string, Task<string>> transformAsync, EtwEditorMode resultMode = EtwEditorMode.Text)
-    {
-        if (DefaultSettings.SendLocalAiResultToNewWindow)
-        {
-            string sourceText = GetSelectedTextOrAllText();
-            string resultText = await transformAsync(sourceText);
-
-            if (LocalAiResultUtilities.IsUnchanged(sourceText, resultText))
-                return false;
-
-            if (OpenTextInNewEditTextWindow(resultText, resultMode) is Guid resultWindowId)
-                NotifyLocalAiComplete(taskDescription, resultWindowId);
-        }
-        else
-        {
-            // In spreadsheet mode the transform runs once per cell, so "unchanged" means no cell
-            // came back different, not just the last one.
-            bool anyChanged = false;
-
-            await ApplySelectedTextOrAllTextTransformAsync(async text =>
-            {
-                string resultText = await transformAsync(text);
-                anyChanged |= !LocalAiResultUtilities.IsUnchanged(text, resultText);
-                return resultText;
-            });
-
-            if (!anyChanged)
-                return false;
-
-            if (resultMode != EtwEditorMode.Text)
-                SetEditorMode(resultMode);
-
-            NotifyLocalAiComplete(taskDescription, WindowId);
-        }
-
-        return true;
-    }
-
-    private void SendLocalAiResultToNewWindowMenuItem_Checked(object sender, RoutedEventArgs e)
-    {
-        DefaultSettings.SendLocalAiResultToNewWindow = true;
-        DefaultSettings.Save();
-    }
-
-    private void SendLocalAiResultToNewWindowMenuItem_Unchecked(object sender, RoutedEventArgs e)
-    {
-        DefaultSettings.SendLocalAiResultToNewWindow = false;
-        DefaultSettings.Save();
-    }
-
-    private void NotifyOnLocalAiCompleteMenuItem_Checked(object sender, RoutedEventArgs e)
-    {
-        DefaultSettings.NotifyOnLocalAiComplete = true;
-        DefaultSettings.Save();
-    }
-
-    private void NotifyOnLocalAiCompleteMenuItem_Unchecked(object sender, RoutedEventArgs e)
-    {
-        DefaultSettings.NotifyOnLocalAiComplete = false;
-        DefaultSettings.Save();
-    }
-
-    /// <summary>
-    /// Shows a completion toast for a Local AI task if the user opted in. These tasks run with the
-    /// window disabled (see <see cref="SetToLoading"/>), so a user who has switched away otherwise
-    /// has no signal that the result is ready, mirroring the transcription-complete notification.
-    /// <paramref name="windowId"/> is whichever window actually holds the result: this window for an
-    /// in-place edit (Rewrite, Convert to Table, Translate, Extract RegEx), or the new window for
-    /// Summarize/Meeting Notes, which open the result separately instead of replacing the source text.
-    /// </summary>
-    private void NotifyLocalAiComplete(string taskDescription, Guid windowId)
-    {
-        if (DefaultSettings.NotifyOnLocalAiComplete)
-            NotificationUtilities.ShowLocalAiCompleteToast(taskDescription, windowId);
-    }
-
-    private async void RestartLocalLlmMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        RestartLocalLlmMenuItem.IsEnabled = false;
-
-        try
-        {
-            await WindowsAiUtilities.RestartWindowsAiAsync();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Restarting the Local LLM failed: {ex.Message}");
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Restart Local LLM Failed",
-                Content = $"The Local LLM could not be restarted: {ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-        }
-        finally
-        {
-            RestartLocalLlmMenuItem.IsEnabled = true;
-        }
-    }
-
-    private void LearnAiMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string url = "https://learn.microsoft.com/en-us/windows/ai/apis/phi-silica";
-        Uri source = new(url, UriKind.Absolute);
-        System.Windows.Navigation.RequestNavigateEventArgs ev = new(source, url);
-        Process.Start(new ProcessStartInfo(ev.Uri.AbsoluteUri) { UseShellExecute = true });
-        e.Handled = true;
-    }
-
-    private async void RewriteMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SetToLoading("Rewriting...");
-
-        bool resultChanged;
-        try
-        {
-            resultChanged = await PerformLocalAiTransformAsync("Rewrite", text => WindowsAiUtilities.Rewrite(text));
-        }
-        finally
-        {
-            SetToLoaded();
-        }
-
-        if (!resultChanged)
-            await ShowLocalAiResultUnchangedAsync("Rewrite");
-    }
-
-    private async void ConvertTableMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SetToLoading("Converting...");
-
-        bool resultChanged;
-        try
-        {
-            resultChanged = await PerformLocalAiTransformAsync("Convert to Table", text => WindowsAiUtilities.TextToTable(text), EtwEditorMode.Spreadsheet);
-        }
-        finally
-        {
-            SetToLoaded();
-        }
-
-        if (!resultChanged)
-            await ShowLocalAiResultUnchangedAsync("Convert to Table");
-    }
-
-    private async void TranslateMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not string targetLanguage)
-            return;
-
-        await PerformTranslationAsync(targetLanguage);
-    }
-
-    private async void TranslateToSystemLanguageMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        // Get system language using the helper from LanguageUtilities
-        string systemLanguage = LanguageUtilities.GetSystemLanguageForTranslation();
-        await PerformTranslationAsync(systemLanguage);
-    }
-
-    private async void TranslateToEnglish_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("English");
-
-    private async void TranslateToSpanish_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Spanish");
-
-    private async void TranslateToFrench_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("French");
-
-    private async void TranslateToGerman_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("German");
-
-    private async void TranslateToItalian_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Italian");
-
-    private async void TranslateToPortuguese_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Portuguese");
-
-    private async void TranslateToRussian_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Russian");
-
-    private async void TranslateToJapanese_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Japanese");
-
-    private async void TranslateToChineseSimplified_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Chinese (Simplified)");
-
-    private async void TranslateToKorean_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Korean");
-
-    private async void TranslateToArabic_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Arabic");
-
-    private async void TranslateToHindi_Click(object sender, RoutedEventArgs e) => await PerformTranslationAsync("Hindi");
-
-    private async Task PerformTranslationAsync(string targetLanguage)
-    {
-        SetToLoading($"Translating to {targetLanguage}...");
-
-        // Captured from inside the transform so a failure can be reported after the text is applied
-        // instead of silently putting the original text back.
-        TranslationResult? failedResult = null;
-
-        // Whichever window ends up with the translated text — this window for an in-place apply, or
-        // the newly opened one — so the completion notification (if any) points at the right one.
-        Guid? resultWindowId = null;
-
-        // Set when the model handed back the text it was given, so no window is opened and the
-        // user is told nothing changed instead of getting a completion notification.
-        bool resultUnchanged = false;
-
-        try
-        {
-            if (DefaultSettings.SendLocalAiResultToNewWindow)
-            {
-                string sourceText = GetSelectedTextOrAllText();
-                TranslationResult result = await WinAiTranslator.TranslateAsync(sourceText, targetLanguage);
-
-                if (!result.Succeeded)
-                    failedResult = result;
-                else if (LocalAiResultUtilities.IsUnchanged(sourceText, result.Text))
-                    resultUnchanged = true;
-                else
-                    resultWindowId = OpenTextInNewEditTextWindow(result.Text);
-            }
-            else
-            {
-                // Runs per cell in spreadsheet mode, so "unchanged" means no cell came back different.
-                bool anyChanged = false;
-
-                await ApplySelectedTextOrAllTextTransformAsync(async text =>
-                {
-                    TranslationResult result = await WinAiTranslator.TranslateAsync(text, targetLanguage);
-
-                    if (!result.Succeeded)
-                        failedResult ??= result;
-                    else
-                        anyChanged |= !LocalAiResultUtilities.IsUnchanged(text, result.Text);
-
-                    return result.Text;
-                });
-
-                if (failedResult is null)
-                {
-                    if (anyChanged)
-                        resultWindowId = WindowId;
-                    else
-                        resultUnchanged = true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            failedResult = new TranslationResult(string.Empty, TranslationFailure.ModelError, $"Translation failed: {ex.Message}");
-        }
-        finally
-        {
-            SetToLoaded();
-        }
-
-        if (failedResult is { } failure)
-        {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = failure.Failure is TranslationFailure.NotNeeded ? "Nothing to Translate" : "Translation Failed",
-                Content = failure.Message ?? "The text could not be translated.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-        }
-        else if (resultUnchanged)
-        {
-            await ShowLocalAiResultUnchangedAsync($"Translation to {targetLanguage}");
-        }
-        else if (resultWindowId is Guid windowId)
-        {
-            NotifyLocalAiComplete($"Translation to {targetLanguage}", windowId);
-        }
-    }
-
-    private async void ExtractRegexMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string textDescription = GetSelectedTextOrAllText();
-
-        if (string.IsNullOrWhiteSpace(textDescription))
-        {
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "No Text",
-                Content = "Please enter or select text to extract a regex pattern from.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-            return;
-        }
-
-        SetToLoading("Extracting RegEx pattern...");
-
-        WinAiGenerationResult extraction;
-        try
-        {
-            extraction = await WindowsAiUtilities.ExtractRegex(textDescription);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Regex extraction exception: {ex.Message}");
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Error",
-                Content = $"An error occurred while extracting regex: {ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-            SetToLoaded();
-            return;
-        }
-
-        SetToLoaded();
-
-        if (extraction.Text is not string regexPattern)
-        {
-            // The shared language model reports why it could not answer, so show that instead of a
-            // guess about what went wrong.
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Extraction Failed",
-                Content = extraction.Message ?? "Failed to extract a regex pattern.",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-            return;
-        }
-
-        NotifyLocalAiComplete("Extract RegEx", WindowId);
-
-        // Clean up any model artifacts like <\/PRED> tags
-        regexPattern = regexPattern.Replace("<\\/PRED>", "").Replace("</PRED>", "").Trim();
-
-        // Create detailed explanation using the ExplainRegexPattern extension method
-        string explanation = regexPattern.ExplainRegexPattern();
-
-        // Create a selectable TextBox for the message box content
-        System.Windows.Controls.TextBox explanationTextBox = new()
-        {
-            Text = explanation,
-            IsReadOnly = true,
-            TextWrapping = TextWrapping.Wrap,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            Padding = new Thickness(8),
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            MaxHeight = 400
-        };
-
-        // Show message box with Copy and Cancel buttons
-        Wpf.Ui.Controls.MessageBoxResult result = await new Wpf.Ui.Controls.MessageBox
-        {
-            Title = "RegEx Pattern Extracted",
-            Content = explanationTextBox,
-            PrimaryButtonText = "Copy",
-            CloseButtonText = "Cancel"
-        }.ShowDialogAsync();
-
-        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
-        {
-            try
-            {
-                System.Windows.Clipboard.SetDataObject(regexPattern, true);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to copy regex to clipboard: {ex.Message}");
-                await new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = "Copy Failed",
-                    Content = "Failed to copy regex pattern to clipboard.",
-                    CloseButtonText = "OK"
-                }.ShowDialogAsync();
-            }
-        }
-    }
-
-    private async void LiveTranscriptionToggleButton_Checked(object sender, RoutedEventArgs e)
-    {
-        int request = ++_liveTranscriptionRequest;
-        LiveCaptureSource source = _liveCaptureSource;
-        bool showStartFailure = false;
-        await _liveTranscriptionGate.WaitAsync();
-        try
-        {
-            if (request != _liveTranscriptionRequest || _isStoppingLiveTranscriptionForClose || _isClosed)
-                return;
-
-            _liveTranscriber ??= new LiveAudioTranscriber();
-            _liveTranscriber.PhraseRecognized -= LiveTranscriber_PhraseRecognized;
-            _liveTranscriber.PhraseRecognized += LiveTranscriber_PhraseRecognized;
-
-            SetLiveTranscriptionUi(true, source switch
-            {
-                LiveCaptureSource.SystemAudio => "Starting (system)…",
-                LiveCaptureSource.MicrophoneAndSystemAudio => "Starting (mic + system)…",
-                _ => "Starting…",
-            });
-
-            bool started;
-            try
-            {
-                started = await _liveTranscriber.StartAsync(source);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Live transcription failed to start: {ex}");
-                started = false;
-            }
-
-            // A newer toggle or close owns the next transition. In particular, don't detach
-            // here: its stop still needs to receive the final phrase from this session.
-            if (request != _liveTranscriptionRequest || _isStoppingLiveTranscriptionForClose || _isClosed)
-                return;
-
-            if (started)
-            {
-                SetLiveTranscriptionUi(true);
-            }
-            else
-            {
-                SetLiveTranscriptionUi(false);
-                LiveTranscriptionToggleButton.IsChecked = false;
-                showStartFailure = true;
-            }
-        }
-        finally
-        {
-            _liveTranscriptionGate.Release();
-        }
-
-        if (showStartFailure && !_isStoppingLiveTranscriptionForClose && !_isClosed)
-        {
-            string reason = source switch
-            {
-                LiveCaptureSource.SystemAudio => "Couldn't capture system audio. Make sure a playback device is active.",
-                LiveCaptureSource.MicrophoneAndSystemAudio => "Couldn't start microphone and system audio capture. Make sure a microphone is connected, Text Grab has microphone access in Windows privacy settings, and a playback device is active.",
-                _ => "Couldn't start microphone capture. Make sure a microphone is connected and that Text Grab has microphone access in Windows privacy settings.",
-            };
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Couldn't Start Transcription",
-                Content = reason,
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-        }
-    }
-
-    private async void LiveTranscriptionToggleButton_Unchecked(object sender, RoutedEventArgs e)
-    {
-        ++_liveTranscriptionRequest;
-        SetLiveTranscriptionUi(false);
-        await StopLiveTranscriptionAsync();
-    }
-
-    private async Task StopLiveTranscriptionAsync(bool dispose = false)
-    {
-        await _liveTranscriptionGate.WaitAsync();
-        try
-        {
-            LiveAudioTranscriber? transcriber = _liveTranscriber;
-            if (transcriber is null)
-                return;
-
-            await StopAndDrainLiveTranscriptionAsync(transcriber, LiveTranscriber_PhraseRecognized, Dispatcher);
-
-            if (dispose)
-            {
-                transcriber.Dispose();
-                _liveTranscriber = null;
-            }
-        }
-        finally
-        {
-            _liveTranscriptionGate.Release();
-        }
-    }
-
-    internal static async Task StopAndDrainLiveTranscriptionAsync(
-        LiveAudioTranscriber transcriber,
-        EventHandler<string> phraseHandler,
-        Dispatcher dispatcher)
-    {
-        try
-        {
-            await transcriber.StopAsync().ConfigureAwait(false);
-            // StopAsync waits for recognition, not its BeginInvoke deliveries. Queue a barrier
-            // behind those Normal-priority callbacks before detaching or allowing another start.
-            if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
-            {
-                try
-                {
-                    await dispatcher.InvokeAsync(() => { }, DispatcherPriority.Normal).Task.ConfigureAwait(false);
-                }
-                catch (TaskCanceledException) when (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
-                {
-                    // Shutdown can abort the barrier; there is no live editor left to drain.
-                }
-            }
-        }
-        finally
-        {
-            transcriber.PhraseRecognized -= phraseHandler;
-        }
-    }
-
-    private void CaptureTranscribeAudioMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        bool transcribe = CaptureTranscribeAudioMenuItem.IsChecked;
-        if (LiveTranscriptionToggleButton.IsChecked != transcribe)
-            LiveTranscriptionToggleButton.IsChecked = transcribe;
-    }
-
-    private void OpenAudioVideoMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        OpenMediaWindow openMediaWindow = new() { Owner = this };
-        openMediaWindow.Show();
-    }
-
-    private void LiveSourceMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag
-            || !Enum.TryParse(tag, out LiveCaptureSource selectedSource))
-            return;
-
-        _liveCaptureSource = selectedSource;
-        LiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
-        LiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
-        LiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
-        CaptureLiveSourceMicMenuItem.IsChecked = selectedSource == LiveCaptureSource.Microphone;
-        CaptureLiveSourceSystemMenuItem.IsChecked = selectedSource == LiveCaptureSource.SystemAudio;
-        CaptureLiveSourceBothMenuItem.IsChecked = selectedSource == LiveCaptureSource.MicrophoneAndSystemAudio;
-
-        // If a session is already running, restart it on the newly chosen source.
-        if (LiveTranscriptionToggleButton.IsChecked is true)
-        {
-            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
-            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new source
-        }
-        else
-        {
-            SetLiveTranscriptionUi(false);
-        }
-    }
-
-    /// <summary>
-    /// Rebuilds a "Transcription model" flyout — shared by the Capture menu and the mic button's
-    /// right-click context menu — every time it's opened. These two flyouts drive live (near-real-time)
-    /// transcription, so they only ever offer <see cref="WhisperModelInfo.LiveEligibleModels"/> — a
-    /// small, fixed set of fast models, always shown (whether downloaded yet or not) and always
-    /// checkable, so the menu looks and behaves the same from a first run with nothing downloaded
-    /// through to having everything downloaded. A trailing "More models..." item opens the full Models
-    /// settings page, where the larger, file-transcription-only models live. Rebuilding on open (instead
-    /// of keeping static XAML items in sync by hand) means the check mark can never go stale.
-    /// </summary>
-    private void TranscriptionModelSubmenu_Opened(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem submenu)
-            return;
-
-        submenu.Items.Clear();
-
-        WhisperModelChoice current = AudioTranscriptionUtilities.CurrentLiveModelChoice;
-        foreach (WhisperModelChoice choice in WhisperModelInfo.LiveEligibleModels)
-        {
-            MenuItem item = new()
-            {
-                Header = WhisperModelInfo.DisplayName(choice),
-                IsCheckable = true,
-                IsChecked = choice == current,
-                Tag = choice.ToString(),
-            };
-            item.Click += TranscriptionModelMenuItem_Click;
-            submenu.Items.Add(item);
-        }
-
-        submenu.Items.Add(new Separator());
-
-        MenuItem moreItem = new() { Header = "More models..." };
-        moreItem.Click += MoreModelsMenuItem_Click;
-        submenu.Items.Add(moreItem);
-    }
-
-    /// <summary>
-    /// Picks a live-transcription model: switches to it immediately, restarting a running session so
-    /// the new model takes effect, and — if it isn't downloaded yet — fetches it in the background
-    /// (live-eligible models are all small, so this finishes quickly) with a toast on completion or
-    /// failure.
-    /// </summary>
-    private async void TranscriptionModelMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem || menuItem.Tag is not string tag)
-            return;
-
-        WhisperModelChoice choice = WhisperModelInfo.Parse(tag);
-        DefaultSettings.LiveTranscriptionModel = tag;
-        DefaultSettings.Save();
-
-        bool wasRunning = LiveTranscriptionToggleButton.IsChecked is true;
-        if (wasRunning)
-        {
-            // Restarting loads the new model via AcquireFactoryAsync, which downloads it if needed.
-            LiveTranscriptionToggleButton.IsChecked = false; // stops via Unchecked
-            LiveTranscriptionToggleButton.IsChecked = true;  // restarts via Checked with new model
-        }
-
-        if (wasRunning || AudioTranscriptionUtilities.IsModelDownloaded(choice))
-            return;
-
-        try
-        {
-            await AudioTranscriptionUtilities.DownloadModelAsync(choice);
-            NotificationUtilities.ShowModelDownloadCompleteToast(WhisperModelInfo.DisplayName(choice), WindowId);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Transcription model download failed: {ex}");
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = "Download failed",
-                Content = $"Couldn't download the \"{WhisperModelInfo.DisplayName(choice)}\" model:\n{ex.Message}",
-                CloseButtonText = "OK"
-            }.ShowDialogAsync();
-        }
-    }
-
-    /// <summary>Opens (or activates) Settings and navigates straight to the Models page.</summary>
-    private void MoreModelsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        SettingsWindow settingsWindow = WindowUtilities.OpenOrActivateWindow<SettingsWindow>();
-        settingsWindow.SettingsNavView.Navigate(typeof(ModelsSettings));
-    }
-
-    private void TranscribeJustIconMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        bool justIcon = TranscribeJustIconMenuItem.IsChecked;
-        DefaultSettings.TranscribeButtonJustIcon = justIcon;
-        DefaultSettings.Save();
-        LiveTranscriptionLabel.Visibility = justIcon ? Visibility.Collapsed : Visibility.Visible;
-    }
-
-    private void LiveTranscriber_PhraseRecognized(object? sender, string recognizedText)
-    {
-        // Recognition events arrive on a background thread; marshal to the UI thread without
-        // blocking the recognizer (BeginInvoke, not Invoke).
-        Dispatcher.BeginInvoke(() =>
-        {
-            if (_isClosed)
-                return;
-
-            string phrase = recognizedText.Trim();
-            if (phrase.Length == 0)
-                return;
-
-            // Insert at the end of the document, separating phrases with a single space.
-            PassedTextControl.Select(PassedTextControl.Text.Length, 0);
-            InsertTranscribedText(phrase, separateWithSpace: true);
-        });
-    }
-
-    private void SetLiveTranscriptionUi(bool active, string? label = null)
-    {
-        bool systemAudio = _liveCaptureSource == LiveCaptureSource.SystemAudio;
-        bool both = _liveCaptureSource == LiveCaptureSource.MicrophoneAndSystemAudio;
-        CaptureTranscribeAudioMenuItem.IsChecked = active;
-
-        if (label is not null)
-            LiveTranscriptionLabel.Text = label;
-        else if (active)
-            LiveTranscriptionLabel.Text = both ? "Listening (mic + system)…" : systemAudio ? "Listening (system)…" : "Listening…";
-        else
-            LiveTranscriptionLabel.Text = both ? "Transcribe (mic + system)" : systemAudio ? "Transcribe (system)" : "Transcribe";
-
-        // Speaker icon for system audio, mic icon for microphone (and mic+system); pulse variant while active.
-        LiveTranscriptionIcon.Symbol = systemAudio && !both
-            ? SymbolRegular.Speaker224
-            : (active ? SymbolRegular.MicPulse24 : SymbolRegular.Mic24);
-
-        if (active)
-            LiveTranscriptionIcon.Foreground = System.Windows.Media.Brushes.OrangeRed;
-        else
-            LiveTranscriptionIcon.ClearValue(ForegroundProperty);
-    }
-
     private void SetToLoading(string message = "")
     {
         IsEnabled = false;
@@ -7894,313 +2341,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         LoadingStack.Visibility = Visibility.Collapsed;
     }
 
-    private void ShowCalcPaneMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-            return;
-
-        DefaultSettings.CalcShowPane = menuItem.IsChecked;
-
-        SetCalcPaneVisibility();
-    }
-
-    private void CalcToggleButton_Click(object sender, RoutedEventArgs e)
-    {
-        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
-        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
-        SetCalcPaneVisibility();
-    }
-
-    private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
-    {
-        ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
-        DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
-        SetCalcPaneVisibility();
-    }
-
-    private void SetCalcPaneVisibility()
-    {
-        // Check if we're loading from history and should ignore default settings
-        if (ShowCalcPaneMenuItem.Tag is bool fromHistory && fromHistory)
-        {
-            ShowCalcPaneMenuItem.Tag = null; // Clear the flag after first use
-            // Use ShowCalcPaneMenuItem.IsChecked which was set from history
-        }
-        else
-        {
-            // Not from history, apply user's default setting
-            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
-        }
-
-        if (ShowCalcPaneMenuItem.IsChecked)
-        {
-            CalcResultsTextControl.Visibility = Visibility.Visible;
-            TextBoxSplitter.Visibility = Visibility.Visible;
-            CalcPaneShadow.Visibility = Visibility.Visible;
-
-            // Restore previous width if it was collapsed
-            if (CalcColumn.Width.Value == 0)
-                CalcColumn.Width = _lastCalcColumnWidth;
-
-            // Disable text wrapping when calc pane is visible to maintain vertical alignment
-            // Store the previous wrapping state to restore later
-            if (PassedTextControl.TextWrapping != TextWrapping.NoWrap)
-            {
-                _previousTextWrapping = PassedTextControl.TextWrapping;
-                PassedTextControl.TextWrapping = TextWrapping.NoWrap;
-            }
-
-            _debounceTimer?.Start();
-        }
-        else
-        {
-            CalcResultsTextControl.Visibility = Visibility.Collapsed;
-            TextBoxSplitter.Visibility = Visibility.Collapsed;
-            CalcPaneShadow.Visibility = Visibility.Collapsed;
-
-            // Remember current width, then collapse column to remove pane area
-            if (CalcColumn.Width.Value > 0)
-                _lastCalcColumnWidth = CalcColumn.Width;
-            CalcColumn.Width = new GridLength(0);
-
-            // Restore previous text wrapping setting when calc pane is hidden
-            if (_previousTextWrapping.HasValue)
-            {
-                PassedTextControl.TextWrapping = _previousTextWrapping.Value;
-                _previousTextWrapping = null;
-            }
-        }
-    }
-
-    private void ShowErrorsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menuItem)
-            return;
-
-        DefaultSettings.CalcShowErrors = menuItem.IsChecked;
-        _ = EvaluateExpressions();
-    }
-
-    private void TextBoxSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        // Toggle between equal split (star) and collapsed
-        if (CalcColumn.Width.IsStar)
-        {
-            // If already star-sized, collapse the pane
-            ShowCalcPaneMenuItem.IsChecked = false;
-            DefaultSettings.CalcShowPane = false;
-            SetCalcPaneVisibility();
-        }
-        else
-        {
-            // If collapsed or pixel-sized, set to equal split (1 star = 50% of available space)
-            CalcColumn.Width = new GridLength(1, GridUnitType.Star);
-            _lastCalcColumnWidth = new GridLength(1, GridUnitType.Star);
-        }
-    }
-
     private void RegexManagerMenuItem_Click(object sender, RoutedEventArgs e)
     {
         RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
         regexManager.Show();
     }
 
-    private void SaveCurrentPatternToRegexManager()
-    {
-        if (currentExtractedPattern is null)
-            return;
-
-        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-        string sourceText = currentExtractedPattern.OriginalText;
-
-        RegexManager regexManager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
-        regexManager.AddPatternFromText(pattern, sourceText, this);
-        regexManager.Show();
-    }
-
-    private void LoadStoredPatternToSelection(StoredRegex storedPattern)
-    {
-        if (storedPattern is null)
-            return;
-
-        // Open Find and Replace window with this pattern and execute search
-        FindAndReplaceWindow findWindow = WindowUtilities.OpenOrActivateWindow<FindAndReplaceWindow>();
-        findWindow.SetFindText(storedPattern.Pattern, useRegex: true);
-        findWindow.TextEditWindow = this;
-        findWindow.StringFromWindow = PassedTextControl.Text;
-        findWindow.SearchForText();
-        findWindow.Show();
-    }
-
-    private void ShowRegexExplanation()
-    {
-        if (currentExtractedPattern is null)
-            return;
-
-        string pattern = currentExtractedPattern.GetPattern(currentPrecisionLevel);
-        string explanation = pattern.ExplainRegexPattern();
-
-        Wpf.Ui.Controls.MessageBox messageBox = new()
-        {
-            Title = "Regex Pattern Explanation",
-            Content = explanation,
-            CloseButtonText = "Close"
-        };
-        _ = messageBox.ShowDialogAsync();
-    }
-
-    private void ExplainPatternMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
-
-        if (string.IsNullOrEmpty(pattern))
-            return;
-
-        // Clear previous content
-        CharDetailsPopupContent.Children.Clear();
-
-        // Create explanation text
-        string explanation = pattern.ExplainRegexPattern();
-
-        System.Windows.Controls.TextBox explanationTextBox = new()
-        {
-            Text = explanation,
-            FontSize = 12,
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent,
-            TextWrapping = TextWrapping.Wrap,
-            Cursor = System.Windows.Input.Cursors.Arrow,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            MaxHeight = 400,
-            Padding = new Thickness(8)
-        };
-
-        CharDetailsPopupContent.Children.Add(explanationTextBox);
-        CharDetailsPopup.IsOpen = true;
-    }
-
     [GeneratedRegex(@"(\r\n|\n|\r)")]
     private static partial Regex NewlineReturns();
 
     #endregion Methods
-
-    private void SavePatternMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        string? pattern = currentExtractedPattern?.GetPattern(currentPrecisionLevel);
-
-        if (string.IsNullOrEmpty(pattern))
-            return;
-
-        // open the RegexManager and save this pattern
-        RegexManager manager = WindowUtilities.OpenOrActivateWindow<RegexManager>();
-        manager.AddPatternFromText(pattern, GetSelectedTextOrAllText(), this);
-        manager.Show();
-
-    }
-
-    private void PatternContextOpening(object sender, ContextMenuEventArgs e)
-    {
-        // sender should be a button if not return
-        if (sender is not System.Windows.Controls.Button button)
-            return;
-
-        // get the context menu
-        if (button.ContextMenu is null)
-            return;
-
-        ContextMenu contextMenu = button.ContextMenu;
-
-        // Clear existing dynamic items (keep original static items)
-        // Find if "Use Pattern" menu item already exists, remove it to rebuild
-        MenuItem? existingUsePatternItem = null;
-        foreach (object? item in contextMenu.Items)
-        {
-            if (item is MenuItem mi && mi.Header?.ToString() == "Use Pattern")
-            {
-                existingUsePatternItem = mi;
-                break;
-            }
-        }
-
-        if (existingUsePatternItem is not null)
-            contextMenu.Items.Remove(existingUsePatternItem);
-
-        // make a context menu item for "use this pattern"
-        MenuItem usePatternMenuItem = new()
-        {
-            Header = "Use Pattern"
-        };
-
-        // add all patterns from regex manager as menu items as children to the new "use this pattern" item
-        List<StoredRegex> storedPatterns = LoadRegexPatterns();
-
-        if (storedPatterns.Count == 0)
-        {
-            MenuItem noPatternItem = new()
-            {
-                Header = "No saved patterns",
-                IsEnabled = false
-            };
-            usePatternMenuItem.Items.Add(noPatternItem);
-        }
-        else
-        {
-            foreach (StoredRegex storedPattern in storedPatterns)
-            {
-                MenuItem patternItem = new()
-                {
-                    Header = storedPattern.Name,
-                    ToolTip = storedPattern.Pattern,
-                    Tag = storedPattern
-                };
-
-                // wire up click event to override the currentExtractedPattern
-                patternItem.Click += (s, args) =>
-                {
-                    if (s is MenuItem clickedItem && clickedItem.Tag is StoredRegex selectedPattern)
-                    {
-                        // Create a new ExtractedPattern from the stored pattern
-                        // Use the pattern's description or name as the source text
-                        string sourceText = string.IsNullOrWhiteSpace(selectedPattern.Description)
-                            ? selectedPattern.Name
-                            : selectedPattern.Description;
-
-                        // Override the current extracted pattern with the selected stored pattern
-                        currentExtractedPattern = new ExtractedPattern(sourceText, ignoreCase: true);
-                        currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
-
-                        // Update the UI to reflect the new pattern
-                        UpdateSelectionSpecificUI();
-
-                        // Optionally open Find and Replace with this pattern
-                        LoadStoredPatternToSelection(selectedPattern);
-                    }
-                };
-
-                usePatternMenuItem.Items.Add(patternItem);
-            }
-        }
-
-        // Add separator before the "Use Pattern" item
-        contextMenu.Items.Add(new Separator());
-
-        // Add the "Use Pattern" menu item to the context menu
-        contextMenu.Items.Add(usePatternMenuItem);
-    }
-
-    private List<StoredRegex> LoadRegexPatterns()
-    {
-        List<StoredRegex> returnRegexes = [];
-        returnRegexes.AddRange(AppUtilities.TextGrabSettingsService.LoadStoredRegexes());
-
-        // Add default patterns if list is empty
-        if (returnRegexes.Count == 0)
-        {
-            foreach (StoredRegex defaultPattern in StoredRegex.GetDefaultPatterns())
-                returnRegexes.Add(defaultPattern);
-        }
-
-        return returnRegexes;
-    }
 }

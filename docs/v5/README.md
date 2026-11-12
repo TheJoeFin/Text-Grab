@@ -25,7 +25,7 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 | W1 | [Workflow engine](W1-Workflow-Engine.md) | A1, F3, F4, F5 | Not started |
 | W2 | [Workflow end-to-end and entry points](W2-Workflow-E2E-Entry-Points.md) | W1 | Not started |
 | W3 | [Nodify graph editor](W3-Nodify-Graph-Editor.md) | W2, E4 | Not started |
-| E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | Not started |
+| E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | Done (E1a 21428ec, E1b 1644515) |
 | E2 | [ETW commands onto the registry](E2-Commands-Onto-Registry.md) | A1, E1 | Not started |
 | E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | E2 | Not started |
 | E4 | [Layout engine and Classic layout](E4-Layout-Engine.md) | E3 | Not started |
@@ -112,7 +112,7 @@ These names are used across phase files. The phase that introduces each one owns
 | `ITriggerSource`, `TriggerPayload` | F5 | Things that start a workflow. |
 | `ActionDescriptor`, `ITextTransform`, `IEditorCommand`, `IActionRegistry` | A1 | One description of every action, consumed by menus, buttons, hotkeys, post-grab actions and workflow nodes. |
 | `WorkflowDefinition`, `IWorkflowStep`, `WorkflowRunner`, `IWorkflowStore` | W1 | Workflow model and headless runtime. |
-| `IEditorSession`, `IEditorSurface` | E1 | The ETW document and the editor control behind it, without naming a control. |
+| `IEditorSession`, `IEditorSurface`, `TextSpan` | E1 | The ETW document and the editor control behind it, without naming a control; `TextSpan` is a range of the document in plain-text offsets. |
 | `IEditorPane` | E3 | A dockable component of the ETW. |
 | `EtwLayoutDefinition`, `ILayoutStore` | E4 | JSON description of an ETW's chrome, panes and buttons. |
 | `TranscriptDocument` | E5 | Timed transcript segments anchored to text ranges. |

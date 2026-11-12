@@ -883,6 +883,7 @@
             <Grid Grid.Column="0">
                 <TextBox
                     x:Name="PassedTextControl"
+                    x:FieldModifier="private"
                     AcceptsReturn="True"
                     AcceptsTab="True"
                     AllowDrop="True"
@@ -905,6 +906,7 @@
                     utils:SmoothScrollBehavior.IsEnabled="True" />
                 <RichTextBox
                     x:Name="MarkdownEditorControl"
+                    x:FieldModifier="private"
                     AllowDrop="True"
                     AutomationProperties.AutomationId="EditText.MarkdownEditor"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"
@@ -932,6 +934,7 @@
                     utils:SmoothScrollBehavior.IsEnabled="True" />
                 <DataGrid
                     x:Name="SpreadsheetDataGrid"
+                    x:FieldModifier="private"
                     AlternatingRowBackground="{DynamicResource ApplicationBackgroundBrush}"
                     AutoGenerateColumns="False"
                     AutomationProperties.AutomationId="EditText.SpreadsheetGrid"
