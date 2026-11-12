@@ -1016,7 +1016,6 @@
                 <controls:CodeEditor
                     x:Name="CodeEditorControl"
                     x:FieldModifier="private"
-                    Padding="4,0,0,0"
                     AutomationProperties.AutomationId="EditText.CodeEditor"
                     Background="Transparent"
                     ContextMenu="{StaticResource CodeContextMenu}"

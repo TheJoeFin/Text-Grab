@@ -1,4 +1,5 @@
 using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Rendering;
 using System;
@@ -39,6 +40,7 @@ public class CodeEditor : TextEditor
         Options.IndentationSize = 4;
 
         RemoveCommandBindingsTheWindowOwns();
+        SpaceOutTheGutter();
         Loaded += (_, _) => ApplyTheme();
     }
 
@@ -69,7 +71,9 @@ public class CodeEditor : TextEditor
         TextArea.SelectionCornerRadius = 0;
         TextArea.Caret.CaretBrush = Freeze(new SolidColorBrush(textColor));
         TextArea.TextView.CurrentLineBackground = Freeze(new SolidColorBrush(Color.FromArgb(isDark ? (byte)0x14 : (byte)0x0C, textColor.R, textColor.G, textColor.B)));
-        TextArea.TextView.CurrentLineBorder = null;
+        // Not null: the property already is null, so null never reaches the renderer, which keeps
+        // AvalonEdit's default translucent green border.
+        TextArea.TextView.CurrentLineBorder = Freeze(new Pen(Brushes.Transparent, 0));
 
         if (isDark == IsDarkTheme)
             return;
@@ -97,6 +101,21 @@ public class CodeEditor : TextEditor
             handlerBindings.Remove(binding);
 
         static bool IsOwnedByTheWindow(CommandBinding binding) => Array.IndexOf(CommandsTheWindowOwns, binding.Command) >= 0;
+    }
+
+    /// <summary>
+    /// AvalonEdit draws line numbers against the editor's left edge and the code against the gutter's
+    /// dotted line. Pad both. (The editor's own Padding does not reach its scrolling text area.)
+    /// </summary>
+    private void SpaceOutTheGutter()
+    {
+        foreach (UIElement margin in TextArea.LeftMargins)
+        {
+            if (margin is LineNumberMargin lineNumbers)
+                lineNumbers.Margin = new Thickness(6, 0, 6, 0);
+        }
+
+        TextArea.TextView.Margin = new Thickness(6, 0, 0, 0);
     }
 
     private static T Freeze<T>(T freezable) where T : Freezable
