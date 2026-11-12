@@ -12,6 +12,14 @@ public class CoreActionsTests
     /// </summary>
     private static readonly string[] PinnedIds =
     [
+        "textgrab.text.correctGuidErrors",
+        "textgrab.text.makeSingleLine",
+        "textgrab.text.removeDuplicateLines",
+        "textgrab.text.replaceReservedCharacters",
+        "textgrab.text.shuffleLines",
+        "textgrab.text.trimLines",
+        "textgrab.text.tryMakeLetters",
+        "textgrab.text.tryMakeNumbers",
     ];
 
     private static ActionRegistry CreateRegistry()
@@ -27,5 +35,13 @@ public class CoreActionsTests
         string[] registered = [.. CreateRegistry().All.Select(d => d.Id).Order(StringComparer.Ordinal)];
 
         Assert.Equal(PinnedIds.Order(StringComparer.Ordinal), registered);
+    }
+
+    [Fact]
+    public void RegisterAll_Twice_Throws()
+    {
+        ActionRegistry registry = CreateRegistry();
+
+        Assert.Throws<ArgumentException>(() => CoreActions.RegisterAll(registry));
     }
 }
