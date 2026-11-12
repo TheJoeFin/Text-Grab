@@ -22,7 +22,7 @@ Stop everything — inside and outside the window — from reaching directly int
 - `Text-Grab/Views/EditTextWindow.xaml.cs`: one class, 8,206 lines before E1a (`dev` @ `b8adc26`). `EditTextWindow.xaml`: 1,538 lines, 205 `MenuItem`s. After E1a the class is split across nine files; see "E1a outcome".
 - Three editors switched by `EtwEditorMode` (`Text`, `Markdown`, `Spreadsheet`; enum in `Text-Grab.Core/Models/EditTextTableDocument.cs`): `PassedTextControl` (`TextBox`), `MarkdownEditorControl` (`RichTextBox`), `SpreadsheetDataGrid` (`DataGrid`).
 - `PassedTextControl.Text` is the source of truth; the other two editors sync to and from it through `SyncTextFromActiveEditor`, `SyncActiveEditorFromText`, `RefreshSpreadsheetFromText`, `RefreshMarkdownFromText`, `SyncMarkdownTextFromDocument`, guarded by flags `isSyncingTextFromSpreadsheet`, `isSyncingTextFromMarkdown`, `isApplyingSpreadsheetLayout`, `isApplyingMarkdownDocument`.
-- `PassedTextControl` is referenced 280 times inside the window and 20 times from other files. `EditTextWindow` is referenced from 29 other app files, among them `FindAndReplaceWindow`, `JoinLinesWindow`, `AddOrRemoveWindow`, `SplitColumnWindow`, `RegexManager`, `BottomBarSettings`, `OutputUtilities`, `HistoryService`, `NotificationUtilities`, `CustomBottomBarUtilities`, `PostGrabActionManager`, `GrabFrame`, `FullscreenGrab`, `QuickSimpleLookup`.
+- `PassedTextControl` is referenced on 280 lines (301 occurrences) inside the window and 20 times from other files (18 in `FindAndReplaceWindow`, one each in `FullscreenGrab.SelectionStyles` and `QuickSimpleLookup`). `EditTextWindow` appears in 29 other app `.cs` files (24 of them reference the type; the rest only contain the name, e.g. `EditTextWindowSettings`), among them `FindAndReplaceWindow`, `JoinLinesWindow`, `AddOrRemoveWindow`, `SplitColumnWindow`, `RegexManager`, `BottomBarSettings`, `OutputUtilities`, `HistoryService`, `NotificationUtilities`, `CustomBottomBarUtilities`, `PostGrabActionManager`, `GrabFrame`, `FullscreenGrab`, `QuickSimpleLookup`.
 - Existing helper methods that already hide the mode: `GetSelectedTextOrAllText`, `ReplaceSelectedTextOrAllText`, `ApplySelectedTextOrAllTextTransform(Func<string,string>)`, `ApplySelectedTextOrAllTextTransformAsync`, `SelectInEditor`, `GetSpreadsheetAwareSelectedText`, `TryApplySpreadsheetTextTransform`.
 - Precedent for partial files: `FullscreenGrab.xaml.cs`, `FullscreenGrab.SelectionStyles.cs`, `FullscreenGrab.FindOnScreen.cs`.
 - Tests: seven `Tests/EditTextWindow*Tests.cs` suites, `FindAndReplaceWindowTests`, `GrabFrameEtwTests`, the Markdown suites.
@@ -159,7 +159,41 @@ No file outside `Text-Grab/Views/EditTextWindow*.cs` and `Text-Grab/Editing/` re
 
 ### Traps
 
-- Offsets: the `TextBox` uses plain-text offsets with `\r\n`; the `RichTextBox` uses `TextPointer`s and the window keeps a `markdownOffsetMap` to translate; the spreadsheet has cells, not offsets. `TextRange` is always plain-text offsets into `Session.Text`. Each surface translates.
-- Programmatic `TextBox.Text = …` clears the undo stack; the existing code sometimes uses `SelectedText = …` to keep it. Preserve which one each call site used.
+- Offsets: the `TextBox` uses plain-text offsets with `\r\n`; the `RichTextBox` uses `TextPointer`s and the window keeps a `markdownOffsetMap` to translate; the spreadsheet has cells, not offsets. `TextSpan` (built as `TextRange` in the sketch above; see "E1b outcome") is always plain-text offsets into `Session.Text`. Each surface translates.
+- ~~Programmatic `TextBox.Text = …` clears the undo stack~~ (wrong: in WPF it is one undoable edit; `EditorSessionCharacterizationTests.Text_UndoAfterWholeTextTransformRestoresTheText` proves it). Whole-text and selection replacement still differ in where the caret and selection end up, so preserve which one each call site used.
 - Re-entrancy: a surface raising `TextChanged` while the session is pushing text into it. Keep the existing guard flags; do not replace them with something cleverer in this phase.
 - `HistoryService` and `NotificationUtilities` construct or reactivate windows by type. They keep referencing `EditTextWindow`; only their reach into its *controls* changes.
+
+### E1b outcome (2026-11-11, branch `v5/e1b-editor-session`, last code commit 1644515)
+
+**Census** of the 321 `PassedTextControl` occurrences (step 1). `CaretIndex` counts as caret: its getter is `SelectionStart` and its setter is `Select(i, 0)`.
+
+| Category | Inside the window (301) | Outside (20) |
+|---|---|---|
+| Read text | 56 | 6 |
+| Write text (25 `Text =`/`+=`, 35 `AppendText`) | 60 | 4 |
+| Read selection | 57 | 4 |
+| Write selection (`Select`, `SelectAll`) | 11 | 1 |
+| Replace selection (`SelectedText =`) | 11 | 1 |
+| Caret/scroll (9 `CaretIndex`, 4 `ScrollToEnd`, 4 scroll viewer, 6 line/character index) | 23 | 0 |
+| Event subscription | 10 | 3 |
+| Control handed to grab windows as a destination `TextBox` | 10 | 1 |
+| Control-specific (17 context menu, 18 font/appearance, 7 wrap, 6 visibility, 4 focus, 3 read-only, 3 spell check) | 58 | 0 |
+| Comments | 5 | 0 |
+
+Nothing outside the window used `MarkdownEditorControl` or `SpreadsheetDataGrid`. After E1b, 88 uses remain inside the window, all control-specific, handler definitions, destination hand-offs, or the session's construction.
+
+**What was built, and how it differs from the sketch:**
+
+- `TextSpan(int Start, int Length)` with `End`, not `TextRange`: WPF's `System.Windows.Documents.TextRange` is used in the Markdown partial and utilities, so the sketch's name would collide (owner's choice).
+- `IEditorSession`: `Text`, `Mode`, `Selection`, `SelectedText`, `ReplaceSelection`, `ReplaceRange`, `AppendText`, `GetSelectedTextOrAllText`, `ReplaceSelectedTextOrAllText`, `SelectInEditor(TextSpan)`, `ScrollToEnd`, `TextChanged`, `ModeChanged`.
+  - `SelectInEditor` replaces `Select(range, scrollIntoView)`. Setting `Selection` must not focus or scroll (12 raw selects), and every "show this range" caller wants focus and scroll, so they are two members.
+  - `AppendText` and `ScrollToEnd` were added (35 and 4 uses).
+  - `InsertAtCaret`, `FilePath`, `HasPendingEdits` and `SelectionChanged` were dropped: nothing outside the window needed them. File state stays in the window (owner's choice) until a consumer appears.
+- `IEditorSurface`: `Mode`, `GetText`, `SetText`, `SelectAndShow`. Text and selection always go to `TextBoxSurface`, because the raw text box holds the document in every mode. `MarkdownSurface` serializes its own document. Building the Markdown document and everything spreadsheet-side stay in the window, which the surfaces delegate to.
+- `EditorSession` owns `isSyncingTextFromSpreadsheet` / `isSyncingTextFromMarkdown` and the sync: `SyncTextFromActiveEditor`, `SyncActiveEditorFromText`, `SyncTextFromEditor`, `SetTextFromEditor` (the guarded write), `SyncEditorFromText` (the guarded push). The `isApplying*` flags guard document and layout application and stay in the window.
+- `EditTextWindow.Session` is created on first use, not in the constructors. `Window_Initialized` runs inside `InitializeComponent` and already syncs Markdown text through the session.
+- The grab windows' destination stays a `TextBox`, obtained through `GetMainTextBox()`. `OpenMediaWindow` and `QuickSimpleLookup` pass their own text boxes down the same path, so it is not an ETW concept.
+- The three editors are `x:FieldModifier="private"`.
+
+**Tests:** `EditorSessionCharacterizationTests` (19, written and passing against the old code first), `EditorSessionTests` (9), `EditorSessionSyncTests` (5). They are the first tests to construct a real `EditTextWindow`. That needed `Tests/WpfResourceAssemblySetup.cs` (the app assembly as WPF's resource assembly) and a null check on `Application.Current` in `NotifyIconUtilities.RefreshTrayIconStyle`. `FindAndReplaceWindow` still can't be constructed in tests, because its XAML needs App.xaml styles, so its interaction is covered through the window methods it calls.
