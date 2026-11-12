@@ -82,7 +82,7 @@ public partial class EditTextWindow
         if (CalcResultsTextControl.Visibility != Visibility.Visible)
             return;
 
-        string input = PassedTextControl.Text;
+        string input = Session.Text;
         if (string.IsNullOrWhiteSpace(input))
         {
             calculationResult = null;
