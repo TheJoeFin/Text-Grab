@@ -1,4 +1,5 @@
 using System;
+using Text_Grab.Models;
 using Text_Grab.Utilities;
 
 namespace Text_Grab.Core.Actions;
@@ -51,7 +52,59 @@ public static class CoreActions
             Transform("textgrab.text.replaceReservedCharacters", "Replace Reserved Characters", "RoadCone24", ActionCategory.Cleanup,
                 defaultGesture: "Ctrl+R"),
             StringMethods.ReplaceReservedCharacters));
+
+        registry.Register(new DelegateTextTransform<CleanUpTextConfig>(
+            Transform("textgrab.text.cleanUp", "Clean Up Text", "TextClearFormatting24", ActionCategory.Cleanup,
+                typeof(CleanUpTextConfig)),
+            static (text, config) => text.CleanUpText(config.CorrectToLatin),
+            new CleanUpTextConfig()));
+
+        // The window's Unstack commands count the selected lines to get Columns or Rows. These
+        // take the count as config; the selection-driven commands are E2's.
+        registry.Register(new DelegateTextTransform<UnstackConfig>(
+            Transform("textgrab.text.unstack", "Unstack Text (Select Top Row)", "TableStackAbove24", ActionCategory.Table,
+                typeof(UnstackConfig)),
+            static (text, config) => text.UnstackStrings(
+                AtLeastOne(config.Columns, "textgrab.text.unstack", nameof(UnstackConfig.Columns)))));
+
+        registry.Register(new DelegateTextTransform<UnstackGroupsConfig>(
+            Transform("textgrab.text.unstackGroups", "Unstack Text (Select First Column)", "TableStackLeft24", ActionCategory.Table,
+                typeof(UnstackGroupsConfig)),
+            static (text, config) => text.UnstackGroups(
+                AtLeastOne(config.Rows, "textgrab.text.unstackGroups", nameof(UnstackGroupsConfig.Rows)))));
+
+        registry.Register(new DelegateTextTransform<ApplyPatternConfig>(
+            Transform("textgrab.text.applyPattern", "Apply Pattern", "TextEffects24", ActionCategory.Extract,
+                typeof(ApplyPatternConfig)),
+            ApplyPattern));
+
+        registry.Register(new DelegateTextTransform<ApplyRecognizerConfig>(
+            Transform("textgrab.text.applyRecognizer", "Apply Smart Pattern", "DocumentSearch24", ActionCategory.Extract,
+                typeof(ApplyRecognizerConfig)),
+            ApplyRecognizer));
     }
+
+    /// <summary>Runs a regex the way the window's Patterns menu runs a saved pattern.</summary>
+    private static string ApplyPattern(string text, ApplyPatternConfig config)
+    {
+        if (string.IsNullOrEmpty(config.Pattern))
+            throw new ArgumentException("'textgrab.text.applyPattern' needs a pattern.");
+
+        PatternItem pattern = new(new StoredRegex { Pattern = config.Pattern });
+        return PatternExecutor.Apply(pattern, text, config.Mode, config.Separator);
+    }
+
+    /// <summary>Runs a built-in recognizer the way the window's Smart Patterns menu does.</summary>
+    private static string ApplyRecognizer(string text, ApplyRecognizerConfig config)
+    {
+        BuiltInRecognizer recognizer = BuiltInRecognizer.GetById(config.RecognizerId)
+            ?? throw new ArgumentException($"'textgrab.text.applyRecognizer' has no recognizer with the ID '{config.RecognizerId}'.");
+
+        return RecognizerExecutor.ApplyRecognizer(recognizer, text, config.Mode, config.Separator, config.Output);
+    }
+
+    private static int AtLeastOne(int value, string actionId, string name)
+        => value >= 1 ? value : throw new ArgumentException($"'{actionId}' needs {name} of at least 1, not {value}.");
 
     private static ActionDescriptor Transform(
         string id,

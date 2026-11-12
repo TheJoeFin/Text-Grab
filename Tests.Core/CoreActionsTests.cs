@@ -12,6 +12,9 @@ public class CoreActionsTests
     /// </summary>
     private static readonly string[] PinnedIds =
     [
+        "textgrab.text.applyPattern",
+        "textgrab.text.applyRecognizer",
+        "textgrab.text.cleanUp",
         "textgrab.text.correctGuidErrors",
         "textgrab.text.makeSingleLine",
         "textgrab.text.removeDuplicateLines",
@@ -20,6 +23,8 @@ public class CoreActionsTests
         "textgrab.text.trimLines",
         "textgrab.text.tryMakeLetters",
         "textgrab.text.tryMakeNumbers",
+        "textgrab.text.unstack",
+        "textgrab.text.unstackGroups",
     ];
 
     private static ActionRegistry CreateRegistry()
