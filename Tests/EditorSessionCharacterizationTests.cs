@@ -1,12 +1,9 @@
-using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
 using Text_Grab;
 using Text_Grab.Models;
-using DocumentTextRange = System.Windows.Documents.TextRange;
+using static Tests.EditTextWindowTestHost;
 
 namespace Tests;
 
@@ -16,11 +13,10 @@ namespace Tests;
 /// so the session refactor can be checked against it. A failure here means behavior changed.
 /// </summary>
 /// <remarks>
-/// Windows are constructed but never shown or closed: showing runs <c>Window_Loaded</c> (clipboard
-/// monitor, settings restore) and closing writes settings and history. The tests drive the window only
-/// through what survives E1b: named elements via <c>FindName</c>, public methods, the public routed
-/// commands and the mode menu items. The one exception is spreadsheet undo, whose command binding is
-/// added by <c>Window_Loaded</c>; <see cref="AddLoadedCommandBindings"/> adds just those bindings.
+/// The tests drive the window only through what survives E1b: named elements via <c>FindName</c>,
+/// public methods, the public routed commands and the mode menu items (see <see cref="EditTextWindowTestHost"/>).
+/// The one exception is spreadsheet undo, whose command binding is added by <c>Window_Loaded</c>;
+/// <see cref="EditTextWindowTestHost.AddLoadedCommandBindings"/> adds just those bindings.
 /// </remarks>
 public class EditorSessionCharacterizationTests
 {
@@ -281,65 +277,4 @@ public class EditorSessionCharacterizationTests
         Assert.Equal("lima", RawTextBox(window).SelectedText);
         Assert.Empty(Grid(window).SelectedCells);
     }
-
-    // ---- helpers ----
-
-    private static EditTextWindow CreateWindow(string text)
-    {
-        EditTextWindow window = new();
-        LayOut(window);
-        RawTextBox(window).Text = text;
-        DoEvents();
-        LayOut(window);
-        return window;
-    }
-
-    /// <summary>
-    /// Measures and arranges the window's content at a fixed size. Without a layout pass, a text box
-    /// records no undo units and the data grid generates no rows, so neither behaves as it does on screen.
-    /// </summary>
-    private static void LayOut(EditTextWindow window)
-    {
-        FrameworkElement root = (FrameworkElement)window.Content;
-        root.Measure(new Size(1000, 700));
-        root.Arrange(new Rect(0, 0, 1000, 700));
-        root.UpdateLayout();
-    }
-
-    private static void SwitchMode(EditTextWindow window, EtwEditorMode mode)
-    {
-        string menuItemName = mode switch
-        {
-            EtwEditorMode.Markdown => "MarkdownModeMenuItem",
-            EtwEditorMode.Spreadsheet => "SpreadsheetModeMenuItem",
-            _ => "RawTextModeMenuItem",
-        };
-        MenuItem menuItem = (MenuItem)window.FindName(menuItemName);
-        menuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, menuItem));
-        DoEvents();
-        LayOut(window);
-    }
-
-    /// <summary>Adds the command bindings <c>Window_Loaded</c> adds, without the rest of Loaded.</summary>
-    private static void AddLoadedCommandBindings(EditTextWindow window)
-        => typeof(EditTextWindow)
-            .GetMethod("SetupRoutedCommands", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .Invoke(window, null);
-
-    private static void DoEvents()
-        => Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.Background, new Action(() => { }));
-
-    private static TextBox RawTextBox(EditTextWindow window) => (TextBox)window.FindName("PassedTextControl");
-
-    private static string RawText(EditTextWindow window) => RawTextBox(window).Text;
-
-    private static RichTextBox MarkdownEditor(EditTextWindow window) => (RichTextBox)window.FindName("MarkdownEditorControl");
-
-    private static string RenderedMarkdown(EditTextWindow window)
-    {
-        RichTextBox editor = MarkdownEditor(window);
-        return new DocumentTextRange(editor.Document.ContentStart, editor.Document.ContentEnd).Text;
-    }
-
-    private static DataGrid Grid(EditTextWindow window) => (DataGrid)window.FindName("SpreadsheetDataGrid");
 }

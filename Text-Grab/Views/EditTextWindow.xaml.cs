@@ -27,6 +27,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Core.Editing;
+using Text_Grab.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Pages;
@@ -145,6 +147,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private SpreadsheetUndoState? pendingSpreadsheetUndoState;
     private string savedFileText = string.Empty;
     private HwndSource? windowSource;
+    private readonly EditorSession editorSession;
 
     #endregion Fields
 
@@ -153,12 +156,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public EditTextWindow()
     {
         InitializeComponent();
+        editorSession = CreateEditorSession();
         App.SetTheme();
     }
 
     public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
     {
         InitializeComponent();
+        editorSession = CreateEditorSession();
         App.SetTheme();
 
         if (isEncoded)
@@ -172,6 +177,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public EditTextWindow(HistoryInfo historyInfo)
     {
         InitializeComponent();
+        editorSession = CreateEditorSession();
         App.SetTheme();
 
         PassedTextControl.Text = historyInfo.TextContent;
@@ -213,9 +219,24 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     public bool WrapText { get; set; } = false;
     private bool IsAccessingClipboard { get; set; } = false;
 
+    /// <summary>The document in this window and the editor showing it.</summary>
+    public IEditorSession Session => editorSession;
+
     #endregion Properties
 
     #region Methods
+
+    private EditorSession CreateEditorSession()
+    {
+        TextBoxSurface textSurface = new(PassedTextControl);
+        EditorSession session = new(
+            textSurface,
+            new MarkdownSurface(range => SelectInMarkdownEditor(range.Start, range.Length)),
+            new SpreadsheetSurface(textSurface),
+            () => editorMode);
+        EditorModeChanged += (_, _) => session.RaiseModeChanged();
+        return session;
+    }
 
     public static Dictionary<string, RoutedCommand> GetRoutedCommands()
     {

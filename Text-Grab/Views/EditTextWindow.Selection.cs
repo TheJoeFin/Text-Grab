@@ -134,23 +134,28 @@ public partial class EditTextWindow
     {
         if (editorMode == EtwEditorMode.Markdown)
         {
-            SyncMarkdownTextFromDocument();
-            if (markdownOffsetMapSourceText != PassedTextControl.Text)
-                LoadMarkdownDocumentFromText(PassedTextControl.Text);
-
-            if (MarkdownEditorControl.Document is not null)
-            {
-                TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
-                TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
-                MarkdownEditorControl.Selection.Select(start, end);
-                MarkdownEditorControl.Focus();
-                start.Paragraph?.BringIntoView();
-            }
+            SelectInMarkdownEditor(index, length);
             return;
         }
 
         PassedTextControl.Select(index, length);
         PassedTextControl.Focus();
+    }
+
+    private void SelectInMarkdownEditor(int index, int length)
+    {
+        SyncMarkdownTextFromDocument();
+        if (markdownOffsetMapSourceText != PassedTextControl.Text)
+            LoadMarkdownDocumentFromText(PassedTextControl.Text);
+
+        if (MarkdownEditorControl.Document is not null)
+        {
+            TextPointer start = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index);
+            TextPointer end = MarkdownFlowDocumentUtilities.MapRawOffsetToPosition(MarkdownEditorControl.Document, markdownOffsetMap, index + length);
+            MarkdownEditorControl.Selection.Select(start, end);
+            MarkdownEditorControl.Focus();
+            start.Paragraph?.BringIntoView();
+        }
     }
 
     private void HideBottomBarMenuItem_Click(object sender, RoutedEventArgs e)
