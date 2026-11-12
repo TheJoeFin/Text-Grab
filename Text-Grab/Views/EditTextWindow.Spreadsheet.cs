@@ -392,7 +392,7 @@ public partial class EditTextWindow
             return;
         }
 
-        tableDocument = EditTextTableDocument.CreateFromText(PassedTextControl.Text);
+        tableDocument = EditTextTableDocument.CreateFromText(Session.Text);
     }
 
     private void FocusSpreadsheetCell(int rowIndex, int columnIndex, bool beginEdit = true)
@@ -526,7 +526,7 @@ public partial class EditTextWindow
 
         EditTextTableDocument? existingDocument = tableDocument;
         tableDocument = EditTextTableDocument.CreateFromText(
-            PassedTextControl.Text,
+            Session.Text,
             existingDocument?.MinimumRowCount ?? EditTextTableDocument.DefaultMinimumRowCount,
             existingDocument?.MinimumColumnCount ?? EditTextTableDocument.DefaultMinimumColumnCount);
 
@@ -1432,7 +1432,7 @@ public partial class EditTextWindow
 
     private void SyncSpreadsheetDocumentFromTable(bool writeText = true)
     {
-        tableDocument ??= EditTextTableDocument.CreateFromText(PassedTextControl.Text);
+        tableDocument ??= EditTextTableDocument.CreateFromText(Session.Text);
 
         tableDocument.ColumnNames = [.. spreadsheetTable.Columns
             .Cast<DataColumn>()
@@ -1717,7 +1717,7 @@ public partial class EditTextWindow
             return;
 
         isSyncingTextFromSpreadsheet = true;
-        PassedTextControl.Text = tableDocument.SerializeToText();
+        Session.Text = tableDocument.SerializeToText();
         isSyncingTextFromSpreadsheet = false;
     }
 
@@ -1867,7 +1867,7 @@ public partial class EditTextWindow
         if (editorMode == EtwEditorMode.Spreadsheet)
             return GetSpreadsheetSelectedText();
 
-        return PassedTextControl.SelectedText;
+        return Session.SelectedText;
     }
 
     private void OpenNewWindowWithSpreadsheetSelection()
