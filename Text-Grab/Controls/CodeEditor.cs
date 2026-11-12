@@ -2,7 +2,10 @@ using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Indentation;
+using ICSharpCode.AvalonEdit.Indentation.CSharp;
 using ICSharpCode.AvalonEdit.Rendering;
+using ICSharpCode.AvalonEdit.Search;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,7 +44,17 @@ public class CodeEditor : TextEditor
 
     private static readonly RoutedCommand[] CommandsTheWindowOwns = [AvalonEditCommands.DeleteLine, AvalonEditCommands.IndentSelection];
 
+    /// <summary>Languages whose blocks are braces, so Enter after "{" indents and "}" outdents.</summary>
+    private static readonly HashSet<string> BraceLanguages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        CodeLanguages.CSharp, CodeLanguages.Cpp, CodeLanguages.Css, CodeLanguages.Java,
+        CodeLanguages.JavaScript, CodeLanguages.Json, CodeLanguages.Php,
+    };
+
     private readonly DispatcherTimer foldingTimer;
+    private readonly SearchPanel searchPanel;
+    private readonly SelectionOccurrencesRenderer occurrencesRenderer;
+    private readonly BracketHighlightRenderer bracketRenderer;
     private FoldingManager? foldingManager;
 
     public CodeEditor()
@@ -51,6 +64,17 @@ public class CodeEditor : TextEditor
         Options.EnableHyperlinks = false;
         Options.EnableEmailHyperlinks = false;
         Options.IndentationSize = 4;
+        Options.EnableRectangularSelection = true; // Alt+drag selects a column
+
+        // Ctrl+F opens an inline find bar; F3 / Shift+F3 step through matches while it is open.
+        searchPanel = SearchPanel.Install(TextArea);
+
+        occurrencesRenderer = new SelectionOccurrencesRenderer(this);
+        bracketRenderer = new BracketHighlightRenderer(this);
+        TextArea.TextView.BackgroundRenderers.Add(occurrencesRenderer);
+        TextArea.TextView.BackgroundRenderers.Add(bracketRenderer);
+        TextArea.SelectionChanged += (_, _) => TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
+        TextArea.Caret.PositionChanged += (_, _) => TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
 
         RemoveCommandBindingsTheWindowOwns();
         SpaceOutTheGutter();
@@ -78,6 +102,21 @@ public class CodeEditor : TextEditor
     /// <summary>The folding regions, or null when the current language has no folding rule.</summary>
     public FoldingManager? Foldings => foldingManager;
 
+    /// <summary>Shows spaces, tabs and line endings as faint marks.</summary>
+    public bool ShowWhitespace
+    {
+        get => Options.ShowSpaces;
+        set
+        {
+            Options.ShowSpaces = value;
+            Options.ShowTabs = value;
+            Options.ShowEndOfLine = value;
+        }
+    }
+
+    /// <summary>The find bar, so tests and the window can open or close it.</summary>
+    public SearchPanel Search => searchPanel;
+
     protected override IVisualLineTransformer CreateColorizer(IHighlightingDefinition highlightingDefinition)
         => new ThemeAwareHighlightingColorizer(highlightingDefinition, this);
 
@@ -88,7 +127,22 @@ public class CodeEditor : TextEditor
         if (e.Property == ForegroundProperty)
             ApplyTheme();
         else if (e.Property == SyntaxHighlightingProperty)
+        {
             ConfigureFolding();
+            ConfigureIndentation();
+        }
+    }
+
+    /// <summary>
+    /// Brace languages indent after "{" and outdent on "}"; every other language keeps the previous
+    /// line's indentation, which is what AvalonEdit's default strategy does.
+    /// </summary>
+    private void ConfigureIndentation()
+    {
+        string? name = SyntaxHighlighting?.Name;
+        TextArea.IndentationStrategy = name is not null && BraceLanguages.Contains(name)
+            ? new CSharpIndentationStrategy(Options)
+            : new DefaultIndentationStrategy();
     }
 
     /// <summary>Recomputes the folding regions from the text now, keeping collapsed ones collapsed.</summary>
@@ -166,6 +220,12 @@ public class CodeEditor : TextEditor
         // Not null: the property already is null, so null never reaches the renderer, which keeps
         // AvalonEdit's default translucent green border.
         TextArea.TextView.CurrentLineBorder = Freeze(new Pen(Brushes.Transparent, 0));
+        TextArea.TextView.NonPrintableCharacterBrush = LineNumbersForeground ?? Brushes.Gray;
+        occurrencesRenderer.Fill = Freeze(new SolidColorBrush(Color.FromArgb(isDark ? (byte)0x40 : (byte)0x30, accent.R, accent.G, accent.B)));
+        bracketRenderer.Fill = Freeze(new SolidColorBrush(Color.FromArgb(0x30, textColor.R, textColor.G, textColor.B)));
+        bracketRenderer.Outline = Freeze(new Pen(Freeze(new SolidColorBrush(Color.FromArgb(0x99, accent.R, accent.G, accent.B))), 1));
+        searchPanel.MarkerBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x80, accent.R, accent.G, accent.B)));
+        TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
         ApplyFoldingMarginTheme();
 
         if (isDark == IsDarkTheme)

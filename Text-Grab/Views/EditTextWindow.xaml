@@ -607,6 +607,13 @@
                         AutomationProperties.AutomationId="EditText.Menu.CodeLanguage"
                         Header="Code _Language"
                         Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="ShowWhitespaceMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.ShowWhitespace"
+                        Click="ShowWhitespaceMenuItem_Click"
+                        Header="Show Whitespace"
+                        IsCheckable="True"
+                        Visibility="Collapsed" />
                     <Separator />
                     <MenuItem
                         x:Name="ShowErrorsMenuItem"

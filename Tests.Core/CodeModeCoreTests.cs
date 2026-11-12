@@ -95,6 +95,60 @@ public class TextEditTests
     }
 }
 
+public class BracketMatcherTests
+{
+    [Fact]
+    public void Find_OpenerAfterCaret_ReturnsItsCloser()
+    {
+        Assert.Equal((0, 3), BracketMatcher.Find("(ab)", 0));
+    }
+
+    [Fact]
+    public void Find_CloserBeforeCaret_ReturnsItsOpener()
+    {
+        Assert.Equal((3, 0), BracketMatcher.Find("(ab)", 4));
+    }
+
+    [Fact]
+    public void Find_SkipsNestedPairs()
+    {
+        Assert.Equal((0, 6), BracketMatcher.Find("{a{b}c}", 0));
+        Assert.Equal((2, 4), BracketMatcher.Find("{a{b}c}", 2));
+    }
+
+    [Fact]
+    public void Find_PrefersTheBracketBeforeTheCaret()
+    {
+        // Caret between "(" and ")": the "(" before it wins.
+        Assert.Equal((0, 1), BracketMatcher.Find("()", 1));
+    }
+
+    [Theory]
+    [InlineData("(ab", 0)]
+    [InlineData("ab)", 3)]
+    [InlineData("abc", 1)]
+    [InlineData("", 0)]
+    public void Find_ReturnsNullWhenThereIsNoMatch(string text, int caret)
+    {
+        Assert.Null(BracketMatcher.Find(text, caret));
+    }
+
+    [Fact]
+    public void Find_IgnoresOtherBracketKinds()
+    {
+        // The "[" is not closed by ")", so it is unmatched; the "(" pairs across it.
+        Assert.Null(BracketMatcher.Find("[x)", 0));
+        Assert.Equal((0, 3), BracketMatcher.Find("(a[)", 0));
+    }
+
+    [Fact]
+    public void Find_CaretOutOfRange_ReturnsNull()
+    {
+        Assert.Null(BracketMatcher.Find("()", 5));
+        Assert.Null(BracketMatcher.Find("()", -1));
+    }
+}
+
 public class CodeHighlightColorsTests
 {
     [Theory]

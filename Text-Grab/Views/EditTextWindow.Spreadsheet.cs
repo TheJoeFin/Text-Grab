@@ -1606,6 +1606,7 @@ public partial class EditTextWindow
         bool isCodeMode = editorMode == EtwEditorMode.Code;
         CodeModeMenuItem.IsChecked = isCodeMode;
         CodeLanguageMenuItem.Visibility = isCodeMode ? Visibility.Visible : Visibility.Collapsed;
+        ShowWhitespaceMenuItem.Visibility = isCodeMode ? Visibility.Visible : Visibility.Collapsed;
         CodeLanguageButton.Visibility = isCodeMode ? Visibility.Visible : Visibility.Collapsed;
         CommandManager.InvalidateRequerySuggested();
     }

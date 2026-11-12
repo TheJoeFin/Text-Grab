@@ -57,6 +57,9 @@ public partial class EditTextWindow
         PopulateCodeLanguageMenu(CodeLanguageMenuItem);
     }
 
+    private void ShowWhitespaceMenuItem_Click(object sender, RoutedEventArgs e)
+        => CodeEditorControl.ShowWhitespace = ShowWhitespaceMenuItem.IsChecked;
+
     private void EnterCodeMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Code);
 
     /// <summary>
