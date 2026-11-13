@@ -76,11 +76,24 @@ public partial class EditTextWindow
         if (deferTextLoad)
             return;
 
-        SessionImpl.SyncEditorFromText(EtwEditorMode.Code);
-        MirrorTextSelectionToCodeEditor();
+        LoadCodeEditorFromText();
 
         // Fold the text now rather than after the typing delay, so the markers are there on entry.
         CodeEditorControl.UpdateFoldings();
+    }
+
+    /// <summary>
+    /// Fills the code editor from the text as a fresh document (<see cref="CodeSurface.LoadText"/>) and
+    /// shows the text box's selection in it. Used on entering code mode and by <see cref="OpenPath"/>.
+    /// </summary>
+    /// <remarks>
+    /// The code editor is not kept up to date outside code mode, so it may hold anything from an earlier
+    /// visit, or nothing. Its undo history from that visit does not apply to the text it now holds.
+    /// </remarks>
+    private void LoadCodeEditorFromText()
+    {
+        CodeSurfaceImpl.LoadText(Session.Text);
+        MirrorTextSelectionToCodeEditor();
     }
 
     /// <summary>

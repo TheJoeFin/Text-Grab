@@ -52,6 +52,20 @@ internal sealed class CodeSurface(CodeEditor editor) : IEditorSurface
         }
     }
 
+    /// <summary>
+    /// Fills the editor with <paramref name="text"/> as a fresh document, with nothing to undo: what
+    /// <see cref="SetText"/> does, then the undo history is cleared.
+    /// </summary>
+    /// <remarks>
+    /// Used where the editor takes the text up rather than an edit being made to it: entering code mode
+    /// and opening a file. Undoing that fill would empty the document or bring back the previous one.
+    /// </remarks>
+    public void LoadText(string text)
+    {
+        SetText(text);
+        editor.Document.UndoStack.ClearAll();
+    }
+
     public void SelectAndShow(TextSpan range)
     {
         Selection = range;

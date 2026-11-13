@@ -301,6 +301,12 @@ public partial class EditTextWindow
                     SessionImpl.SyncEditorFromText(EtwEditorMode.Spreadsheet);
                 else if (IsLoaded && editorMode == EtwEditorMode.Markdown)
                     SessionImpl.SyncEditorFromText(EtwEditorMode.Markdown);
+                else if (editorMode == EtwEditorMode.Code)
+                {
+                    // Even when the text is unchanged: setting the same text raises no TextChanged, and the
+                    // code editor may still hold older text, which the sync below would copy into the file.
+                    LoadCodeEditorFromText();
+                }
             }
             finally
             {

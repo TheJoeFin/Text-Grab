@@ -1529,7 +1529,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Code)
         {
             // Typed in the code editor: the text box just caught up, so there is nothing to push back.
-            if (!SessionImpl.IsSyncingTextFromCode)
+            // OpenPath loads the code editor once itself after setting the text.
+            if (!SessionImpl.IsSyncingTextFromCode && !isLoadingOpenedFile)
                 OnTextChangedInCodeMode();
 
             ResetSpreadsheetUndoHistory();

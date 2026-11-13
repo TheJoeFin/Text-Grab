@@ -33,6 +33,27 @@ public class EditTextWindowCodeModeTests
     }
 
     [WpfFact]
+    public void EnteringCodeMode_LeavesNothingToUndo()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+
+        // Undoing the fill would empty the editor, and the text box with it.
+        Assert.False(editor.CanUndo);
+
+        // Coming back after an edit made elsewhere: the history from the first visit is for older text.
+        editor.Document.Insert(0, "// note\r\n");
+        DoEvents();
+        SwitchMode(window, EtwEditorMode.Text);
+        RawTextBox(window).AppendText("// end\r\n");
+        SwitchMode(window, EtwEditorMode.Code);
+
+        Assert.False(editor.CanUndo);
+        Assert.Equal(RawText(window), editor.Text);
+    }
+
+    [WpfFact]
     public void TypingInTheCodeEditor_UpdatesTheTextAndCaret()
     {
         EditTextWindow window = CreateWindow("int x = 1;");
