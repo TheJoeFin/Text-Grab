@@ -111,17 +111,14 @@ internal sealed class BracketHighlightRenderer(CodeEditor editor) : IBackgroundR
         TextDocument document = textView.Document;
         int caret = editor.TextArea.Caret.Offset;
 
-        // Hand the matcher only the stretch it may scan, not the whole document.
-        int windowStart = Math.Max(0, caret - BracketMatcher.MaxScanDistance);
-        int windowEnd = Math.Min(document.TextLength, caret + BracketMatcher.MaxScanDistance);
-        string window = document.GetText(windowStart, windowEnd - windowStart);
-
-        if (BracketMatcher.Find(window, caret - windowStart) is not (int bracket, int partner))
+        // This layer redraws on every caret move, keystroke and scroll, so read the document in place
+        // rather than copying text out of it: most draws read only the two characters beside the caret.
+        if (BracketMatcher.Find(document.TextLength, document.GetCharAt, caret) is not (int bracket, int partner))
             return;
 
         BackgroundGeometryBuilder builder = new() { AlignToWholePixels = true, CornerRadius = 2 };
-        builder.AddSegment(textView, new TextSegment { StartOffset = windowStart + bracket, Length = 1 });
-        builder.AddSegment(textView, new TextSegment { StartOffset = windowStart + partner, Length = 1 });
+        builder.AddSegment(textView, new TextSegment { StartOffset = bracket, Length = 1 });
+        builder.AddSegment(textView, new TextSegment { StartOffset = partner, Length = 1 });
 
         Geometry? geometry = builder.CreateGeometry();
         if (geometry is not null)

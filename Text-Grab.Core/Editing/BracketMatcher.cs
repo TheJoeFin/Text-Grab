@@ -21,42 +21,55 @@ public static class BracketMatcher
     /// the one after it, as in most editors.
     /// </summary>
     public static (int Bracket, int Partner)? Find(string text, int caretOffset)
+        => text is null ? null : Find(text.Length, index => text[index], caretOffset);
+
+    /// <summary>
+    /// <see cref="Find(string, int)"/> over text read one character at a time by <paramref name="charAt"/>,
+    /// so an editor's document need not be copied out to look beside the caret.
+    /// </summary>
+    /// <remarks>
+    /// Only the two characters beside the caret are read unless one is a bracket; then at most
+    /// <see cref="MaxScanDistance"/> more.
+    /// </remarks>
+    public static (int Bracket, int Partner)? Find(int textLength, Func<int, char> charAt, int caretOffset)
     {
-        if (string.IsNullOrEmpty(text) || caretOffset < 0 || caretOffset > text.Length)
+        ArgumentNullException.ThrowIfNull(charAt);
+
+        if (textLength <= 0 || caretOffset < 0 || caretOffset > textLength)
             return null;
 
-        if (caretOffset > 0 && TryMatch(text, caretOffset - 1) is int before)
+        if (caretOffset > 0 && TryMatch(textLength, charAt, caretOffset - 1) is int before)
             return (caretOffset - 1, before);
 
-        if (caretOffset < text.Length && TryMatch(text, caretOffset) is int after)
+        if (caretOffset < textLength && TryMatch(textLength, charAt, caretOffset) is int after)
             return (caretOffset, after);
 
         return null;
     }
 
-    private static int? TryMatch(string text, int offset)
+    private static int? TryMatch(int textLength, Func<int, char> charAt, int offset)
     {
-        char c = text[offset];
+        char c = charAt(offset);
         int open = Openers.IndexOf(c);
         if (open >= 0)
-            return Scan(text, offset, c, Closers[open], 1);
+            return Scan(textLength, charAt, offset, c, Closers[open], 1);
 
         int close = Closers.IndexOf(c);
         if (close >= 0)
-            return Scan(text, offset, c, Openers[close], -1);
+            return Scan(textLength, charAt, offset, c, Openers[close], -1);
 
         return null;
     }
 
-    private static int? Scan(string text, int start, char same, char opposite, int direction)
+    private static int? Scan(int textLength, Func<int, char> charAt, int start, char same, char opposite, int direction)
     {
         int depth = 0;
-        int limit = Math.Min(MaxScanDistance, direction > 0 ? text.Length - start : start + 1);
+        int limit = Math.Min(MaxScanDistance, direction > 0 ? textLength - start : start + 1);
 
         for (int step = 0; step < limit; step++)
         {
             int index = start + (step * direction);
-            char c = text[index];
+            char c = charAt(index);
 
             if (c == same)
             {

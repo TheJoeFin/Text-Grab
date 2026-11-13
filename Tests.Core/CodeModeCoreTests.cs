@@ -161,6 +161,28 @@ public class BracketMatcherTests
         Assert.Null(BracketMatcher.Find("()", 5));
         Assert.Null(BracketMatcher.Find("()", -1));
     }
+
+    [Fact]
+    public void Find_ReadsOnlyTheTwoCharactersBesideTheCaret_WhenNeitherIsABracket()
+    {
+        // The code editor redraws its bracket highlight on every caret move and keystroke.
+        string text = new('x', 100_000);
+        int reads = 0;
+
+        Assert.Null(BracketMatcher.Find(text.Length, index => { reads++; return text[index]; }, 50_000));
+        Assert.Equal(2, reads);
+    }
+
+    [Fact]
+    public void Find_StopsScanningForAnUnmatchedBracket_AfterMaxScanDistance()
+    {
+        string text = "(" + new string('x', 100_000);
+        int reads = 0;
+
+        Assert.Null(BracketMatcher.Find(text.Length, index => { reads++; return text[index]; }, 0));
+        // The character after the caret, then the scan from the bracket itself.
+        Assert.Equal(1 + BracketMatcher.MaxScanDistance, reads);
+    }
 }
 
 public class CodeHighlightColorsTests
