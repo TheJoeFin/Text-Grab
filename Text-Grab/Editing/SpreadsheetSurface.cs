@@ -31,4 +31,9 @@ internal sealed class SpreadsheetSurface(
     /// mode; nothing in the grid is selected. Spreadsheet search goes through the window's cell methods instead.
     /// </summary>
     public void SelectAndShow(TextSpan range) => textSurface.SelectAndShow(range);
+
+    /// <summary>Does nothing: the grid is not the text, so it is left where it is.</summary>
+    public void ScrollToEnd()
+    {
+    }
 }

@@ -97,11 +97,11 @@ internal sealed class EditorSession : IEditorSession
 
     public void ScrollToEnd()
     {
+        // The text box holds the document in every mode, so it follows even when another editor is showing.
         textSurface.ScrollToEnd();
 
-        // The code editor is the only other editor that shows the text as text; the rest re-render it.
-        if (Mode == EtwEditorMode.Code && codeSurface is CodeSurface code)
-            code.ScrollToEnd();
+        if (Mode != EtwEditorMode.Text)
+            ActiveSurface.ScrollToEnd();
     }
 
     /// <summary>Called by the window after it switches editors.</summary>

@@ -119,6 +119,21 @@ public class EditorSessionSyncTests
     }
 
     [WpfFact]
+    public void ScrollToEnd_ScrollsTheVisibleEditorThroughItsSurface()
+    {
+        Harness harness = new("raw");
+
+        harness.Session.ScrollToEnd();
+        harness.Mode = EtwEditorMode.Code;
+        harness.Session.ScrollToEnd();
+
+        // Any code surface, not only the real CodeSurface, which the session used to check for by type.
+        Assert.Equal(1, harness.Code.ScrolledToEnd);
+        Assert.Equal(0, harness.Markdown.ScrolledToEnd);
+        Assert.Equal(0, harness.Spreadsheet.ScrolledToEnd);
+    }
+
+    [WpfFact]
     public void SyncActiveEditorFromText_PushesTheTextIntoTheVisibleEditorOnly()
     {
         Harness harness = new("raw");
@@ -164,5 +179,9 @@ public class EditorSessionSyncTests
         public void SetText(string text) => Loaded.Add(text);
 
         public void SelectAndShow(TextSpan range) { }
+
+        public int ScrolledToEnd { get; private set; }
+
+        public void ScrollToEnd() => ScrolledToEnd++;
     }
 }
