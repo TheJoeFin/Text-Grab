@@ -45,7 +45,8 @@ internal sealed class SelectionOccurrencesRenderer(CodeEditor editor) : IBackgro
         foreach (VisualLine visualLine in textView.VisualLines)
         {
             DocumentLine documentLine = visualLine.FirstDocumentLine;
-            string lineText = textView.Document.GetText(documentLine);
+            // Only the part that shows: a long line's hidden rest can be megabytes, redrawn on every caret move.
+            string lineText = textView.Document.GetText(documentLine.Offset, Math.Min(documentLine.Length, CodeEditor.LongLineLength));
 
             int index = 0;
             while ((index = lineText.IndexOf(needle, index, StringComparison.Ordinal)) >= 0)

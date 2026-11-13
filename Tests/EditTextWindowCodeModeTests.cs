@@ -1,6 +1,8 @@
 using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Rendering;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -287,6 +289,78 @@ public class EditTextWindowCodeModeTests
 
         Assert.Equal(classCount, editor.Foldings.AllFoldings.Count());
         Assert.Equal(scansBefore + 1, editor.FoldingScanCount);
+    }
+
+    /// <summary>
+    /// An HTML page whose second line is a script line of about <paramref name="dataLength"/> characters.
+    /// </summary>
+    /// <remarks>
+    /// Four times <see cref="Text_Grab.Controls.CodeEditor.LongLineLength"/> is enough to be a long line.
+    /// Much longer, and a regression would hang these tests instead of failing them: at 300,000 characters,
+    /// laying out and highlighting the line runs for minutes.
+    /// </remarks>
+    private static string PageWithALongScriptLine(int dataLength)
+        => "<script>\r\nvar data = [" + string.Concat(Enumerable.Repeat("\"x\",", dataLength / 4)) + "];\r\nvar after = 1;\r\n</script>\r\n";
+
+    private const int LongScriptLineLength = 4 * Text_Grab.Controls.CodeEditor.LongLineLength;
+
+    [WpfFact]
+    public void ALongLine_ShowsOnlyItsStartThenAMarkerForTheRest()
+    {
+        EditTextWindow window = CreateWindow(PageWithALongScriptLine(LongScriptLineLength));
+        window.SetCodeLanguage(CodeLanguages.Html);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        DocumentLine longLine = editor.Document.GetLineByNumber(2);
+
+        VisualLine visualLine = editor.TextArea.TextView.GetOrConstructVisualLine(longLine);
+
+        VisualLineElement marker = visualLine.Elements[^1];
+        Assert.IsType<FormattedTextElement>(marker);
+        Assert.Equal(Text_Grab.Controls.CodeEditor.LongLineLength, marker.RelativeTextOffset);
+        Assert.Equal(longLine.Length - Text_Grab.Controls.CodeEditor.LongLineLength, marker.DocumentLength);
+        // The text itself is all still there.
+        Assert.Equal(window.Session.Text, editor.Text);
+    }
+
+    [WpfFact]
+    public void ALongLine_IsLeftPlain_AndTheLinesAfterItHighlightAsBefore()
+    {
+        EditTextWindow window = CreateWindow(PageWithALongScriptLine(LongScriptLineLength));
+        window.SetCodeLanguage(CodeLanguages.Html);
+        SwitchMode(window, EtwEditorMode.Code);
+        IHighlighter highlighter = (IHighlighter)CodeEditor(window).TextArea.TextView.GetService(typeof(IHighlighter))!;
+
+        EditTextWindow shortWindow = CreateWindow(PageWithALongScriptLine(8));
+        shortWindow.SetCodeLanguage(CodeLanguages.Html);
+        SwitchMode(shortWindow, EtwEditorMode.Code);
+        IHighlighter shortHighlighter = (IHighlighter)CodeEditor(shortWindow).TextArea.TextView.GetService(typeof(IHighlighter))!;
+
+        // Highlighted, a line makes about a section per token, and AvalonEdit applies them in quadratic time.
+        Assert.Empty(highlighter.HighlightLine(2).Sections);
+
+        // The script state carries over the long line unscanned, so the next line is still script.
+        Assert.Equal(Describe(shortHighlighter.HighlightLine(3)), Describe(highlighter.HighlightLine(3)));
+        Assert.NotEmpty(highlighter.HighlightLine(3).Sections);
+
+        static string[] Describe(HighlightedLine line) => line.Sections
+            .Select(section => $"{section.Offset - line.DocumentLine.Offset}+{section.Length} {section.Color?.Name}")
+            .ToArray();
+    }
+
+    [WpfFact]
+    public void AFoldStartingInTheHiddenPartOfALongLine_IsNotOffered()
+    {
+        string text = "class A\r\n" + new string('x', Text_Grab.Controls.CodeEditor.LongLineLength * 2) + " {\r\n    int y;\r\n}\r\n";
+        Assert.NotEmpty(CodeFolding.Find(text, CodeLanguages.CSharp));
+        EditTextWindow window = CreateWindow(text);
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+
+        SwitchMode(window, EtwEditorMode.Code);
+
+        // Its marker would sit beside text that doesn't show where it starts, and collapsing it would
+        // hide the lines below with nothing in their place.
+        Assert.Empty(CodeEditor(window).Foldings!.AllFoldings);
     }
 
     [WpfFact]

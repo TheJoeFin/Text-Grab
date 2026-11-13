@@ -1,4 +1,5 @@
 using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Folding;
 using System.Threading.Tasks;
@@ -39,11 +40,22 @@ namespace Text_Grab.Controls;
 /// regions are recomputed shortly after the text stops changing; AvalonEdit anchors existing regions to
 /// the text, so collapsed regions stay collapsed through edits around them.
 /// </para>
+/// <para>
+/// A line longer than <see cref="LongLineLength"/> shows only that much, then a marker for the rest
+/// (<see cref="LongLineElementGenerator"/>), and is not highlighted (<see cref="LongLineHighlighter"/>):
+/// laying out or highlighting a line of a million characters freezes the UI.
+/// </para>
 /// </remarks>
 public class CodeEditor : TextEditor
 {
     /// <summary>How long the text must be still before the folding regions are recomputed.</summary>
     public static readonly TimeSpan FoldingUpdateDelay = TimeSpan.FromMilliseconds(400);
+
+    /// <summary>
+    /// Lines longer than this many characters show only this many, and are not highlighted. The same
+    /// cut-off VS Code uses for rendering.
+    /// </summary>
+    public const int LongLineLength = 10_000;
 
     private static readonly RoutedCommand[] CommandsTheWindowOwns = [AvalonEditCommands.DeleteLine, AvalonEditCommands.IndentSelection];
 
@@ -77,6 +89,8 @@ public class CodeEditor : TextEditor
 
         // Ctrl+F opens an inline find bar; F3 / Shift+F3 step through matches while it is open.
         searchPanel = SearchPanel.Install(TextArea);
+
+        TextArea.TextView.ElementGenerators.Add(new LongLineElementGenerator(this));
 
         occurrencesRenderer = new SelectionOccurrencesRenderer(this);
         bracketRenderer = new BracketHighlightRenderer(this);
@@ -176,6 +190,16 @@ public class CodeEditor : TextEditor
     }
 
     /// <summary>
+    /// The regions as AvalonEdit foldings, less any that start in the hidden part of a long line: their
+    /// marker would sit on a line that doesn't show where they start, and collapsing one would hide the
+    /// lines below with nothing in their place.
+    /// </summary>
+    private IEnumerable<NewFolding> ToNewFoldings(IEnumerable<TextSpan> regions)
+        => regions
+            .Where(region => !LongLineElementGenerator.IsHidden(Document, region.Start))
+            .Select(region => new NewFolding(region.Start, region.End));
+
+    /// <summary>
     /// Scans for folding regions on a worker thread so a large document can't freeze the UI, then
     /// applies them if the text, language and folding are unchanged. Whatever changed meanwhile
     /// starts its own scan.
@@ -214,9 +238,6 @@ public class CodeEditor : TextEditor
 
     /// <summary>How many folding scans have started, for tests.</summary>
     internal int FoldingScanCount { get; private set; }
-
-    private static IEnumerable<NewFolding> ToNewFoldings(IEnumerable<TextSpan> regions)
-        => regions.Select(region => new NewFolding(region.Start, region.End));
 
     /// <summary>What a folding scan read: which text (by revision), in which language, for which folding.</summary>
     private readonly record struct FoldingScan(int TextRevision, string? Language, FoldingManager Manager);
@@ -498,14 +519,26 @@ public class CodeEditor : TextEditor
 
     /// <summary>
     /// Highlights as AvalonEdit does, except that on the dark theme each highlighting color is swapped
-    /// for a dark-theme version, made once per color and cached.
+    /// for a dark-theme version, made once per color and cached, and long lines are left plain
+    /// (<see cref="LongLineHighlighter"/>).
     /// </summary>
-    private sealed class ThemeAwareHighlightingColorizer(IHighlightingDefinition definition, CodeEditor editor)
-        : HighlightingColorizer(definition)
+    private sealed class ThemeAwareHighlightingColorizer : HighlightingColorizer
     {
         private readonly Dictionary<HighlightingColor, HighlightingColor> darkColors = new(ReferenceEqualityComparer.Instance);
+        private readonly IHighlightingDefinition definition;
+        private readonly CodeEditor editor;
+
+        public ThemeAwareHighlightingColorizer(IHighlightingDefinition definition, CodeEditor editor)
+            : base(definition)
+        {
+            this.definition = definition;
+            this.editor = editor;
+        }
 
         public void ClearCache() => darkColors.Clear();
+
+        protected override IHighlighter CreateHighlighter(TextView textView, TextDocument document)
+            => new LongLineHighlighter(document, definition);
 
         protected override void ApplyColorToElement(VisualLineElement element, HighlightingColor color)
         {
