@@ -2,6 +2,8 @@ using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Folding;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Indentation;
 using ICSharpCode.AvalonEdit.Indentation.CSharp;
@@ -58,6 +60,7 @@ public class CodeEditor : TextEditor
     private readonly BracketHighlightRenderer bracketRenderer;
     private FoldingManager? foldingManager;
     private int textRevision;
+    private bool searchTemplateApplied;
 
     /// <summary>Documents longer than this are scanned off the UI thread.</summary>
     private const int SynchronousFoldingLimit = 50_000;
@@ -258,6 +261,7 @@ public class CodeEditor : TextEditor
         searchPanel.MarkerBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x80, accent.R, accent.G, accent.B)));
         TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
         ApplyFoldingMarginTheme();
+        ApplySearchPanelTheme(textColor, accent, isDark);
 
         if (isDark == IsDarkTheme)
             return;
@@ -268,6 +272,154 @@ public class CodeEditor : TextEditor
 
         TextArea.TextView.Redraw();
     }
+
+    /// <summary>
+    /// The find bar's built-in template paints with system colors (white) and the app's implicit
+    /// control styles, so give it the editor's own palette: system color keys for the template, and
+    /// explicit brushes for the pieces it exposes.
+    /// </summary>
+    private void ApplySearchPanelTheme(Color textColor, Color accent, bool isDark)
+    {
+        // The editor's background is usually Transparent (#00FFFFFF), which says nothing about the
+        // window behind it, so only an opaque background is used as the base.
+        Color editorBackground = Background is SolidColorBrush { Color.A: 255 } back ? back.Color : (isDark ? Color.FromRgb(0x20, 0x20, 0x20) : Colors.White);
+        byte lift = isDark ? (byte)0x14 : (byte)0;
+        Color panel = isDark
+            ? Color.FromRgb((byte)Math.Min(255, editorBackground.R + lift), (byte)Math.Min(255, editorBackground.G + lift), (byte)Math.Min(255, editorBackground.B + lift))
+            : Color.FromRgb(0xF3, 0xF3, 0xF3);
+        Color field = isDark ? Color.FromRgb(0x2D, 0x2D, 0x2D) : Colors.White;
+        Color border = Color.FromArgb(0x55, textColor.R, textColor.G, textColor.B);
+        Color hover = Color.FromArgb(0x26, textColor.R, textColor.G, textColor.B);
+
+        SolidColorBrush panelBrush = Freeze(new SolidColorBrush(panel));
+        SolidColorBrush textBrush = Freeze(new SolidColorBrush(textColor));
+        SolidColorBrush fieldBrush = Freeze(new SolidColorBrush(field));
+        SolidColorBrush borderBrush = Freeze(new SolidColorBrush(border));
+        SolidColorBrush hoverBrush = Freeze(new SolidColorBrush(hover));
+
+        if (!searchTemplateApplied)
+        {
+            searchPanel.Template = (ControlTemplate)System.Windows.Markup.XamlReader.Parse(SearchPanelTemplateXaml);
+            searchTemplateApplied = true;
+        }
+
+        searchPanel.Background = panelBrush;
+        searchPanel.Foreground = textBrush;
+        searchPanel.BorderBrush = borderBrush;
+
+        ResourceDictionary resources = searchPanel.Resources;
+        resources[SystemColors.ControlBrushKey] = panelBrush;
+        resources[SystemColors.ControlLightBrushKey] = panelBrush;
+        resources[SystemColors.ControlLightLightBrushKey] = hoverBrush;
+        resources[SystemColors.ControlDarkBrushKey] = borderBrush;
+        resources[SystemColors.ControlTextBrushKey] = textBrush;
+        resources[SystemColors.WindowBrushKey] = fieldBrush;
+        resources[SystemColors.WindowTextBrushKey] = textBrush;
+        resources[SystemColors.MenuBrushKey] = panelBrush;
+        resources[SystemColors.MenuTextBrushKey] = textBrush;
+        resources[SystemColors.HighlightBrushKey] = Freeze(new SolidColorBrush(Color.FromArgb(0x66, accent.R, accent.G, accent.B)));
+        resources[SystemColors.HighlightTextBrushKey] = textBrush;
+
+        // Replace the app's rounded, filled text box style with a plain one that reads on the panel.
+        Style textBoxStyle = new(typeof(TextBox));
+        textBoxStyle.Setters.Add(new Setter(Control.BackgroundProperty, fieldBrush));
+        textBoxStyle.Setters.Add(new Setter(Control.ForegroundProperty, textBrush));
+        textBoxStyle.Setters.Add(new Setter(Control.BorderBrushProperty, borderBrush));
+        textBoxStyle.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+        textBoxStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(4, 2, 4, 2)));
+        textBoxStyle.Setters.Add(new Setter(TextBoxBase.CaretBrushProperty, textBrush));
+        resources[typeof(TextBox)] = textBoxStyle;
+
+        Style checkBoxStyle = new(typeof(CheckBox));
+        checkBoxStyle.Setters.Add(new Setter(Control.ForegroundProperty, textBrush));
+        resources[typeof(CheckBox)] = checkBoxStyle;
+    }
+
+    private const string SearchPanelTemplateXaml = """
+        <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                         xmlns:search="clr-namespace:ICSharpCode.AvalonEdit.Search;assembly=ICSharpCode.AvalonEdit"
+                         TargetType="{x:Type search:SearchPanel}">
+          <ControlTemplate.Resources>
+            <Style x:Key="FindButton" TargetType="ButtonBase">
+              <Setter Property="Width" Value="26"/>
+              <Setter Property="Height" Value="26"/>
+              <Setter Property="Margin" Value="2,0,0,0"/>
+              <Setter Property="Padding" Value="0"/>
+              <Setter Property="Focusable" Value="False"/>
+              <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="ButtonBase">
+                    <Border x:Name="Chrome" Background="Transparent" CornerRadius="4">
+                      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+            <Style x:Key="FindToggle" TargetType="ToggleButton" BasedOn="{StaticResource FindButton}">
+              <Setter Property="FontFamily" Value="Segoe UI"/>
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="FontWeight" Value="SemiBold"/>
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Chrome" Background="Transparent" CornerRadius="4">
+                      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}"/>
+                      </Trigger>
+                      <Trigger Property="IsChecked" Value="True">
+                        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+          </ControlTemplate.Resources>
+          <Border Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                  BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                  BorderThickness="1,0,0,1" CornerRadius="0,0,0,6" Padding="4"
+                  HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="Arrow">
+            <StackPanel Orientation="Horizontal">
+              <TextBox x:Name="PART_searchTextBox" Width="180" Height="26" VerticalContentAlignment="Center"
+                       Text="{Binding SearchPattern, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"/>
+              <ToggleButton Style="{StaticResource FindToggle}" Content="Aa" Margin="6,0,0,0" ToolTip="Match case"
+                            IsChecked="{Binding MatchCase, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+              <ToggleButton Style="{StaticResource FindToggle}" Content="ab" ToolTip="Match whole words"
+                            IsChecked="{Binding WholeWords, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+              <ToggleButton Style="{StaticResource FindToggle}" Content=".*" ToolTip="Use regular expressions"
+                            IsChecked="{Binding UseRegex, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+              <Button Style="{StaticResource FindButton}" Margin="6,0,0,0" ToolTip="Previous match (Shift+F3)"
+                      Command="{x:Static search:SearchCommands.FindPrevious}">
+                <Path Data="M1,6 L5,2 L9,6" Width="10" Height="8" Stretch="Uniform" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+              </Button>
+              <Button Style="{StaticResource FindButton}" ToolTip="Next match (F3)"
+                      Command="{x:Static search:SearchCommands.FindNext}">
+                <Path Data="M1,2 L5,6 L9,2" Width="10" Height="8" Stretch="Uniform" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+              </Button>
+              <Button Style="{StaticResource FindButton}" ToolTip="Close (Esc)"
+                      Command="{x:Static search:SearchCommands.CloseSearchPanel}">
+                <Path Data="M1,1 L9,9 M9,1 L1,9" Width="9" Height="9" Stretch="Uniform" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
+              </Button>
+            </StackPanel>
+          </Border>
+        </ControlTemplate>
+        """;
 
     private void RemoveCommandBindingsTheWindowOwns()
     {
