@@ -121,6 +121,16 @@ public partial class EditTextWindow
             UpdateLineAndColumnText();
     }
 
+    /// <summary>
+    /// Takes up the language <paramref name="history"/> was saved with, "" being plain text. An item
+    /// saved with none leaves the language as it is.
+    /// </summary>
+    private void RestoreCodeLanguage(HistoryInfo history)
+    {
+        if (history.CodeLanguage is not null)
+            SetCodeLanguage(history.CodeLanguage);
+    }
+
     /// <summary>The language for the opened file's extension, or else the one the text looks like.</summary>
     private string? DetectCodeLanguage()
     {

@@ -1,4 +1,5 @@
 using System.Drawing;
+using Text_Grab.Core.Editing;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 
@@ -55,6 +56,9 @@ public sealed class HistoryFileRoundTripTests : IDisposable
             Item("text-1", day: 1, mode: TextGrabMode.EditText, text: "plain note"),
             Item("text-2", day: 2, mode: TextGrabMode.EditText, text: "# Markdown\r\n\r\n**bold**", editor: EtwEditorMode.Markdown),
             Item("text-3", day: 3, mode: TextGrabMode.Fullscreen, text: "a\tb\r\nc\td", isTable: true, rect: new RectangleF(10.5f, 20, 300, 40.25f)),
+            Item("text-4", day: 4, text: "x = 1", editor: EtwEditorMode.Code, codeLanguage: CodeLanguages.Python),
+            // Plain text chosen in code mode: "" must come back as "", not as null (no choice).
+            Item("text-5", day: 5, text: "notes", editor: EtwEditorMode.Code, codeLanguage: string.Empty),
         ];
 
         HistoryFileUtilities.WriteHistoryFiles(written, TextHistory, HistoryFileUtilities.MaxHistoryTextOnly);
@@ -263,7 +267,8 @@ public sealed class HistoryFileRoundTripTests : IDisposable
         bool isTable = false,
         RectangleF? rect = null,
         string imagePath = "",
-        OpenContentKind kind = OpenContentKind.Image)
+        OpenContentKind kind = OpenContentKind.Image,
+        string? codeLanguage = null)
     {
         HistoryInfo item = new()
         {
@@ -272,6 +277,7 @@ public sealed class HistoryFileRoundTripTests : IDisposable
             SourceMode = mode,
             TextContent = text,
             EditorMode = editor,
+            CodeLanguage = codeLanguage,
             IsTable = isTable,
             ImagePath = imagePath,
             SourceContentKind = kind,
@@ -287,11 +293,11 @@ public sealed class HistoryFileRoundTripTests : IDisposable
     /// <summary>The persisted fields, as one comparable value.</summary>
     private sealed record Snapshot(
         string ID, DateTimeOffset CaptureDateTime, TextGrabMode SourceMode, string TextContent, EtwEditorMode EditorMode,
-        bool IsTable, string RectAsString, string ImagePath, OpenContentKind SourceContentKind, string SourcePath,
+        string? CodeLanguage, bool IsTable, string RectAsString, string ImagePath, OpenContentKind SourceContentKind, string SourcePath,
         int SourcePageIndex, string LanguageTag, LanguageKind LanguageKind, double DpiScaleFactor, FsgSelectionStyle SelectionStyle)
     {
         public static Snapshot Of(HistoryInfo h) => new(
-            h.ID, h.CaptureDateTime, h.SourceMode, h.TextContent, h.EditorMode, h.IsTable, h.RectAsString, h.ImagePath,
+            h.ID, h.CaptureDateTime, h.SourceMode, h.TextContent, h.EditorMode, h.CodeLanguage, h.IsTable, h.RectAsString, h.ImagePath,
             h.SourceContentKind, h.SourcePath, h.SourcePageIndex, h.LanguageTag, h.LanguageKind, h.DpiScaleFactor, h.SelectionStyle);
     }
 }

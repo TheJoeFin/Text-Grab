@@ -166,6 +166,40 @@ public class EditTextWindowCodeModeTests
     }
 
     [WpfFact]
+    public void APlainTextChoice_SurvivesHistory()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        window.SetCodeLanguage(null);
+
+        HistoryInfo saved = window.AsHistoryItem();
+        EditTextWindow restored = new(saved);
+        SwitchMode(restored, EtwEditorMode.Code);
+
+        // Saved as "" (plain text), not null (no choice), so the C# the text looks like isn't detected.
+        Assert.Equal(string.Empty, saved.CodeLanguage);
+        Assert.Null(restored.CodeLanguageName);
+        Assert.Null(CodeEditor(restored).SyntaxHighlighting);
+    }
+
+    [WpfFact]
+    public void ShowingAHistoryItemInAnEmptyWindow_RestoresItsCodeLanguage()
+    {
+        EditTextWindow window = CreateWindow(string.Empty);
+
+        window.ShowHistoryItem(new HistoryInfo
+        {
+            TextContent = CSharpSample,
+            EditorMode = EtwEditorMode.Code,
+            CodeLanguage = CodeLanguages.Python,
+        });
+
+        Assert.Equal(EtwEditorMode.Code, window.Session.Mode);
+        Assert.Equal(CodeLanguages.Python, window.CodeLanguageName);
+        Assert.Equal(CSharpSample, CodeEditor(window).Text);
+    }
+
+    [WpfFact]
     public void TheCodeEditorLeavesCtrlDAndCtrlIToTheWindow()
     {
         CodeEditor editor = new();

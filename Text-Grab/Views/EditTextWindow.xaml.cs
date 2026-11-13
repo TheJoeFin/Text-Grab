@@ -178,8 +178,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Session.Text = historyInfo.TextContent;
         editorMode = historyInfo.EditorMode;
         tableDocument = EditTextTableDocument.TryDeserialize(historyInfo.EditTextTableDocumentJson);
-        if (historyInfo.CodeLanguage is not null)
-            SetCodeLanguage(historyInfo.CodeLanguage);
+        RestoreCodeLanguage(historyInfo);
 
         historyId = historyInfo.ID;
 
@@ -545,7 +544,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CalcPaneWidth = calcPaneWidth,
             HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true,
             EditorMode = editorMode,
-            CodeLanguage = editorMode == EtwEditorMode.Code ? codeLanguageName : null,
+            // Plain text is saved as "", not null, so restoring keeps it rather than detecting a language.
+            CodeLanguage = editorMode == EtwEditorMode.Code && isCodeLanguageSet ? codeLanguageName ?? string.Empty : null,
             EditTextTableDocumentJson = tableDocument?.SerializeToJson()
         };
 

@@ -461,16 +461,23 @@ public partial class EditTextWindow
 
         if (string.IsNullOrWhiteSpace(Session.Text))
         {
-            ResetSpreadsheetUndoHistory();
-            Session.Text = selectedHistory.TextContent;
-            tableDocument = EditTextTableDocument.TryDeserialize(selectedHistory.EditTextTableDocumentJson);
-            editorMode = selectedHistory.EditorMode;
-            SetEditorMode(editorMode);
+            ShowHistoryItem(selectedHistory);
             return;
         }
 
         EditTextWindow etw = new(selectedHistory);
         etw.Show();
+    }
+
+    /// <summary>Shows a history item in this (empty) window: its text, table, code language and mode.</summary>
+    internal void ShowHistoryItem(HistoryInfo history)
+    {
+        ResetSpreadsheetUndoHistory();
+        Session.Text = history.TextContent;
+        tableDocument = EditTextTableDocument.TryDeserialize(history.EditTextTableDocumentJson);
+        RestoreCodeLanguage(history);
+        editorMode = history.EditorMode;
+        SetEditorMode(editorMode);
     }
 
     private void ClearRecentTextMenuItems()
