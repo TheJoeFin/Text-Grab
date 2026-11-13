@@ -1603,6 +1603,11 @@ public partial class EditTextWindow
         RawTextModeMenuItem.IsChecked = editorMode == EtwEditorMode.Text;
         SpreadsheetModeMenuItem.IsChecked = isSpreadsheetMode;
         MarkdownModeMenuItem.IsChecked = isMarkdownMode;
+        bool isCodeMode = editorMode == EtwEditorMode.Code;
+        CodeModeMenuItem.IsChecked = isCodeMode;
+        CodeLanguageMenuItem.Visibility = isCodeMode ? Visibility.Visible : Visibility.Collapsed;
+        ShowWhitespaceMenuItem.Visibility = isCodeMode ? Visibility.Visible : Visibility.Collapsed;
+        CodeLanguageButton.Visibility = isCodeMode ? Visibility.Visible : Visibility.Collapsed;
         CommandManager.InvalidateRequerySuggested();
     }
 

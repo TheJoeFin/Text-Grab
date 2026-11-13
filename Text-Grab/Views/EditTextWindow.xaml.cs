@@ -178,6 +178,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Session.Text = historyInfo.TextContent;
         editorMode = historyInfo.EditorMode;
         tableDocument = EditTextTableDocument.TryDeserialize(historyInfo.EditTextTableDocumentJson);
+        if (historyInfo.CodeLanguage is not null)
+            SetCodeLanguage(historyInfo.CodeLanguage);
 
         historyId = historyInfo.ID;
 
@@ -239,6 +241,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 RefreshMarkdownFromText,
                 range => SelectInMarkdownEditor(range.Start, range.Length)),
             new SpreadsheetSurface(textSurface, GetSpreadsheetTextFromTable, RefreshSpreadsheetFromText),
+            CodeSurfaceImpl,
             () => editorMode);
         EditorModeChanged += (_, _) => session.RaiseModeChanged();
         return session;
@@ -355,8 +358,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     /// <param name="deferMarkdownLoad">
-    /// When switching to Markdown, skip building the document from the current text. The caller is about
-    /// to replace the text and refresh the document itself, so building it here would be thrown away.
+    /// When switching to Markdown or code, skip building that editor's content from the current text. The
+    /// caller is about to replace the text, which refreshes the editor, so building it here would be thrown away.
     /// </param>
     private void SetEditorMode(EtwEditorMode mode, bool deferMarkdownLoad = false)
     {
@@ -364,13 +367,20 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         {
             EtwEditorMode.Spreadsheet => SpreadsheetDataGrid.Visibility == Visibility.Visible
                 && PassedTextControl.Visibility != Visibility.Visible
-                && MarkdownEditorControl.Visibility != Visibility.Visible,
+                && MarkdownEditorControl.Visibility != Visibility.Visible
+                && CodeEditorControl.Visibility != Visibility.Visible,
             EtwEditorMode.Markdown => MarkdownEditorControl.Visibility == Visibility.Visible
                 && PassedTextControl.Visibility != Visibility.Visible
-                && SpreadsheetDataGrid.Visibility != Visibility.Visible,
+                && SpreadsheetDataGrid.Visibility != Visibility.Visible
+                && CodeEditorControl.Visibility != Visibility.Visible,
+            EtwEditorMode.Code => CodeEditorControl.Visibility == Visibility.Visible
+                && PassedTextControl.Visibility != Visibility.Visible
+                && SpreadsheetDataGrid.Visibility != Visibility.Visible
+                && MarkdownEditorControl.Visibility != Visibility.Visible,
             _ => PassedTextControl.Visibility == Visibility.Visible
                 && SpreadsheetDataGrid.Visibility != Visibility.Visible
                 && MarkdownEditorControl.Visibility != Visibility.Visible
+                && CodeEditorControl.Visibility != Visibility.Visible
         };
 
         if (editorMode == mode && isModeAlreadyApplied)
@@ -392,6 +402,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             RebuildSpreadsheetTable();
             PassedTextControl.Visibility = Visibility.Collapsed;
             MarkdownEditorControl.Visibility = Visibility.Collapsed;
+            CodeEditorControl.Visibility = Visibility.Collapsed;
             SpreadsheetDataGrid.Visibility = Visibility.Visible;
             editorMode = EtwEditorMode.Spreadsheet;
             SpreadsheetDataGrid.Focus();
@@ -406,9 +417,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             SpreadsheetDataGrid.Visibility = Visibility.Collapsed;
             PassedTextControl.Visibility = Visibility.Collapsed;
+            CodeEditorControl.Visibility = Visibility.Collapsed;
             MarkdownEditorControl.Visibility = Visibility.Visible;
             editorMode = EtwEditorMode.Markdown;
             MarkdownEditorControl.Focus();
+        }
+        else if (mode == EtwEditorMode.Code)
+        {
+            if (editorMode == EtwEditorMode.Spreadsheet && SpreadsheetDataGrid.Visibility == Visibility.Visible)
+                SyncSpreadsheetDocumentFromTable();
+            else if (editorMode == EtwEditorMode.Markdown && MarkdownEditorControl.Visibility == Visibility.Visible)
+                SyncMarkdownTextFromDocument();
+
+            PrepareCodeEditor(deferTextLoad: deferMarkdownLoad);
+
+            SpreadsheetDataGrid.Visibility = Visibility.Collapsed;
+            MarkdownEditorControl.Visibility = Visibility.Collapsed;
+            PassedTextControl.Visibility = Visibility.Collapsed;
+            CodeEditorControl.Visibility = Visibility.Visible;
+            editorMode = EtwEditorMode.Code;
+            CodeEditorControl.TextArea.Focus();
         }
         else
         {
@@ -419,6 +447,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             SpreadsheetDataGrid.Visibility = Visibility.Collapsed;
             MarkdownEditorControl.Visibility = Visibility.Collapsed;
+            CodeEditorControl.Visibility = Visibility.Collapsed;
             PassedTextControl.Visibility = Visibility.Visible;
             editorMode = EtwEditorMode.Text;
             PassedTextControl.Focus();
@@ -437,6 +466,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SetEditorMode(EtwEditorMode.Spreadsheet);
         else if (sender == MarkdownModeMenuItem)
             SetEditorMode(EtwEditorMode.Markdown);
+        else if (sender == CodeModeMenuItem)
+            SetEditorMode(EtwEditorMode.Code);
     }
 
     private void ToggleMenuItem(MenuItem menuItem, RoutedEventHandler handler)
@@ -514,6 +545,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             CalcPaneWidth = calcPaneWidth,
             HasCalcPaneOpen = ShowCalcPaneMenuItem.IsChecked is true,
             EditorMode = editorMode,
+            CodeLanguage = editorMode == EtwEditorMode.Code ? codeLanguageName : null,
             EditTextTableDocumentJson = tableDocument?.SerializeToJson()
         };
 
@@ -918,6 +950,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Markdown && MarkdownEditorControl.Visibility == Visibility.Visible)
             return WindowUtilities.GetScrollViewer(MarkdownEditorControl);
 
+        if (editorMode == EtwEditorMode.Code && CodeEditorControl.Visibility == Visibility.Visible)
+            return WindowUtilities.GetScrollViewer(CodeEditorControl);
+
         if (CalcResultsTextControl.Visibility == Visibility.Visible && CalcResultsTextControl.IsMouseOver)
             return WindowUtilities.GetScrollViewer(CalcResultsTextControl);
 
@@ -1300,6 +1335,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
+        if (editorMode == EtwEditorMode.Code)
+        {
+            EditTextWindow codeWindow = new(Session.SelectedText, false);
+            codeWindow.SetCodeLanguage(codeLanguageName);
+            codeWindow.SetEditorMode(EtwEditorMode.Code);
+            codeWindow.Show();
+            return;
+        }
+
         string selectedText = Session.SelectedText;
         EditTextWindow newEtwWithText = CreateSelectionWindow(selectedText, EtwEditorMode.Text);
         newEtwWithText.Show();
@@ -1339,6 +1383,12 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void PassedTextControl_SelectionChanged(object sender, RoutedEventArgs e)
     {
+        if (editorMode == EtwEditorMode.Code)
+        {
+            OnTextSelectionChangedInCodeMode();
+            return;
+        }
+
         if (editorMode is EtwEditorMode.Spreadsheet or EtwEditorMode.Markdown)
             return;
 
@@ -1472,6 +1522,18 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (SessionImpl.IsSyncingTextFromMarkdown)
                 ResetSpreadsheetUndoHistory();
 
+            UpdatePendingFileEditState();
+            return;
+        }
+
+        if (editorMode == EtwEditorMode.Code)
+        {
+            // Typed in the code editor: the text box just caught up, so there is nothing to push back.
+            if (!SessionImpl.IsSyncingTextFromCode)
+                OnTextChangedInCodeMode();
+
+            ResetSpreadsheetUndoHistory();
+            tableDocument = null;
             UpdatePendingFileEditState();
             return;
         }
@@ -2035,6 +2097,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             ApplyMarkdownThemeIfChanged();
             MarkdownEditorControl.Focus();
         }
+        else if (editorMode == EtwEditorMode.Code)
+        {
+            CodeEditorControl.ApplyTheme();
+            CodeEditorControl.TextArea.Focus();
+        }
         else
             PassedTextControl.Focus();
     }
@@ -2157,6 +2224,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         MarkdownEditorControl.PreviewMouseWheel += HandlePreviewMouseWheel;
         MarkdownEditorControl.PreviewTextInput += MarkdownEditorControl_PreviewTextInput;
         System.Windows.DataObject.AddPastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
+        InitializeCodeEditor();
         SetFontFromSettings();
         UpdateSpreadsheetModeUi();
         UpdateWindowTitle();
@@ -2254,6 +2322,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SetEditorMode(EtwEditorMode.Spreadsheet);
         else if (editorMode == EtwEditorMode.Markdown)
             SetEditorMode(EtwEditorMode.Markdown);
+        else if (editorMode == EtwEditorMode.Code)
+            SetEditorMode(EtwEditorMode.Code);
         else
             UpdateSpreadsheetModeUi();
     }
@@ -2279,6 +2349,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
 
         ApplyMarkdownWrapSetting();
+        CodeEditorControl.WordWrap = WrapTextMenuItem.IsChecked;
 
         DefaultSettings.EditWindowIsWordWrapOn = WrapTextMenuItem.IsChecked;
     }

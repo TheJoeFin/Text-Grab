@@ -334,6 +334,7 @@ public partial class HistoryService : IDisposable
                 {
                     EtwEditorMode.Spreadsheet => SymbolRegular.Table24,
                     EtwEditorMode.Markdown => SymbolRegular.Markdown20,
+                    EtwEditorMode.Code => SymbolRegular.Code24,
                     _ => SymbolRegular.TextT24,
                 },
             };

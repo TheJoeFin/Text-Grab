@@ -82,6 +82,41 @@
             <Separator />
             <MenuItem Command="ApplicationCommands.SelectAll" />
         </ContextMenu>
+        <ContextMenu x:Key="CodeContextMenu">
+            <MenuItem Command="ApplicationCommands.Undo" />
+            <MenuItem Command="ApplicationCommands.Redo" />
+            <Separator />
+            <MenuItem Command="ApplicationCommands.Cut" />
+            <MenuItem Command="ApplicationCommands.Copy" />
+            <MenuItem Command="ApplicationCommands.Paste" />
+            <MenuItem
+                Command="{x:Static local:EditTextWindow.OcrPasteCommand}"
+                Header="OCR Paste"
+                InputGestureText="Ctrl + Shift + V" />
+            <Separator />
+            <MenuItem
+                Command="{x:Static local:EditTextWindow.IsolateSelectionCmd}"
+                Header="Isolate Selected Text"
+                InputGestureText="Ctrl + I" />
+            <MenuItem
+                Click="SelectLineMenuItem_Click"
+                Header="Select Line"
+                InputGestureText="Ctrl + L" />
+            <MenuItem Command="ApplicationCommands.SelectAll" />
+            <MenuItem
+                Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
+                Header="Toggle Case"
+                InputGestureText="Shift + F3" />
+            <Separator />
+            <MenuItem
+                Click="MoveLineUpMenuItem_Click"
+                Header="Move Selection Up"
+                InputGestureText="Alt + Up" />
+            <MenuItem
+                Click="MoveLineDownMenuItem_Click"
+                Header="Move Selection Down"
+                InputGestureText="Alt + Down" />
+        </ContextMenu>
         <ContextMenu x:Key="SpreadsheetContextMenu" Opened="SpreadsheetContextMenu_Opened">
             <MenuItem Click="AddSpreadsheetRowMenuItem_Click" Header="Add Row Below" />
             <MenuItem Click="AddSpreadsheetColumnMenuItem_Click" Header="Add Column Right" />
@@ -561,6 +596,24 @@
                         Click="EditorModeMenuItem_Click"
                         Header="Markdown"
                         IsCheckable="True" />
+                    <MenuItem
+                        x:Name="CodeModeMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CodeMode"
+                        Click="EditorModeMenuItem_Click"
+                        Header="Code"
+                        IsCheckable="True" />
+                    <MenuItem
+                        x:Name="CodeLanguageMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CodeLanguage"
+                        Header="Code _Language"
+                        Visibility="Collapsed" />
+                    <MenuItem
+                        x:Name="ShowWhitespaceMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.ShowWhitespace"
+                        Click="ShowWhitespaceMenuItem_Click"
+                        Header="Show Whitespace"
+                        IsCheckable="True"
+                        Visibility="Collapsed" />
                     <Separator />
                     <MenuItem
                         x:Name="ShowErrorsMenuItem"
@@ -967,6 +1020,22 @@
                     VerticalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     VerticalScrollBarVisibility="Auto"
                     Visibility="Collapsed" />
+                <controls:CodeEditor
+                    x:Name="CodeEditorControl"
+                    x:FieldModifier="private"
+                    AutomationProperties.AutomationId="EditText.CodeEditor"
+                    Background="Transparent"
+                    ContextMenu="{StaticResource CodeContextMenu}"
+                    FontFamily="Cascadia Mono, Consolas, Courier New"
+                    FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    HorizontalScrollBarVisibility="Auto"
+                    LineNumbersForeground="{DynamicResource TextFillColorTertiaryBrush}"
+                    PreviewDragOver="ETWindow_DragOver"
+                    PreviewDrop="ETWindow_Drop"
+                    VerticalScrollBarVisibility="Auto"
+                    Visibility="Collapsed"
+                    utils:SmoothScrollBehavior.IsEnabled="True" />
             </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"
@@ -1439,6 +1508,32 @@
                         AutomationProperties.AutomationId="EditText.StatusText"
                         FontFamily="Cascadia Mono"
                         Text="Ln 1, Col 0" />
+                    <Button
+                        x:Name="CodeLanguageButton"
+                        Margin="8,0,0,0"
+                        Padding="4,2"
+                        AutomationProperties.AutomationId="EditText.CodeLanguageButton"
+                        AutomationProperties.Name="Code language"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="CodeLanguageButton_Click"
+                        Cursor="Hand"
+                        ToolTip="Change the code language"
+                        Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                Symbol="Code24" />
+                            <TextBlock
+                                x:Name="CodeLanguageButtonText"
+                                Margin="4,0,0,0"
+                                VerticalAlignment="Center"
+                                FontFamily="Cascadia Mono"
+                                FontSize="12"
+                                Text="Plain Text" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
                 <Popup
                     x:Name="CharDetailsPopup"

@@ -20,6 +20,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
+using Text_Grab.Core.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -206,7 +207,7 @@ public partial class EditTextWindow
             && !string.Equals(savedText, currentText, StringComparison.Ordinal);
     }
 
-    internal static string GetDefaultSaveExtension(string? openedFilePath, EtwEditorMode editorMode, EditTextTableDocument? tableDocument)
+    internal static string GetDefaultSaveExtension(string? openedFilePath, EtwEditorMode editorMode, EditTextTableDocument? tableDocument, string? codeLanguageName = null)
     {
         string existingExtension = Path.GetExtension(openedFilePath ?? string.Empty);
         if (!string.IsNullOrWhiteSpace(existingExtension))
@@ -216,6 +217,7 @@ public partial class EditTextWindow
         {
             EtwEditorMode.Spreadsheet => GetSpreadsheetSaveExtension(tableDocument),
             EtwEditorMode.Markdown => ".md",
+            EtwEditorMode.Code => CodeLanguages.Find(codeLanguageName)?.DefaultExtension ?? ".txt",
             _ => ".txt"
         };
     }
@@ -239,6 +241,7 @@ public partial class EditTextWindow
         {
             EtwEditorMode.Spreadsheet => 1,
             EtwEditorMode.Markdown => 2,
+            EtwEditorMode.Code => 4,
             _ => 3
         };
     }
@@ -278,6 +281,9 @@ public partial class EditTextWindow
                 EtwEditorMode targetMode = isMultipleFiles
                     ? EtwEditorMode.Text
                     : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
+
+                if (targetMode == EtwEditorMode.Code)
+                    SetCodeLanguage(CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name);
 
                 // The text and Markdown document are replaced just below, so don't build the old text's document.
                 if (IsLoaded)
@@ -487,7 +493,7 @@ public partial class EditTextWindow
 
     private string GetDefaultSaveExtension()
     {
-        return GetDefaultSaveExtension(OpenedFilePath, editorMode, tableDocument);
+        return GetDefaultSaveExtension(OpenedFilePath, editorMode, tableDocument, codeLanguageName);
     }
 
     private int GetSaveDocumentFilterIndex()

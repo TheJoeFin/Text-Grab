@@ -67,6 +67,10 @@ public class HistoryInfo : IEquatable<HistoryInfo>
 
     public EtwEditorMode EditorMode { get; set; } = EtwEditorMode.Text;
 
+    /// <summary>The code editor's highlighting language, when <see cref="EditorMode"/> is <see cref="EtwEditorMode.Code"/>.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CodeLanguage { get; set; }
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? EditTextTableDocumentJson { get; set; }
 

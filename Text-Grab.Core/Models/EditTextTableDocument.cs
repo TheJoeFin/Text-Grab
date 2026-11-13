@@ -12,7 +12,8 @@ public enum EtwEditorMode
 {
     Text,
     Markdown,
-    Spreadsheet
+    Spreadsheet,
+    Code
 }
 
 public enum EtwStructuredTextFormat
