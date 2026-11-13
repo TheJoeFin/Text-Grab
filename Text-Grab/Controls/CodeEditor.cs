@@ -1,6 +1,7 @@
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Folding;
+using System.Threading.Tasks;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Indentation;
 using ICSharpCode.AvalonEdit.Indentation.CSharp;
@@ -56,6 +57,10 @@ public class CodeEditor : TextEditor
     private readonly SelectionOccurrencesRenderer occurrencesRenderer;
     private readonly BracketHighlightRenderer bracketRenderer;
     private FoldingManager? foldingManager;
+    private int textRevision;
+
+    /// <summary>Documents longer than this are scanned off the UI thread.</summary>
+    private const int SynchronousFoldingLimit = 50_000;
 
     public CodeEditor()
     {
@@ -84,10 +89,11 @@ public class CodeEditor : TextEditor
         foldingTimer.Tick += (_, _) =>
         {
             foldingTimer.Stop();
-            UpdateFoldings();
+            _ = UpdateFoldingsInBackgroundAsync();
         };
         TextChanged += (_, _) =>
         {
+            textRevision++;
             if (foldingManager is null)
                 return;
 
@@ -156,6 +162,28 @@ public class CodeEditor : TextEditor
         foldingManager.UpdateFoldings(foldings, -1);
     }
 
+    /// <summary>
+    /// Scans for folding regions on a worker thread so a large document can't freeze the UI, then
+    /// applies them if the text hasn't changed in the meantime.
+    /// </summary>
+    private async Task UpdateFoldingsInBackgroundAsync()
+    {
+        if (foldingManager is null)
+            return;
+
+        string text = Document.Text;
+        string? language = SyntaxHighlighting?.Name;
+        int revision = textRevision;
+        FoldingManager? manager = foldingManager;
+
+        IReadOnlyList<TextSpan> regions = await Task.Run(() => CodeFolding.Find(text, language));
+
+        if (revision != textRevision || manager != foldingManager)
+            return;
+
+        manager.UpdateFoldings(regions.Select(region => new NewFolding(region.Start, region.End)), -1);
+    }
+
     /// <summary>Expands every collapsed region that hides part of the range from <paramref name="start"/> to <paramref name="end"/>.</summary>
     public void ExpandFoldingsAround(int start, int end)
     {
@@ -186,7 +214,10 @@ public class CodeEditor : TextEditor
             foldingManager = null;
         }
 
-        UpdateFoldings();
+        if (Document.TextLength > SynchronousFoldingLimit)
+            _ = UpdateFoldingsInBackgroundAsync();
+        else
+            UpdateFoldings();
     }
 
     private void ApplyFoldingMarginTheme()

@@ -21,6 +21,18 @@ public class BraceFoldingTests
     }
 
     [Fact]
+    public void JsonArrayOfObjects_FoldsEveryItem()
+    {
+        string text = "[\n  {\n    \"a\": 1\n  },\n  {\n    \"a\": 2\n  },\n  {\n    \"a\": 3\n  }\n]";
+        BraceFoldingSyntax json = BraceFoldingSyntax.CStyle with { Brackets = ["{}", "[]"], Quotes = "\"" };
+
+        string[] folded = Folded(text, json);
+
+        Assert.Equal(4, folded.Length);
+        Assert.Equal(3, folded.Count(f => f.StartsWith('{')));
+    }
+
+    [Fact]
     public void BracesAtTheEndOfALine_FoldFromTheBrace()
     {
         Assert.Equal(["{\n  return 1;\n}"], Folded("function f() {\n  return 1;\n}", BraceFoldingSyntax.CStyle));

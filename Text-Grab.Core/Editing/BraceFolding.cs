@@ -120,9 +120,11 @@ public static class BraceFolding
             previousLineStart--;
 
         // Only a header (a signature, "else", "new Foo") is worth keeping in view; a line that ends a
-        // statement or a block, or opens one of its own, is not.
+        // statement or a block, or opens one of its own, is not. A trailing comma means the previous
+        // line is a sibling item (JSON's "}," between array elements), and starting there would make
+        // neighbouring folds overlap on one line.
         ReadOnlySpan<char> previousLine = text.AsSpan(previousLineStart, previousLineEnd - previousLineStart).Trim();
-        bool previousLineIsHeader = previousLine.Length > 0 && previousLine[^1] is not ('{' or '}' or ';');
+        bool previousLineIsHeader = previousLine.Length > 0 && previousLine[^1] is not ('{' or '}' or ';' or ',' or '[');
         return previousLineIsHeader ? previousLineEnd : bracketOffset;
     }
 
