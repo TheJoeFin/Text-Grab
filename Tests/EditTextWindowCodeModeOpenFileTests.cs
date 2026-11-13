@@ -1,6 +1,7 @@
 using System.IO;
 using Text_Grab;
 using Text_Grab.Controls;
+using Text_Grab.Core.Editing;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using static Tests.EditTextWindowTestHost;
@@ -89,6 +90,27 @@ public sealed class EditTextWindowCodeModeOpenFileTests : IDisposable
         Assert.False(editor.CanUndo);
         Assert.Equal(fileText, editor.Text);
         Assert.Equal(fileText, window.Session.Text);
+    }
+
+    [WpfFact]
+    public async Task OpeningACodeFile_FoldsTheFileOnceAndRightAway()
+    {
+        const string fileText = "{\r\n  \"items\": [\r\n    1,\r\n    2\r\n  ]\r\n}\r\n";
+        string path = WriteFile("items.json", fileText);
+        EditTextWindow window = CreateWindow("class A\r\n{\r\n    int x;\r\n}\r\n");
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        int scansBefore = editor.FoldingScanCount;
+
+        await window.OpenPath(path);
+
+        // One scan, of the file's text in the file's language, without waiting for the typing delay.
+        Assert.Equal(CodeLanguages.Json, window.CodeLanguageName);
+        Assert.Equal(scansBefore + 1, editor.FoldingScanCount);
+        Assert.Equal(
+            CodeFolding.Find(fileText, CodeLanguages.Json),
+            editor.Foldings!.AllFoldings.Select(folding => new TextSpan(folding.StartOffset, folding.Length)));
     }
 
     private string WriteFile(string name, string text)

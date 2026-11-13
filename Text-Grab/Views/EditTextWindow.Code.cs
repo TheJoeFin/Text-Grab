@@ -63,22 +63,27 @@ public partial class EditTextWindow
     private void EnterCodeMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Code);
 
     /// <summary>
-    /// <see cref="SetEditorMode"/>'s half of entering code mode, before the editor is shown: picks a
-    /// language if none has been chosen and fills the editor from the text.
+    /// <see cref="SetEditorMode"/>'s half of entering code mode, before the editor is shown: fills the
+    /// editor from the text and picks a language if none has been chosen.
     /// </summary>
+    /// <param name="deferTextLoad">
+    /// Set by <see cref="OpenPath"/>, which loads the file's text and sets its language itself.
+    /// </param>
     private void PrepareCodeEditor(bool deferTextLoad)
     {
-        if (!isCodeLanguageSet)
-            SetCodeLanguage(DetectCodeLanguage());
-
         CodeEditorControl.WordWrap = WrapTextMenuItem.IsChecked;
 
         if (deferTextLoad)
             return;
 
+        // The text first, so the folding scan that setting a language starts reads this text.
         LoadCodeEditorFromText();
 
+        if (!isCodeLanguageSet)
+            SetCodeLanguage(DetectCodeLanguage());
+
         // Fold the text now rather than after the typing delay, so the markers are there on entry.
+        // Skipped if setting the language just did it.
         CodeEditorControl.UpdateFoldings();
     }
 

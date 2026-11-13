@@ -275,6 +275,7 @@ public partial class EditTextWindow
             ResetSpreadsheetUndoHistory();
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
+            string? fileCodeLanguage = null;
 
             if (KindOpened == OpenContentKind.TextFile)
             {
@@ -283,7 +284,7 @@ public partial class EditTextWindow
                     : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
 
                 if (targetMode == EtwEditorMode.Code)
-                    SetCodeLanguage(CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name);
+                    fileCodeLanguage = CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name;
 
                 // The text and Markdown document are replaced just below, so don't build the old text's document.
                 if (IsLoaded)
@@ -306,6 +307,12 @@ public partial class EditTextWindow
                     // Even when the text is unchanged: setting the same text raises no TextChanged, and the
                     // code editor may still hold older text, which the sync below would copy into the file.
                     LoadCodeEditorFromText();
+
+                    // After the text, so the folding scan that a new language starts reads the file.
+                    if (fileCodeLanguage is not null)
+                        SetCodeLanguage(fileCodeLanguage);
+
+                    CodeEditorControl.UpdateFoldings();
                 }
             }
             finally

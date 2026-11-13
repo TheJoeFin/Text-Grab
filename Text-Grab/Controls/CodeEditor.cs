@@ -60,6 +60,7 @@ public class CodeEditor : TextEditor
     private readonly BracketHighlightRenderer bracketRenderer;
     private FoldingManager? foldingManager;
     private int textRevision;
+    private FoldingScan? lastFoldingScan;
     private bool searchTemplateApplied;
 
     /// <summary>Documents longer than this are scanned off the UI thread.</summary>
@@ -154,38 +155,71 @@ public class CodeEditor : TextEditor
             : new DefaultIndentationStrategy();
     }
 
-    /// <summary>Recomputes the folding regions from the text now, keeping collapsed ones collapsed.</summary>
+    /// <summary>
+    /// Recomputes the folding regions for the current text and language without waiting for the typing
+    /// delay, keeping collapsed ones collapsed. A large document is scanned on a worker thread, so the
+    /// regions arrive shortly after. Does nothing when they are already computed, or being computed, for
+    /// this text and language.
+    /// </summary>
     public void UpdateFoldings()
     {
-        if (foldingManager is null)
-            return;
+        foldingTimer.Stop();
 
-        IEnumerable<NewFolding> foldings = CodeFolding.Find(Document.Text, SyntaxHighlighting?.Name)
-            .Select(region => new NewFolding(region.Start, region.End));
-        foldingManager.UpdateFoldings(foldings, -1);
+        if (Document.TextLength > SynchronousFoldingLimit)
+        {
+            _ = UpdateFoldingsInBackgroundAsync();
+            return;
+        }
+
+        if (TakeFoldingScan() is FoldingScan scan)
+            scan.Manager.UpdateFoldings(ToNewFoldings(CodeFolding.Find(Document.Text, scan.Language)), -1);
     }
 
     /// <summary>
     /// Scans for folding regions on a worker thread so a large document can't freeze the UI, then
-    /// applies them if the text hasn't changed in the meantime.
+    /// applies them if the text, language and folding are unchanged. Whatever changed meanwhile
+    /// starts its own scan.
     /// </summary>
     private async Task UpdateFoldingsInBackgroundAsync()
     {
-        if (foldingManager is null)
+        if (TakeFoldingScan() is not FoldingScan scan)
             return;
 
         string text = Document.Text;
-        string? language = SyntaxHighlighting?.Name;
-        int revision = textRevision;
-        FoldingManager? manager = foldingManager;
+        IReadOnlyList<TextSpan> regions = await Task.Run(() => CodeFolding.Find(text, scan.Language));
 
-        IReadOnlyList<TextSpan> regions = await Task.Run(() => CodeFolding.Find(text, language));
-
-        if (revision != textRevision || manager != foldingManager)
+        if (CurrentFoldingScan != scan)
             return;
 
-        manager.UpdateFoldings(regions.Select(region => new NewFolding(region.Start, region.End)), -1);
+        scan.Manager.UpdateFoldings(ToNewFoldings(regions), -1);
     }
+
+    /// <summary>
+    /// The scan the current text and language need, recorded as the latest. Null when nothing folds, or
+    /// when the latest scan, finished or not, was for this same text and language.
+    /// </summary>
+    private FoldingScan? TakeFoldingScan()
+    {
+        if (CurrentFoldingScan is not FoldingScan scan || scan == lastFoldingScan)
+            return null;
+
+        lastFoldingScan = scan;
+        FoldingScanCount++;
+        return scan;
+    }
+
+    private FoldingScan? CurrentFoldingScan => foldingManager is null
+        ? null
+        : new FoldingScan(textRevision, SyntaxHighlighting?.Name, foldingManager);
+
+    /// <summary>How many folding scans have started, for tests.</summary>
+    internal int FoldingScanCount { get; private set; }
+
+    private static IEnumerable<NewFolding> ToNewFoldings(IEnumerable<TextSpan> regions)
+        => regions.Select(region => new NewFolding(region.Start, region.End));
+
+    /// <summary>What a folding scan read: which text (by revision), in which language, for which folding.</summary>
+    private readonly record struct FoldingScan(int TextRevision, string? Language, FoldingManager Manager);
 
     /// <summary>Expands every collapsed region that hides part of the range from <paramref name="start"/> to <paramref name="end"/>.</summary>
     public void ExpandFoldingsAround(int start, int end)
@@ -215,12 +249,10 @@ public class CodeEditor : TextEditor
             foldingTimer.Stop();
             FoldingManager.Uninstall(foldingManager);
             foldingManager = null;
+            lastFoldingScan = null;
         }
 
-        if (Document.TextLength > SynchronousFoldingLimit)
-            _ = UpdateFoldingsInBackgroundAsync();
-        else
-            UpdateFoldings();
+        UpdateFoldings();
     }
 
     private void ApplyFoldingMarginTheme()

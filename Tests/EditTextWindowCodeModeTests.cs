@@ -1,6 +1,8 @@
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab;
@@ -207,6 +209,50 @@ public class EditTextWindowCodeModeTests
         Assert.Equal(2, editor.Foldings!.AllFoldings.Count());
         Assert.True(editor.Foldings.AllFoldings.First().IsFolded);
         Assert.False(editor.Foldings.AllFoldings.Last().IsFolded);
+    }
+
+    [WpfFact]
+    public async Task EnteringCodeMode_ScansForFoldingOnce()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        CodeEditor editor = CodeEditor(window);
+
+        SwitchMode(window, EtwEditorMode.Code);
+        // Long enough for the typing delay's scan, if one were still pending.
+        await Task.Delay(Text_Grab.Controls.CodeEditor.FoldingUpdateDelay * 2);
+
+        // Once, for the detected language on the text being shown: not also on the editor's old text
+        // when the language was set, nor again after the typing delay.
+        Assert.Equal(CodeLanguages.CSharp, window.CodeLanguageName);
+        Assert.Single(editor.Foldings!.AllFoldings);
+        Assert.Equal(1, editor.FoldingScanCount);
+    }
+
+    [WpfFact]
+    public async Task EnteringCodeMode_FoldsALargeDocumentOffTheUiThread()
+    {
+        const int classCount = 2_000;
+        string text = string.Concat(Enumerable.Range(0, classCount).Select(i => $"class C{i}\r\n{{\r\n    int x{i};\r\n}}\r\n"));
+        Assert.True(text.Length > 50_000);
+        EditTextWindow window = CreateWindow(text);
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        CodeEditor editor = CodeEditor(window);
+        int scansBefore = editor.FoldingScanCount;
+
+        // Switch without pumping the dispatcher: a scan on the UI thread would have applied its regions
+        // by the time the click returns, and one on a worker thread can't have yet.
+        MenuItem codeModeMenuItem = (MenuItem)window.FindName("CodeModeMenuItem");
+        codeModeMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, codeModeMenuItem));
+
+        Assert.Equal(scansBefore + 1, editor.FoldingScanCount);
+        Assert.Empty(editor.Foldings!.AllFoldings);
+
+        Stopwatch waited = Stopwatch.StartNew();
+        while (!editor.Foldings.AllFoldings.Any() && waited.Elapsed < TimeSpan.FromSeconds(10))
+            await Task.Delay(20);
+
+        Assert.Equal(classCount, editor.Foldings.AllFoldings.Count());
+        Assert.Equal(scansBefore + 1, editor.FoldingScanCount);
     }
 
     [WpfFact]
