@@ -57,6 +57,32 @@ public partial class EditTextWindow
         PopulateCodeLanguageMenu(CodeLanguageMenuItem);
     }
 
+    private const string ToggleCaseGesture = "Shift + F3";
+
+    /// <summary>
+    /// The Toggle Case shortcut as the menus show it: none while the code editor's find bar is open,
+    /// because Shift+F3 then goes to the previous match, as the find bar's own button says.
+    /// </summary>
+    /// <remarks>
+    /// The find bar keeps the key while it is open: Shift+F3 for the previous match is what every code
+    /// editor does, and taking it for Toggle Case would change the text of someone stepping back through
+    /// matches. With the find bar closed, its Find Previous binding passes the key on to Toggle Case.
+    /// </remarks>
+    internal string ToggleCaseGestureText
+        => editorMode == EtwEditorMode.Code && !CodeEditorControl.Search.IsClosed ? string.Empty : ToggleCaseGesture;
+
+    private void CodeContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ContextMenu menu)
+            return;
+
+        foreach (object item in menu.Items)
+        {
+            if (item is MenuItem menuItem && menuItem.Command == ToggleCaseCmd)
+                menuItem.InputGestureText = ToggleCaseGestureText;
+        }
+    }
+
     private void ShowWhitespaceMenuItem_Click(object sender, RoutedEventArgs e)
         => CodeEditorControl.ShowWhitespace = ShowWhitespaceMenuItem.IsChecked;
 

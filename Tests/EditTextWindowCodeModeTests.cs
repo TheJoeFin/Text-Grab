@@ -111,6 +111,29 @@ public class EditTextWindowCodeModeTests
     }
 
     [WpfFact]
+    public void WhileTheFindBarIsOpen_TheCodeMenuDoesNotOfferShiftF3ForToggleCase()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        ContextMenu menu = (ContextMenu)window.FindResource("CodeContextMenu");
+        MenuItem toggleCase = menu.Items.OfType<MenuItem>().Single(item => item.Command == EditTextWindow.ToggleCaseCmd);
+
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent, menu));
+        Assert.Equal("Shift + F3", toggleCase.InputGestureText);
+
+        // Shift+F3 goes to the previous match while the find bar is open.
+        editor.Search.Open();
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent, menu));
+        Assert.Equal(string.Empty, toggleCase.InputGestureText);
+        Assert.Equal(string.Empty, window.ToggleCaseGestureText);
+
+        editor.Search.Close();
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent, menu));
+        Assert.Equal("Shift + F3", toggleCase.InputGestureText);
+    }
+
+    [WpfFact]
     public void ATransformAppliesToWhatIsSelectedInTheCodeEditor()
     {
         EditTextWindow window = CreateWindow("one\r\ntwo\r\nthree");

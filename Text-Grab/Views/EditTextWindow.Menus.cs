@@ -128,6 +128,8 @@ public partial class EditTextWindow
 
     private void EditMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
+        ToggleCaseMenuItem.InputGestureText = ToggleCaseGestureText;
+
         // Load text-only templates fresh each time the Edit menu opens and use them to
         // populate the Grab Templates group in both apply flyouts.
         List<GrabTemplate> textOnlyTemplates = [.. GrabTemplateManager.GetAllTemplates().Where(template => template.IsTextOnly && template.IsValid)];

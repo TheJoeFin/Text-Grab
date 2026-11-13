@@ -82,7 +82,7 @@
             <Separator />
             <MenuItem Command="ApplicationCommands.SelectAll" />
         </ContextMenu>
-        <ContextMenu x:Key="CodeContextMenu">
+        <ContextMenu x:Key="CodeContextMenu" Opened="CodeContextMenu_Opened">
             <MenuItem Command="ApplicationCommands.Undo" />
             <MenuItem Command="ApplicationCommands.Redo" />
             <Separator />
