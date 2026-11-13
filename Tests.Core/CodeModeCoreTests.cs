@@ -95,6 +95,20 @@ public class TextEditTests
     }
 }
 
+public class TextSpanTests
+{
+    [Theory]
+    [InlineData(2, 3, 10, 2, 3)]
+    [InlineData(8, 5, 10, 8, 2)]
+    [InlineData(12, 4, 10, 10, 0)]
+    [InlineData(-3, 4, 10, 0, 4)]
+    [InlineData(2, -1, 10, 2, 0)]
+    public void ClampTo_CutsTheSpanDownToTheText(int start, int length, int textLength, int expectedStart, int expectedLength)
+    {
+        Assert.Equal(new TextSpan(expectedStart, expectedLength), new TextSpan(start, length).ClampTo(textLength));
+    }
+}
+
 public class BracketMatcherTests
 {
     [Fact]

@@ -82,13 +82,26 @@ public class EditorSessionSyncTests
             harness.Session.SyncEditorFromText(EtwEditorMode.Code);
         };
 
-        harness.Session.ApplyEditFromCodeEditor(new TextEdit(new TextSpan(8, 1), "42"));
+        harness.Session.ApplyEditFromCodeEditor(new TextEdit(new TextSpan(8, 1), "42"), new TextSpan(10, 0));
 
         Assert.Equal("int x = 42;", harness.Session.Text);
         Assert.Equal(new TextSpan(10, 0), harness.Session.Selection);
         Assert.Equal([true], flaggedDuringChange);
         Assert.Empty(harness.Code.Loaded);
         Assert.False(harness.Session.IsSyncingTextFromCode);
+    }
+
+    [WpfFact]
+    public void ApplyEditFromCodeEditor_SelectsWhatTheCodeEditorHasSelected_NotTheEndOfTheEdit()
+    {
+        Harness harness = new("one two three");
+        harness.Mode = EtwEditorMode.Code;
+
+        // Text inserted at the start while "two" stays selected, as an undo or a direct change leaves it.
+        harness.Session.ApplyEditFromCodeEditor(new TextEdit(new TextSpan(0, 0), ">> "), new TextSpan(7, 3));
+
+        Assert.Equal(">> one two three", harness.Session.Text);
+        Assert.Equal("two", harness.Session.SelectedText);
     }
 
     [WpfFact]

@@ -1,4 +1,3 @@
-using System;
 using Text_Grab.Controls;
 using Text_Grab.Core.Editing;
 using Text_Grab.Models;
@@ -28,7 +27,7 @@ internal sealed class CodeSurface(CodeEditor editor) : IEditorSurface
         get => new(editor.SelectionStart, editor.SelectionLength);
         set
         {
-            TextSpan clamped = Clamp(value);
+            TextSpan clamped = value.ClampTo(editor.Document.TextLength);
             editor.Select(clamped.Start, clamped.Length);
         }
     }
@@ -77,11 +76,4 @@ internal sealed class CodeSurface(CodeEditor editor) : IEditorSurface
     }
 
     public void ScrollToEnd() => editor.ScrollToEnd();
-
-    private TextSpan Clamp(TextSpan range)
-    {
-        int length = editor.Document.TextLength;
-        int start = Math.Clamp(range.Start, 0, length);
-        return new TextSpan(start, Math.Clamp(range.Length, 0, length - start));
-    }
 }

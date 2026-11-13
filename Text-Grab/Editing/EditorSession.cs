@@ -121,20 +121,26 @@ internal sealed class EditorSession : IEditorSession
 
     /// <summary>
     /// Applies one edit the code editor just made to its own document to <see cref="Text"/>, with the
-    /// code editor's flag set, and leaves the caret after the inserted text.
+    /// code editor's flag set, then selects what the code editor has selected.
     /// </summary>
+    /// <param name="edit">The edit, in offsets of the text before it.</param>
+    /// <param name="codeSelection">
+    /// The code editor's selection with the edit made. It need not be beside the edit: an undo, a redo,
+    /// one line of a multi-line indent, or any change made to the document directly, leaves the caret
+    /// where it was, or carries it along.
+    /// </param>
     /// <remarks>
     /// The code editor holds the same plain text as the text box, so it is synced edit by edit rather
     /// than by copying the whole document on every keystroke as the other editors are. Copying the whole
     /// text would also add a whole-text undo unit to the hidden text box per keystroke.
     /// </remarks>
-    internal void ApplyEditFromCodeEditor(TextEdit edit)
+    internal void ApplyEditFromCodeEditor(TextEdit edit, TextSpan codeSelection)
     {
         isSyncingTextFromCode = true;
         try
         {
             ReplaceRange(edit.Removed, edit.Inserted);
-            Selection = new TextSpan(edit.Removed.Start + edit.Inserted.Length, 0);
+            Selection = codeSelection.ClampTo(Text.Length);
         }
         finally
         {

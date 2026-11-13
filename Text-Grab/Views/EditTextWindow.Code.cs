@@ -145,7 +145,12 @@ public partial class EditTextWindow
         if (CodeSurfaceImpl.IsApplyingText)
             return;
 
-        SessionImpl.ApplyEditFromCodeEditor(new TextEdit(new TextSpan(e.Offset, e.RemovalLength), e.InsertedText.Text));
+        // The text area has already moved its caret and selection for this change: it has listened to the
+        // document since the editor was made, so it hears of the change first. (It raises PositionChanged
+        // only once the update is done.) So the selection read here is the one to show in the text box.
+        SessionImpl.ApplyEditFromCodeEditor(
+            new TextEdit(new TextSpan(e.Offset, e.RemovalLength), e.InsertedText.Text),
+            CodeSurfaceImpl.Selection);
     }
 
     private void CodeEditor_SelectionChanged(object? sender, EventArgs e)
@@ -181,10 +186,7 @@ public partial class EditTextWindow
         isMirroringCodeSelection = true;
         try
         {
-            TextSpan selection = CodeSurfaceImpl.Selection;
-            int length = Session.Text.Length;
-            int start = Math.Clamp(selection.Start, 0, length);
-            Session.Selection = new TextSpan(start, Math.Clamp(selection.Length, 0, length - start));
+            Session.Selection = CodeSurfaceImpl.Selection.ClampTo(Session.Text.Length);
         }
         finally
         {

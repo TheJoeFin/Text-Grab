@@ -74,6 +74,43 @@ public class EditTextWindowCodeModeTests
     }
 
     [WpfFact]
+    public void IndentingSeveralLines_LeavesTheTextBoxSelectionWithTheCodeEditors()
+    {
+        EditTextWindow window = CreateWindow("one\r\ntwo\r\nthree");
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        editor.Select(0, "one\r\ntwo".Length);
+        DoEvents();
+
+        // Tab with lines selected indents each line: one change per line, none of them at the caret.
+        System.Windows.Documents.EditingCommands.TabForward.Execute(null, editor.TextArea);
+        DoEvents();
+
+        Assert.Equal("\tone\r\n\ttwo\r\nthree", window.Session.Text);
+        Assert.Equal(new TextSpan(editor.SelectionStart, editor.SelectionLength), window.Session.Selection);
+    }
+
+    [WpfFact]
+    public void AChangeAfterTheSelection_LeavesTheSameTextSelectedInTheTextBox()
+    {
+        EditTextWindow window = CreateWindow("one two three");
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        editor.Select("one ".Length, "two".Length);
+        DoEvents();
+
+        // Neither the caret nor the selection moves. (AvalonEdit 6.3 raises the caret's PositionChanged
+        // after every update anyway, which re-mirrors the selection, but only because a flag for it is
+        // never reset; the sync of the edit itself must leave the selection right.)
+        editor.Document.Insert(window.Session.Text.Length, "!");
+        DoEvents();
+
+        // Selection-based commands (Select Line, Move Line, Toggle Case, Isolate) read the text box's.
+        Assert.Equal("two", editor.SelectedText);
+        Assert.Equal("two", window.Session.SelectedText);
+    }
+
+    [WpfFact]
     public void ATransformAppliesToWhatIsSelectedInTheCodeEditor()
     {
         EditTextWindow window = CreateWindow("one\r\ntwo\r\nthree");
