@@ -194,6 +194,19 @@ public class CodeFoldingTests
         Assert.Equal(expected, CodeFolding.IsSupported(languageName));
     }
 
+    [Theory]
+    [InlineData(CodeLanguages.CSharp, true)]
+    [InlineData(CodeLanguages.PowerShell, true)]
+    [InlineData(CodeLanguages.Json, true)]
+    [InlineData(CodeLanguages.Html, false)]
+    [InlineData(CodeLanguages.Xml, false)]
+    [InlineData(CodeLanguages.Python, false)]
+    [InlineData(null, false)]
+    public void UsesBraceBlocks_IsTheLanguagesFoldedByBrackets(string? languageName, bool expected)
+    {
+        Assert.Equal(expected, CodeFolding.UsesBraceBlocks(languageName));
+    }
+
     [Fact]
     public void Find_UsesTheLanguagesRule()
     {

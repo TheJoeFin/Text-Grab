@@ -27,6 +27,13 @@ public static class CodeFolding
             && (BraceLanguages.ContainsKey(languageName) || IsMarkup(languageName));
 
     /// <summary>
+    /// True when <paramref name="languageName"/> marks its blocks with braces: the languages folded by
+    /// brackets, and the ones the code editor indents after "{" and outdents on "}".
+    /// </summary>
+    public static bool UsesBraceBlocks(string? languageName)
+        => languageName is not null && BraceLanguages.ContainsKey(languageName);
+
+    /// <summary>
     /// The foldable regions of <paramref name="text"/> in <paramref name="languageName"/>, sorted by
     /// start; empty when the language has no folding rule.
     /// </summary>
