@@ -34,6 +34,7 @@ The same package inventory is also available from the app's **About → Licenses
 | PdfPig | App | Apache-2.0 | [Open](https://github.com/UglyToad/PdfPig/blob/master/LICENSE) | [Project](https://github.com/UglyToad/PdfPig) | — |
 | Svg | App | MIT | [Open](https://github.com/svg-net/SVG/blob/master/license.txt) | [Project](https://github.com/svg-net/SVG) | Renders SVG images in the Markdown editor. |
 | UnitsNet | App | MIT-0 | [Open](https://github.com/angularsen/UnitsNet/blob/master/LICENSE) | [Project](https://github.com/angularsen/UnitsNet) | — |
+| Tesseract.CrossPlatform | App | Apache-2.0 | [Open](ThirdPartyNotices/licenses/Tesseract/tesseract.txt) | [Project](https://github.com/tesseract-ocr/tesseract) | In-process Tesseract 5.5 OCR (with Leptonica and other native libraries). Third-party license texts, and the tessdata_fast English model license, are in `ThirdPartyNotices/licenses/Tesseract`. |
 | Vortice.Direct3D11 | App | MIT | [Open](https://github.com/amerkoleci/Vortice.Windows/blob/main/LICENSE) | [Project](https://github.com/amerkoleci/Vortice.Windows) | Direct3D 11 interop for HDR-aware screen capture. |
 | Vortice.DXGI | App | MIT | [Open](https://github.com/amerkoleci/Vortice.Windows/blob/main/LICENSE) | [Project](https://github.com/amerkoleci/Vortice.Windows) | DXGI interop for HDR-aware screen capture. |
 | WPF-UI | App | MIT | [Open](https://github.com/lepoco/wpfui/blob/main/LICENSE) | [Project](https://github.com/lepoco/wpfui) | — |
