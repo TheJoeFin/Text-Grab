@@ -66,6 +66,8 @@ public class CodeEditor : TextEditor
     private FoldingManager? foldingManager;
     private int textRevision;
     private FoldingScan? lastFoldingScan;
+    private FoldingScan? completedFoldingScan;
+    private FoldSnapshot? pendingFoldRestore;
     private bool searchTemplateApplied;
 
     /// <summary>Documents longer than this are scanned off the UI thread.</summary>
@@ -184,7 +186,51 @@ public class CodeEditor : TextEditor
         }
 
         if (TakeFoldingScan() is FoldingScan scan)
+        {
             scan.Manager.UpdateFoldings(ToNewFoldings(CodeFolding.Find(Document.Text, scan.Language)), -1);
+            OnFoldingScanApplied(scan);
+        }
+    }
+
+    /// <summary>The start offsets of the regions that are collapsed now.</summary>
+    public IReadOnlyList<int> GetCollapsedRegionStarts()
+        => foldingManager is null
+            ? []
+            : [.. foldingManager.AllFoldings.Where(folding => folding.IsFolded).Select(folding => folding.StartOffset)];
+
+    /// <summary>
+    /// Collapses the regions a <see cref="FoldSnapshot"/> recorded, as soon as the regions of the current
+    /// text are known: immediately if they already are, otherwise when the scan in progress (a large
+    /// document is scanned off the UI thread) finishes. Regions that can't be matched stay open.
+    /// </summary>
+    public void RestoreCollapsedRegions(FoldSnapshot? snapshot)
+    {
+        pendingFoldRestore = snapshot;
+        if (snapshot is not null && completedFoldingScan is FoldingScan done && done == CurrentFoldingScan)
+            ApplyPendingFoldRestore();
+    }
+
+    private void OnFoldingScanApplied(FoldingScan scan)
+    {
+        completedFoldingScan = scan;
+        ApplyPendingFoldRestore();
+    }
+
+    private void ApplyPendingFoldRestore()
+    {
+        if (pendingFoldRestore is not FoldSnapshot snapshot || foldingManager is null)
+            return;
+
+        pendingFoldRestore = null;
+        List<FoldingSection> sections = [.. foldingManager.AllFoldings];
+        IReadOnlyList<int> toFold = FoldState.Match(snapshot, Document.Text, sections.Select(section => section.StartOffset));
+        HashSet<int> starts = [.. toFold];
+
+        foreach (FoldingSection section in sections)
+        {
+            if (starts.Contains(section.StartOffset))
+                section.IsFolded = true;
+        }
     }
 
     /// <summary>
@@ -214,6 +260,7 @@ public class CodeEditor : TextEditor
             return;
 
         scan.Manager.UpdateFoldings(ToNewFoldings(regions), -1);
+        OnFoldingScanApplied(scan);
     }
 
     /// <summary>
@@ -269,6 +316,8 @@ public class CodeEditor : TextEditor
             FoldingManager.Uninstall(foldingManager);
             foldingManager = null;
             lastFoldingScan = null;
+            completedFoldingScan = null;
+            pendingFoldRestore = null;
         }
 
         UpdateFoldings();
