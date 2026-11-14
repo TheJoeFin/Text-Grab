@@ -97,7 +97,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     /// <summary>Cancels an in-progress audio-file transcription; non-null only while one is running.</summary>
     private CancellationTokenSource? _transcriptionCts;
     private CancellationTokenSource? cancellationTokenForDirOCR;
-    private readonly string historyId = string.Empty;
+    private string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
     private readonly DispatcherTimer EscapeKeyTimer = new();
@@ -2195,6 +2195,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         SessionImpl.SyncTextFromActiveEditor();
         UpdatePendingFileEditState();
 
+        SaveReadingPosition();
+
         if (allowCloseAfterPendingFilePrompt)
         {
             allowCloseAfterPendingFilePrompt = false;
@@ -2327,6 +2329,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             SetEditorMode(EtwEditorMode.Code);
         else
             UpdateSpreadsheetModeUi();
+
+        // A history item's text is already in place; once the editor has laid out, offer to resume it.
+        if (!string.IsNullOrEmpty(historyId))
+            _ = Dispatcher.BeginInvoke(ShowResumeReadingButtonIfNeeded, DispatcherPriority.ApplicationIdle);
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)

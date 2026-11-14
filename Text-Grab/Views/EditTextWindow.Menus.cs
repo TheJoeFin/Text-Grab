@@ -480,6 +480,9 @@ public partial class EditTextWindow
         RestoreCodeLanguage(history);
         editorMode = history.EditorMode;
         SetEditorMode(editorMode);
+
+        historyId = history.ID;
+        _ = Dispatcher.BeginInvoke(ShowResumeReadingButtonIfNeeded, DispatcherPriority.ApplicationIdle);
     }
 
     private void ClearRecentTextMenuItems()

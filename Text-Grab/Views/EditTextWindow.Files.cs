@@ -272,6 +272,7 @@ public partial class EditTextWindow
             if (_isClosed || result is not (string TextContent, OpenContentKind KindOpened))
                 return;
 
+            SaveReadingPosition();
             ResetSpreadsheetUndoHistory();
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
@@ -322,6 +323,7 @@ public partial class EditTextWindow
                 SetOpenedFileState(shouldTrackOpenedFile ? pathOfFileToOpen : null);
             }
             Singleton<HistoryService>.Instance.RecordRecentFile(pathOfFileToOpen, KindOpened);
+            ShowResumeReadingButtonIfNeeded();
         }
         finally
         {

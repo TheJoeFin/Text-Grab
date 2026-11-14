@@ -1036,6 +1036,18 @@
                     VerticalScrollBarVisibility="Auto"
                     Visibility="Collapsed"
                     utils:SmoothScrollBehavior.IsEnabled="True" />
+                <Button
+                    x:Name="ResumeReadingButton"
+                    Margin="0,0,24,16"
+                    Padding="12,6"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    AutomationProperties.AutomationId="EditText.ResumeReadingButton"
+                    AutomationProperties.Name="Pick up where you left off"
+                    Click="ResumeReadingButton_Click"
+                    Content="Pick up where you left off"
+                    ToolTip="Jump to where you stopped the last time you had this file open"
+                    Visibility="Collapsed" />
             </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"
