@@ -53,6 +53,10 @@ public partial class PreviousGrabWindow : Window
     {
         InitializeComponent();
 
+        // This overlay can be the last window alive: the shutdown checks that run when the
+        // grab completes happen while it is still open, so re-check once it closes (#705).
+        Closed += (_, _) => Utilities.WindowUtilities.ShouldShutDown();
+
         int borderThickness = 3;
 
         Width = rect.Width + (2 * borderThickness);
