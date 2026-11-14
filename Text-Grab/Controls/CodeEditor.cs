@@ -59,13 +59,6 @@ public class CodeEditor : TextEditor
 
     private static readonly RoutedCommand[] CommandsTheWindowOwns = [AvalonEditCommands.DeleteLine, AvalonEditCommands.IndentSelection];
 
-    /// <summary>Languages whose blocks are braces, so Enter after "{" indents and "}" outdents.</summary>
-    private static readonly HashSet<string> BraceLanguages = new(StringComparer.OrdinalIgnoreCase)
-    {
-        CodeLanguages.CSharp, CodeLanguages.Cpp, CodeLanguages.Css, CodeLanguages.Java,
-        CodeLanguages.JavaScript, CodeLanguages.Json, CodeLanguages.Php,
-    };
-
     private readonly DispatcherTimer foldingTimer;
     private readonly SearchPanel searchPanel;
     private readonly SelectionOccurrencesRenderer occurrencesRenderer;
@@ -158,13 +151,18 @@ public class CodeEditor : TextEditor
     }
 
     /// <summary>
-    /// Brace languages indent after "{" and outdent on "}"; every other language keeps the previous
-    /// line's indentation, which is what AvalonEdit's default strategy does.
+    /// Brace languages (<see cref="CodeFolding.UsesBraceBlocks"/>, the same ones folded by brackets)
+    /// indent after "{" and outdent on "}"; every other language keeps the previous line's indentation,
+    /// which is what AvalonEdit's default strategy does.
     /// </summary>
+    /// <remarks>
+    /// AvalonEdit's only brace strategy is C#'s. It reads "//" and "#" as line comments, so it suits the
+    /// other brace languages too; a string escape it doesn't know (PowerShell's backtick) can only throw
+    /// off the indent it suggests for that line.
+    /// </remarks>
     private void ConfigureIndentation()
     {
-        string? name = SyntaxHighlighting?.Name;
-        TextArea.IndentationStrategy = name is not null && BraceLanguages.Contains(name)
+        TextArea.IndentationStrategy = CodeFolding.UsesBraceBlocks(SyntaxHighlighting?.Name)
             ? new CSharpIndentationStrategy(Options)
             : new DefaultIndentationStrategy();
     }

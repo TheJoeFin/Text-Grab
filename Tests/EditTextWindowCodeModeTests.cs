@@ -2,6 +2,7 @@ using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Indentation.CSharp;
 using ICSharpCode.AvalonEdit.Rendering;
 using System.Diagnostics;
 using System.Windows;
@@ -268,6 +269,23 @@ public class EditTextWindowCodeModeTests
 
         Assert.DoesNotContain(editor.TextArea.CommandBindings.Cast<CommandBinding>(),
             binding => binding.Command == AvalonEditCommands.DeleteLine || binding.Command == AvalonEditCommands.IndentSelection);
+    }
+
+    [WpfFact]
+    public void TheLanguagesFoldedByBraces_AreTheOnesIndentedByBraces()
+    {
+        CodeEditor editor = new();
+
+        foreach (CodeLanguage language in CodeLanguages.All)
+        {
+            editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition(language.Name);
+            bool indentsByBraces = editor.TextArea.IndentationStrategy is CSharpIndentationStrategy;
+
+            // One list for both (PowerShell folded by braces but wasn't indented by them).
+            Assert.True(
+                CodeFolding.UsesBraceBlocks(language.Name) == indentsByBraces,
+                $"{language.Name}: folded by braces {CodeFolding.UsesBraceBlocks(language.Name)}, indented by braces {indentsByBraces}");
+        }
     }
 
     [WpfFact]
