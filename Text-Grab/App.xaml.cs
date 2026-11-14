@@ -70,6 +70,8 @@ public partial class App : System.Windows.Application
         // WPF reads the process render mode when it creates its first window, so this has to
         // happen here rather than in the Startup handler.
         RenderingUtilities.ApplyRenderingMode(_defaultSettings);
+
+        SmoothScrollBehavior.RegisterGlobally();
     }
 
     #region Methods

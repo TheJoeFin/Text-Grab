@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -94,13 +95,64 @@ public static class SmoothScrollBehavior
     public static bool ScrollBy(Control owner, int wheelDelta)
     {
         ScrollViewer? sv = WindowUtilities.GetScrollViewer(owner);
-        if (sv is null || sv.ScrollableHeight <= 0)
+        if (sv is null)
+            return false;
+
+        double lineHeight = Math.Max(12, owner.FontSize * owner.FontFamily.LineSpacing);
+        return ScrollBy(sv, wheelDelta, lineHeight);
+    }
+
+    /// <summary>
+    /// Registers eased wheel scrolling for every pixel-scrolling ScrollViewer in the app.
+    /// Call once at startup. ScrollViewers that scroll by logical item (virtualized lists,
+    /// combo box popups) keep their default behavior, since their offsets are not pixels.
+    /// </summary>
+    public static void RegisterGlobally()
+    {
+        EventManager.RegisterClassHandler(typeof(ScrollViewer), UIElement.MouseWheelEvent,
+            new MouseWheelEventHandler(ScrollViewer_MouseWheel));
+
+        // Lists scroll a whole item per wheel notch by default, which is abrupt. Defaulting them to
+        // pixel scrolling keeps virtualization but gives the ScrollViewer pixel offsets we can ease.
+        // Done as a metadata default (not on Loaded) so the panel is created in pixel mode.
+        // WPF needs a fresh metadata instance per type.
+        VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(ListBox), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
+        VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(DataGrid), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
+        VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
+    }
+
+    private static void ScrollViewer_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Bubbling event: the innermost ScrollViewer sees it first and passes it on at its edge.
+        if (e.Handled || Keyboard.Modifiers != ModifierKeys.None || sender is not ScrollViewer sv)
+            return;
+
+        if (sv.VerticalScrollBarVisibility == ScrollBarVisibility.Disabled || IsLogicalScrolling(sv))
+            return;
+
+        if (ScrollBy(sv, e.Delta, lineHeight: 16))
+            e.Handled = true;
+    }
+
+    private static bool IsLogicalScrolling(ScrollViewer sv)
+    {
+        if (!sv.CanContentScroll)
+            return false;
+
+        if (sv.TemplatedParent is ItemsControl items)
+            return VirtualizingPanel.GetScrollUnit(items) == ScrollUnit.Item;
+
+        return sv.Content is ItemsPresenter or IScrollInfo;
+    }
+
+    private static bool ScrollBy(ScrollViewer sv, int wheelDelta, double lineHeight)
+    {
+        if (sv.ScrollableHeight <= 0)
             return false;
 
         ScrollState state = States.GetOrCreateValue(sv);
         double basis = state.IsAnimating ? state.Target : sv.VerticalOffset;
 
-        double lineHeight = Math.Max(12, owner.FontSize * owner.FontFamily.LineSpacing);
         double pixels = -wheelDelta / 120.0 * SystemParameters.WheelScrollLines * lineHeight;
         double target = Math.Clamp(basis + pixels, 0, sv.ScrollableHeight);
 
