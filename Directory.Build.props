@@ -1,0 +1,11 @@
+<Project>
+    <PropertyGroup>
+        <!--
+            MSB3277: WinRT.Runtime 2.1 (Windows SDK .NET ref pack) vs 2.2 (Windows App SDK projections),
+            plus Bcl.AsyncInterfaces and WebView2 projection duplicates. The conflicts are inherent to the
+            package mix and the higher version is what ships; they cannot be resolved from the project files.
+            NU1503: the .wapproj packaging project is not restorable via NuGet; it is built by MSBuild only.
+        -->
+        <NoWarn>$(NoWarn);MSB3277;NU1503</NoWarn>
+    </PropertyGroup>
+</Project>

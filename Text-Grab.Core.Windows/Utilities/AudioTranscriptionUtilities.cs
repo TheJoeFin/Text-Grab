@@ -604,7 +604,7 @@ public static class AudioTranscriptionUtilities
     internal static MemoryStream PcmToWav16kMono(byte[] pcm, int count)
     {
         MemoryStream memoryStream = new();
-        using (WaveFileWriter writer = new(new IgnoreDisposeStream(memoryStream), new WaveFormat(16000, 16, 1)))
+        using (WaveFileWriter writer = new(memoryStream, new WaveFormat(16000, 16, 1)))
             writer.Write(pcm, 0, count);
 
         memoryStream.Position = 0;

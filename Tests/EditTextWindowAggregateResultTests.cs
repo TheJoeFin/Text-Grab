@@ -31,7 +31,7 @@ public class EditTextWindowAggregateResultTests
             }
         }
 
-        Assert.Single(document.Rows.SelectMany(row => row).Where(value => value == result));
+        Assert.Single(document.Rows.SelectMany(row => row), value => value == result);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class EditTextWindowAggregateResultTests
 
         Assert.Equal(result, restored.Rows[0][0]);
         Assert.Equal("keep", restored.Rows[0][1]);
-        Assert.Single(restored.Rows.SelectMany(row => row).Where(value => value == result));
+        Assert.Single(restored.Rows.SelectMany(row => row), value => value == result);
     }
 
     [Fact]
@@ -57,6 +57,6 @@ public class EditTextWindowAggregateResultTests
         EditTextWindow.WriteAggregateResultIntoSpreadsheetDocument(document, "Summary", 0, 0);
 
         Assert.Equal("Summary", document.Rows[0][0]);
-        Assert.Single(document.Rows.SelectMany(row => row).Where(value => !string.IsNullOrEmpty(value)));
+        Assert.Single(document.Rows.SelectMany(row => row), value => !string.IsNullOrEmpty(value));
     }
 }
