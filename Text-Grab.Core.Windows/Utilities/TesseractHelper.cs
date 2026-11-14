@@ -1,112 +1,57 @@
-﻿using CliWrap;
-using CliWrap.Buffered;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Threading.Tasks;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
-using Text_Grab.Services;
 
 namespace Text_Grab.Utilities;
 
-// Install Tesseract for Windows from UB-Mannheim
-// https://github.com/UB-Mannheim/tesseract/wiki
-
-// Docs about command line usage
-// https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html 
-
-// This was developed using Tesseract v5 in 2022
+// Tesseract is a facade over two engines, chosen once by TesseractEngineModeResolver:
+//   Bundled  - in-process Tesseract that ships with Text Grab (BundledTesseractBackend)
+//   External - the legacy user-installed tesseract.exe (ExternalTesseractBackend, frozen)
+// Tesseract docs: https://tesseract-ocr.github.io/tessdoc/
 
 public static class TesseractHelper
 {
-    private const string rawPath = @"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe";
-    private const string rawProgramsPath = @"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe";
-    private const string basicPath = @"C:\Program Files\Tesseract-OCR\tesseract.exe";
+    public static TesseractEngineMode Mode => TesseractEngineModeResolver.Current;
 
-    public static bool CanLocateTesseractExe()
+    /// <summary>
+    /// Mode-aware gate that replaces <c>UseTesseract &amp;&amp; CanLocateTesseractExe()</c>: a bundled user
+    /// has no exe to locate. Never runs the external install probe in Bundled mode.
+    /// </summary>
+    public static bool IsAvailable()
     {
-        string tesseractPath = string.Empty;
-        try
-        {
-            tesseractPath = GetTesseractPath();
-        }
-        catch (Exception)
-        {
-            tesseractPath = string.Empty;
-#if DEBUG
-            throw;
-#endif
-        }
-        return !string.IsNullOrEmpty(tesseractPath);
+        if (Mode == TesseractEngineMode.External)
+            return ExternalTesseractBackend.CanLocateTesseractExe();
+
+        return TessdataLocator.GetInstalledLanguages().Count > 0;
     }
 
-    private static string GetTesseractPath()
-    {
-        ITextGrabSettings defaultSettings = SettingsAccess.Current;
+    /// <summary>True when the legacy external tesseract.exe can be found. External mode only.</summary>
+    public static bool CanLocateTesseractExe() => ExternalTesseractBackend.CanLocateTesseractExe();
 
-        if (!string.IsNullOrWhiteSpace(defaultSettings.TesseractPath)
-            && File.Exists(defaultSettings.TesseractPath))
-            return defaultSettings.TesseractPath;
-
-        string tesExePath = Environment.ExpandEnvironmentVariables(rawPath);
-        string programsPath = Environment.ExpandEnvironmentVariables(rawProgramsPath);
-
-        if (File.Exists(tesExePath))
-        {
-            defaultSettings.TesseractPath = tesExePath;
-            defaultSettings.Save();
-            return tesExePath;
-        }
-
-        if (File.Exists(programsPath))
-        {
-            defaultSettings.TesseractPath = programsPath;
-            defaultSettings.Save();
-            return programsPath;
-        }
-
-        if (File.Exists(basicPath))
-        {
-            defaultSettings.TesseractPath = basicPath;
-            defaultSettings.Save();
-            return basicPath;
-        }
-
-        return string.Empty;
-    }
-
-    public static async Task<string> GetTextFromImagePathAsync(string imagePath, string tessTag)
-    {
-        string tesseractPath = GetTesseractPath();
-
-        if (string.IsNullOrWhiteSpace(tesseractPath))
-            return "Cannot find tesseract.exe";
-
-        // probably not needed, but if the Windows languages get passed it, it should still work
-        string languageString = tessTag;
-
-        BufferedCommandResult result = await Cli.Wrap(tesseractPath)
-            .WithValidation(CommandResultValidation.None)
-            .WithArguments(args => args
-                .Add(imagePath)
-                .Add("-")
-                .Add("-l")
-                .Add(languageString)
-            )
-            .ExecuteBufferedAsync(Encoding.UTF8);
-
-        return result.StandardOutput;
-    }
+    public static Task<string> GetTextFromImagePathAsync(string imagePath, string tessTag) =>
+        Mode == TesseractEngineMode.External
+            ? ExternalTesseractBackend.GetTextFromImagePathAsync(imagePath, tessTag)
+            : BundledTesseractBackend.RecognizeFileAsync(imagePath, tessTag);
 
     public static async Task<OcrOutput> GetOcrOutputFromBitmap(Bitmap bmp, TessLang language, OcrOptions? options = null)
     {
-        bmp.Save(TesseractHelper.TempImagePath(), ImageFormat.Png);
+        string rawOutput;
+
+        if (Mode == TesseractEngineMode.External)
+        {
+            bmp.Save(TempImagePath(), ImageFormat.Png);
+            rawOutput = await ExternalTesseractBackend.GetTextFromImagePathAsync(TempImagePath(), language.RawTag);
+        }
+        else
+        {
+            rawOutput = await BundledTesseractBackend.RecognizeAsync(bmp, language.RawTag);
+        }
 
         OcrOutput ocrOutput = new()
         {
@@ -114,67 +59,24 @@ public static class TesseractHelper
             Kind = OcrOutputKind.Paragraph,
             Language = language,
             SourceBitmap = bmp,
-            RawOutput = await TesseractHelper.GetTextFromImagePathAsync(TempImagePath(), language.RawTag)
+            RawOutput = rawOutput
         };
         ocrOutput.CleanOutput(options);
 
         return ocrOutput;
     }
 
-    public static async Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr)
-    {
-        string tesExePath = GetTesseractPath();
-
-        if (string.IsNullOrEmpty(tesExePath))
-            return "Cannot find tesseract.exe";
-
-        string argumentsString = $"\"{pathToFile}\" - -l eng";
-
-        if (outputHocr)
-            argumentsString += " hocr";
-
-        ProcessStartInfo psi = new()
-        {
-            FileName = tesExePath,
-            Arguments = argumentsString,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
-        };
-
-        Process? process = Process.Start(psi);
-
-        if (process is null)
-            return string.Empty;
-
-        StreamReader sr = process.StandardOutput;
-        StreamReader errorReader = process.StandardError;
-
-        process.WaitForExit(1000);
-
-        if (process.HasExited)
-        {
-            string returningResult = await sr.ReadToEndAsync();
-
-            if (!string.IsNullOrWhiteSpace(returningResult))
-                return returningResult;
-
-            returningResult = await errorReader.ReadToEndAsync();
-
-            return returningResult;
-        }
-        else
-            return string.Empty;
-    }
+    public static Task<string> GetTextFromImagePath(string pathToFile, bool outputHocr) =>
+        Mode == TesseractEngineMode.External
+            ? ExternalTesseractBackend.GetTextFromImagePath(pathToFile, outputHocr)
+            : BundledTesseractBackend.RecognizeFileAsync(pathToFile, "eng");
 
     public static string TempImagePath()
     {
         if (AutomationProfile.Current is not null)
             return Path.Combine(AutomationProfile.GetTemporaryDirectory(), "tempImage.png");
 
-        string? exePath = Path.GetDirectoryName(System.AppContext.BaseDirectory);
+        string? exePath = Path.GetDirectoryName(AppContext.BaseDirectory);
         if (exePath is null)
         {
             string rawPath = @"%LOCALAPPDATA%\Text_Grab";
@@ -186,35 +88,14 @@ public static class TesseractHelper
 
     public static async Task<List<string>> TesseractLanguagesAsStrings()
     {
-        List<string> languageStrings = new();
+        if (Mode == TesseractEngineMode.External)
+            return await ExternalTesseractBackend.TesseractLanguagesAsStrings();
 
-        string tesseractPath = GetTesseractPath();
+        List<string> languages = [.. TessdataLocator.GetInstalledLanguages().Select(file => file.Tag)];
+        if (languages.Count == 0)
+            languages.Add("eng");
 
-        if (string.IsNullOrWhiteSpace(tesseractPath))
-        {
-            languageStrings.Add("eng");
-            return languageStrings;
-        }
-
-        BufferedCommandResult result = await Cli.Wrap(tesseractPath)
-            .WithValidation(CommandResultValidation.None)
-            .WithArguments(args => args
-                .Add("--list-langs")
-            ).ExecuteBufferedAsync();
-
-        if (string.IsNullOrWhiteSpace(result.StandardOutput))
-        {
-            languageStrings.Add("eng");
-            return languageStrings;
-        }
-
-        string[] tempList = result.StandardOutput.Split(Environment.NewLine);
-
-        foreach (string item in tempList)
-            if (item.Length < 30 && !string.IsNullOrWhiteSpace(item) && item != "osd")
-                languageStrings.Add(item);
-
-        return languageStrings;
+        return languages;
     }
 
     public static async Task<List<ILanguage>> TesseractLanguages()
@@ -227,4 +108,10 @@ public static class TesseractHelper
 
         return tesseractLanguages;
     }
+
+    /// <summary>Bundled engine health: Ready (with version), library failed to load, or no languages.</summary>
+    public static Task<BundledTesseractStatus> GetBundledStatusAsync() => BundledTesseractBackend.GetStatusAsync();
+
+    /// <summary>Call after a model was downloaded, removed or the engine mode changed.</summary>
+    public static Task InvalidateBundledEngineAsync() => BundledTesseractBackend.InvalidateAsync();
 }

@@ -397,7 +397,8 @@ public static class DiagnosticsUtilities
     {
         try
         {
-            bool canLocate = TesseractHelper.CanLocateTesseractExe();
+            TesseractEngineMode engineMode = TesseractHelper.Mode;
+            bool canLocate = TesseractHelper.IsAvailable();
             List<string> availableLanguages = [];
 
             if (canLocate)
@@ -412,11 +413,21 @@ public static class DiagnosticsUtilities
                 }
             }
 
+            string version = "Version info not publicly available";
+            if (engineMode == TesseractEngineMode.Bundled)
+            {
+                BundledTesseractStatus status = await TesseractHelper.GetBundledStatusAsync();
+                version = status.State == BundledTesseractState.Ready ? status.Version : status.State.ToString();
+            }
+
             return new TesseractInfoModel
             {
+                EngineMode = engineMode.ToString(),
                 IsInstalled = canLocate,
-                ExecutablePath = canLocate ? "Located (path redacted)" : "Not found",
-                Version = "Version info not publicly available",
+                ExecutablePath = engineMode == TesseractEngineMode.Bundled
+                    ? "Bundled with Text Grab"
+                    : canLocate ? "Located (path redacted)" : "Not found",
+                Version = version,
                 AvailableLanguages = availableLanguages,
                 ConfiguredLanguages = ["Will be populated from Tesseract installation"]
             };
@@ -659,6 +670,8 @@ public class LanguageInfoModel
 
 public class TesseractInfoModel
 {
+    /// <summary>Bundled (in-process) or External (user-installed tesseract.exe).</summary>
+    public string EngineMode { get; set; } = string.Empty;
     public bool IsInstalled { get; set; }
     public string ExecutablePath { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;

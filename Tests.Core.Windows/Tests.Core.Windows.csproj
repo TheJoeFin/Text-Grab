@@ -50,6 +50,10 @@
     <Content Include="..\Tests\Images\paragraph-test-image.png" Link="Images\paragraph-test-image.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- The bundled English model, so the in-process Tesseract engine can be exercised end to end. -->
+    <Content Include="..\Text-Grab\tessdata-bundled\eng.traineddata" Link="tessdata-bundled\eng.traineddata">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
