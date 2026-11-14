@@ -5,9 +5,10 @@
 | Track | Workflows |
 | Size / risk | Large / Medium |
 | Recommended model | Opus |
-| Depends on | W2, E4 |
+| Depends on | W2, E4a (the pane host is enough; E4b is not required) |
 | Required decisions | D4 (view-model library) |
 | Branch | `v5/w3-graph-editor` |
+| Ships in | 5.0.0-beta2. See [Release-Plan.md](Release-Plan.md). |
 
 Read [README.md](README.md) first.
 
@@ -23,7 +24,8 @@ The editor is a **projection** of the Core model. View models wrap `WorkflowNode
 
 - W1 model: node `X` / `Y` are plain doubles, intended to map to Nodify's node location.
 - W1 step registry exposes `StepDescriptor`s with typed ports — the palette and the connector shapes come from these.
-- E4 provides `IEditorPane`, the pane registry and layouts.
+- E3 `calc` and E4a provide `IEditorPane`, the pane registry and layouts.
+- Code mode gives a JSON editor for free: the Workflow layout can put the definition's JSON in the editor pane (`DefaultMode: Code`, language JSON, with folding) beside the graph. Treat it as a view of the same definition — an edit to the JSON re-validates and reloads the graph, and invalid JSON shows the error without discarding the graph.
 - Nodify is not yet referenced. Check its current version, license (MIT at time of writing) and .NET target before adding it, and read its documentation and samples rather than relying on memory of its API.
 
 ## Design

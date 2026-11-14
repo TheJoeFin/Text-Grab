@@ -8,6 +8,7 @@
 | Depends on | A1, F3, F4, F5 |
 | Unblocks | W2, the transformer pane in E5 |
 | Branch | `v5/w1-workflow-engine` |
+| Ships in | 4.18, inert. Not needed for 4.17; start it after 4.17.0-beta2 is out. See [Release-Plan.md](Release-Plan.md). |
 
 Read [README.md](README.md) first.
 
@@ -91,7 +92,9 @@ public sealed record PortEmission(string PortId, object? Payload);
 
 Steps that need Windows services are declared wherever their dependency's *interface* lives. Since all four output interfaces are in Core, the steps can be too; only their registrations differ.
 
-Not in v1 — list as follow-ups: OCR-screen-region, apply grab template, transcribe audio, translate / summarize / rewrite, text ↔ table, open in Edit Text Window (needs E4), after-grab trigger.
+Not in v1 — list as follow-ups: OCR-screen-region, apply grab template, transcribe audio, translate / summarize / rewrite, text ↔ table, open in Edit Text Window (needs E4a; its config is a layout ID, an editor mode and — for Code mode — a language name from `CodeLanguages`), after-grab trigger.
+
+The store may land after E4a's `FileLayoutStore` (4.17). If it does, follow that store's storage and naming rather than inventing a second pattern.
 
 ## Steps
 

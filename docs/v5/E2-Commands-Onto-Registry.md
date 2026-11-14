@@ -6,7 +6,8 @@
 | Size / risk | Large / Medium (users' saved buttons must survive) |
 | Recommended model | Opus for the first run (foundation + first cluster); Sonnet for each remaining cluster |
 | Depends on | A1, E1 |
-| Unblocks | E3 |
+| Unblocks | E3 (all clusters but `calc`), E4b |
+| Ships in | 4.18. **Do not merge any E2 run to `dev` until 4.17.0 is released** — see [Release-Plan.md](Release-Plan.md). |
 | Branch | `v5/e2-commands-<cluster>` |
 
 Read [README.md](README.md) first, then the inventory appendix in [A1-Action-Registry.md](A1-Action-Registry.md).
@@ -20,8 +21,10 @@ Every action in the Edit Text Window is a registered action with a stable ID. Me
 ## Current state (verify)
 
 - 17 static `RoutedCommand` fields at the top of `EditTextWindow.xaml.cs`; `GetRoutedCommands()` returns them by name; `SetupRoutedCommands` wires bindings and gestures.
-- About 200 `*_Click` handlers referenced from 205 `MenuItem`s in `EditTextWindow.xaml`.
-- `Text-Grab/Models/ButtonInfo.cs`: `AllButtons` (about 100 entries), each with `ButtonText`, `SymbolIcon`, and either `Command` (a `RoutedCommand` name) or `ClickEvent` (a window method name).
+- About 200 `*_Click` handlers referenced from 220 `MenuItem`s in `EditTextWindow.xaml` (counted 2026-11-14, after Code mode).
+- `Text-Grab/Models/ButtonInfo.cs`: `AllButtons` (111 entries), each with `ButtonText`, `SymbolIcon`, and either `Command` (a `RoutedCommand` name) or `ClickEvent` (a window method name).
+- **Code mode (PR #710) added actions this plan did not list:** `EnterCodeMode_Click` (menu item and an "Enter Code Mode" `ButtonInfo`), the Code Language menu (a dynamic list built in `PopulateCodeLanguageMenu`, also shown from the status-bar `CodeLanguageButton`), "Detect Automatically", and `ShowWhitespaceMenuItem_Click`. They are in `EditTextWindow.Code.cs` and belong to the `view` cluster.
+- **The code editor has a context menu of its own**, a fixed list in XAML that binds the same `RoutedCommand`s as the text box's. It is one more surface every converted action has to be rebound on.
 - `Text-Grab/Utilities/CustomBottomBarUtilities.cs`: `GetBottomBarButtons(EditTextWindow)` resolves `ClickEvent` by reflection over the window's methods and `Command` through `GetRoutedCommands()`.
 - Users' customized bottom bars are persisted as serialized `ButtonInfo` lists (see `GetCustomBottomBarItemsSetting` / `SaveCustomBottomBarItemsSetting` and `SettingsService`).
 - `Text-Grab/Utilities/PostGrabActionManager.cs` executes `ButtonInfo`s against text after a grab; users' enabled post-grab actions are persisted too.
@@ -68,7 +71,7 @@ public interface IEditorCommand
 | `ai` | summarize, meeting notes, rewrite, convert table, translate family |
 | `transcription` | transcribe audio file, live transcription toggle, source, model |
 | `spreadsheet` | every spreadsheet menu and context-menu action |
-| `view` | mode switches, wrap, margins, always on top, calc pane toggle, hide bottom bar, font, spell check |
+| `view` | mode switches (Text, Markdown, Spreadsheet, **Code**), wrap, margins, always on top, calc pane toggle, hide bottom bar, font, spell check, **code language** (one action, `textgrab.view.setCodeLanguage`, with the language name as config — not one ID per language), **detect code language**, **show whitespace** |
 | `final` | remove the reflection path from `CustomBottomBarUtilities`, delete `GetRoutedCommands()`, make the catalog test require a mapping for every entry, point `PostGrabActionManager` at the invoker |
 
 Each cluster run: follow "How to convert a cluster"; one commit per action or small group; all gates after each commit.
@@ -96,3 +99,6 @@ Each cluster run: follow "How to convert a cluster"; one commit per action or sm
 - Some handlers read `sender` (which menu item, its `Tag`, its `IsChecked`). Those become action config or separate action IDs — decide per case and record it in the A1 inventory.
 - Async handlers are `async void` today and swallow nothing. The invoker must surface exceptions the same way the UI does now (check what the window does on failure) rather than leaving unobserved tasks.
 - Action IDs added here join A1's pinned-ID test.
+- **AvalonEdit handles keys before the window.** With focus in the code editor, a gesture reaches the window only if the editor has no binding for it. `CodeEditor` already removes its Ctrl+D and Ctrl+I bindings for this reason. When gestures start coming from `ActionDescriptor.DefaultGesture`, check each one against AvalonEdit's bindings and test it with focus in the code editor (`EditTextWindowCodeModeTests` has the pattern).
+- **One gesture is not static.** Toggle Case is Shift+F3, except while the code editor's find bar is open, where Shift+F3 is Find Previous and the menus show no gesture (`ToggleCaseGestureText`). `DefaultGesture` is a single string: keep this case as a `CanExecute` on the action plus the existing gesture-text override, and do not generalize it into the descriptor.
+- Every manual check that says "in Text mode and, where it applies, in Spreadsheet and Markdown modes" now includes Code mode. The selection a command sees there is the mirrored one, so a command that works in Text mode should work unchanged; the ones to watch are those that set the selection or the scroll position afterwards.

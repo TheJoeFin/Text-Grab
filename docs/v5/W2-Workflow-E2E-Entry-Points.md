@@ -6,6 +6,7 @@
 | Size / risk | Small–medium / Low, plus a security review |
 | Recommended model | Sonnet |
 | Depends on | W1 |
+| Ships in | 5.0.0-beta1, not 4.18: the entry points are an attack surface and ship with the release that explains them. See [Release-Plan.md](Release-Plan.md). |
 | Unblocks | W3; first user-visible workflow feature |
 | Branch | `v5/w2-workflow-entry` |
 

@@ -9,35 +9,39 @@ Each file in this folder is the work plan for one phase. Every phase is sized to
 
 **If you are an agent starting a phase: read this whole file, then your phase file. Both are binding.**
 
+**Which phase ships in which release is in [Release-Plan.md](Release-Plan.md).** Read it before choosing what to start next: the order below follows it.
+
 ## Phase index
 
 Update the Status column when you finish a phase (`Not started` → `In progress` → `Done (<short commit hash>)`).
 
-| Phase | Work plan | Depends on | Status |
-|---|---|---|---|
-| F1 | [DI composition root](F1-DI-Composition-Root.md) | — | Done (790bc4e) |
-| F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | Done (9d8b126) |
-| F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | Done (bf1a568) |
-| F4 | [Output services](F4-Output-Services.md) | F1 | Done (fea6fe7) |
-| F5 | [Trigger infrastructure](F5-Trigger-Infrastructure.md) | F1 | Done (964b0d0) |
-| F6 | [Observable history store](F6-History-Store.md) (optional) | — | Shelved until a consumer needs it (steps 1–2 done, fe8a24b; see the phase file) |
-| A1 | [Action registry](A1-Action-Registry.md) | F1 | Done (96e59be) |
-| W1 | [Workflow engine](W1-Workflow-Engine.md) | A1, F3, F4, F5 | Not started |
-| W2 | [Workflow end-to-end and entry points](W2-Workflow-E2E-Entry-Points.md) | W1 | Not started |
-| W3 | [Nodify graph editor](W3-Nodify-Graph-Editor.md) | W2, E4 | Not started |
-| E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | Done (E1a 21428ec, E1b 1644515) |
-| E2 | [ETW commands onto the registry](E2-Commands-Onto-Registry.md) | A1, E1 | Not started |
-| E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | E2 | Not started |
-| E4 | [Layout engine and Classic layout](E4-Layout-Engine.md) | E3 | Not started |
-| E5 | [New panes](E5-New-Panes.md) | E4 (+ per pane) | Not started |
-| E6 | [Ribbon, layout picker, layout editor](E6-Ribbon-Layout-Editor.md) | E4 | Not started |
+| Phase | Work plan | Depends on | Ships in | Status |
+|---|---|---|---|---|
+| F1 | [DI composition root](F1-DI-Composition-Root.md) | — | 4.17 | Done (790bc4e) |
+| F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | 4.17 | Done (9d8b126) |
+| F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | 4.17 | Done (bf1a568) |
+| F4 | [Output services](F4-Output-Services.md) | F1 | 4.17 | Done (fea6fe7) |
+| F5 | [Trigger infrastructure](F5-Trigger-Infrastructure.md) | F1 | 4.17 | Done (964b0d0) |
+| F6 | [Observable history store](F6-History-Store.md) (optional) | — | — | Shelved until a consumer needs it (steps 1–2 done, fe8a24b; see the phase file) |
+| A1 | [Action registry](A1-Action-Registry.md) | F1 | 4.17 (inert) | Done (96e59be) |
+| W1 | [Workflow engine](W1-Workflow-Engine.md) | A1, F3, F4, F5 | 4.18 (inert) | Not started |
+| W2 | [Workflow end-to-end and entry points](W2-Workflow-E2E-Entry-Points.md) | W1 | 5.0 | Not started |
+| W3 | [Nodify graph editor](W3-Nodify-Graph-Editor.md) | W2, E4a | 5.0 | Not started |
+| E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | 4.17 | Done (E1a 21428ec, E1b 1644515) |
+| — | Code mode (#645, PR #710; not a planned phase — see [E1](E1-Editor-Session-Surfaces.md#after-e1-code-mode-2026-11-14-pr-710)) | E1 | 4.17 | Done (2bc0599) |
+| E2 | [ETW commands onto the registry](E2-Commands-Onto-Registry.md) | A1, E1 | 4.18 | Not started |
+| E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | `calc`: E1. Others: E2 | `calc`: 4.17. Others: 4.18 | Not started |
+| E4a | [Pane host and pane layouts](E4-Layout-Engine.md) | E3 `calc` | 4.17 | Not started |
+| E4b | [Chrome from the layout definition](E4-Layout-Engine.md) | E2, E3, E4a | 4.18 (opt-in) | Not started |
+| E5 | [New panes](E5-New-Panes.md) | E4a (+ per pane) | 4.17: `recent`, `mermaid`, `markdown-preview`. 5.0: `transformer`, `audio` | Not started |
+| E6 | [Ribbon, layout picker, layout editor](E6-Ribbon-Layout-Editor.md) | `picker`: E4a. Others: E4b | `picker`: 4.17. Others: 5.0 | Not started |
 
-Suggested order: F1 and E1 first → A1 → F2, F3 → E2 → F4, F5 → W1, W2 alongside E3 → E4 → E5, E6 → W3.
+Order from here: **4.17** — E3 `calc` → E4a → E5 `recent`, `mermaid`, `markdown-preview` and E6 `picker` (E5 `folder-tree` if time allows). **4.18** — E2 → the other E3 clusters → E4b, with W1 alongside. **5.0** — W2, E5 `transformer` and `audio`, the rest of E6 → W3.
 
 ## Rules for every phase
 
 1. **Check prerequisites first.** If a phase your plan depends on is not `Done` in the table above, stop and say so.
-2. **Verify "Current state" before relying on it.** Line numbers and counts in the phase files were correct on 2026-11-09 (`dev` @ `08eae21`). Re-check them with a search; fix the phase file if they have drifted.
+2. **Verify "Current state" before relying on it.** Line numbers and counts in the phase files were correct on 2026-11-09 (`dev` @ `08eae21`); the unfinished E and W files were revised on 2026-11-14 (`dev` @ `2bc0599`) after Code mode landed. Re-check them with a search; fix the phase file if they have drifted.
 3. **Stay in scope.** If you find a blocker outside your phase, stop and report it. Do not widen the phase to fix it.
 4. **No behavior change unless the plan says so.** Change only what the work requires. No drive-by renames, reformatting or "cleanup".
 5. **Tests before risky moves.** When a plan says "characterization tests first", write and pass them against the *old* code before changing it.
@@ -86,11 +90,12 @@ Open design decisions. A phase that lists one as **required** must use the value
 
 | ID | Decision | Choice | Alternative | Required by | Status |
 |---|---|---|---|---|---|
-| D1 | Docking | Own split-tree from `Grid` + `GridSplitter`; no drag-to-dock in the first release; layout model stays library-agnostic | AvalonDock | E4 | Default |
-| D2 | Ribbon | Custom tabbed command bar built from WPF-UI controls, generated from the action registry | Fluent.Ribbon, or `System.Windows.Controls.Ribbon` | E6 | Default |
-| D3 | Range highlighting in the text editor | Adorner layer over the existing `TextBox` | Switch the text surface to AvalonEdit | E5 (audio pane) | Default |
-| D4 | View-model library for new components | CommunityToolkit.Mvvm | Hand-rolled `INotifyPropertyChanged` | E3, W3 | Default |
-| D5 | Layout scope | Per window instance, with a per-file-type default and a global default | One global layout | E4 | Default |
+| D1 | Docking | Own split-tree from `Grid` + `GridSplitter`; no drag-to-dock in the first release; layout model stays library-agnostic | AvalonDock | E4a — **needed for 4.17** | Default |
+| D2 | Ribbon | Custom tabbed command bar built from WPF-UI controls, generated from the action registry | Fluent.Ribbon, or `System.Windows.Controls.Ribbon` | E6 `ribbon` | Default |
+| D3 | Range highlighting in the editor | **Changed 2026-11-14.** Highlight in the code editor: an AvalonEdit `IBackgroundRenderer` on `CodeEditor`, as `SelectionOccurrencesRenderer` already does for matching words. A layout that needs highlighting (Transcription) opens its text in Code mode as Plain Text. No highlighting in Text, Markdown or Spreadsheet modes. | Adorner layer over the `TextBox` (the previous choice; still needed if highlighting must work in Text mode) | E5 `audio` | Default |
+| D4 | View-model library for new components | CommunityToolkit.Mvvm | Hand-rolled `INotifyPropertyChanged` | E5, W3 — **needed for 4.17** | Default |
+| D5 | Layout scope | Per window instance, with a per-file-type default and a global default | One global layout | E4a — **needed for 4.17** | Default |
+| D6 | Document of record (new 2026-11-14) | Keep the `TextBox` as the document in every mode through 4.18; the code editor mirrors it edit by edit. Revisit before 5.0 with a release of Code mode behind us. | Make AvalonEdit the Text surface too and retire the `TextBox`: one editor, one undo stack, half the memory for large documents — but it loses spell check, the link and email context-menu items and Use Margins until they are rebuilt, and changes IME and touch behavior | Nothing yet | Default |
 
 Fixed decisions (do not revisit):
 
@@ -113,8 +118,11 @@ These names are used across phase files. The phase that introduces each one owns
 | `ActionDescriptor`, `ITextTransform`, `IEditorCommand`, `IActionRegistry` | A1 | One description of every action, consumed by menus, buttons, hotkeys, post-grab actions and workflow nodes. |
 | `WorkflowDefinition`, `IWorkflowStep`, `WorkflowRunner`, `IWorkflowStore` | W1 | Workflow model and headless runtime. |
 | `IEditorSession`, `IEditorSurface`, `TextSpan` | E1 | The ETW document and the editor control behind it, without naming a control; `TextSpan` is a range of the document in plain-text offsets. |
+| `EtwEditorMode.Code`, `CodeSurface`, `CodeEditor` | Code mode | The fourth editor: an AvalonEdit control holding the same characters as the text box. `CodeSurface` is its `IEditorSurface`. |
+| `TextEdit` | Code mode | One replacement in a text (`Removed` span, `Inserted` string). `TextEdit.Between(old, new)` is the smallest edit between two texts. Reuse it wherever ranges must survive an edit (E5 `audio`). |
+| `CodeLanguages`, `CodeLanguageDetector`, `CodeFolding` | Code mode | Core: the language list with extensions, the heuristic detector, and the folding rules. |
 | `IEditorPane` | E3 | A dockable component of the ETW. |
-| `EtwLayoutDefinition`, `ILayoutStore` | E4 | JSON description of an ETW's chrome, panes and buttons. |
+| `EtwLayoutDefinition`, `ILayoutStore` | E4a | JSON description of an ETW's panes and, from E4b, its chrome and buttons. |
 | `TranscriptDocument` | E5 | Timed transcript segments anchored to text ranges. |
 
 ## Reporting

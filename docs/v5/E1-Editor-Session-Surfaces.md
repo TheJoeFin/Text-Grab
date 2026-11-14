@@ -196,4 +196,24 @@ Nothing outside the window used `MarkdownEditorControl` or `SpreadsheetDataGrid`
 - The grab windows' destination stays a `TextBox`, obtained through `GetMainTextBox()`. `OpenMediaWindow` and `QuickSimpleLookup` pass their own text boxes down the same path, so it is not an ETW concept.
 - The three editors are `x:FieldModifier="private"`.
 
-**Tests:** `EditorSessionCharacterizationTests` (19, written and passing against the old code first), `EditorSessionTests` (9), `EditorSessionSyncTests` (5). They are the first tests to construct a real `EditTextWindow`. That needed `Tests/WpfResourceAssemblySetup.cs` (the app assembly as WPF's resource assembly) and a null check on `Application.Current` in `NotifyIconUtilities.RefreshTrayIconStyle`. `FindAndReplaceWindow` still can't be constructed in tests, because its XAML needs App.xaml styles, so its interaction is covered through the window methods it calls.
+### After E1: Code mode (2026-11-14, PR #710)
+
+Code mode (#645) was not a planned phase. It is the first feature built on the session, and it changed some of what is written above. Later phases should read this as part of E1's outcome.
+
+- **Four editors, not three.** `EtwEditorMode` gained `Code`; `CodeEditorControl` is a `CodeEditor` (AvalonEdit 6.3.1.120, a new package in the app). `CodeSurface` is the fourth `IEditorSurface`. The window's part is `EditTextWindow.Code.cs` (318 lines); the control is `Text-Grab/Controls/CodeEditor*.cs` (about 1,000 lines).
+- **The text box is still the document in every mode.** The code editor holds the same characters, so offsets need no mapping, and the two are kept in step exactly rather than by copying the whole text:
+  - an edit typed in the code editor reaches the text box as the same replacement, through `EditorSession.ApplyEditFromCodeEditor(TextEdit, TextSpan)`;
+  - a change made through the session reaches the code editor as the smallest replacement (`CodeSurface.SetText` → `TextEdit.Between`), so its caret, scroll position, undo history and collapsed regions survive;
+  - the selection is mirrored both ways by the window (`MirrorCodeSelectionToText`, `MirrorTextSelectionToCodeEditor`).
+- **Session and surface changes:** `IEditorSurface` gained `ScrollToEnd()`. `EditorSession` takes a fourth surface, owns `isSyncingTextFromCode`, and exposes `IsSyncingTextFromCode` and `IsSyncingTextFromEditor`. `TextSpan` gained `ClampTo`. `IEditorSession` itself did not change.
+- **New in Core** (`Text_Grab.Core.Editing`): `TextEdit`, `CodeLanguages`, `CodeLanguageDetector`, `CodeFolding` with `BraceFolding` and `TagFolding`, `BracketMatcher`, `CodeHighlightColors`.
+- **Persistence:** `HistoryInfo.CodeLanguage` (null = none chosen, `""` = plain text). `IoUtilities.GetEditorModeForPath` returns `Code` for the extensions in `CodeLanguages`, so those files no longer open as Raw Text.
+- **Two undo stacks.** The code editor has its own, and each of its edits is also an undoable edit in the hidden text box. Undo in Code mode is AvalonEdit's. Anything that reasons about undo across a mode switch has to know this (decision D6).
+- **Known gaps** (from the PR): the calc pane does not scroll with the code editor; Use Margins has no effect; no spell check; a fixed right-click menu without the spelling, link and email items; always a monospace font.
+- **Line counts after it:** `EditTextWindow.xaml.cs` 2,389; `.Spreadsheet.cs` 2,015; `.Selection.cs` 857; `.Calc.cs` 659; `.Files.cs` 656; `.LocalAi.cs` 593; `.Transcription.cs` 587; `.Menus.cs` 516; `.Code.cs` 318; `.Markdown.cs` 307 — 8,897 in all. `EditTextWindow.xaml` is 1,636 lines with 220 `MenuItem`s.
+
+**Tests:** `EditTextWindowCodeModeTests`, `EditTextWindowCodeModeOpenFileTests`, and in `Tests.Core` `CodeModeCoreTests` and `CodeFoldingTests`.
+
+### E1b tests
+
+`EditorSessionCharacterizationTests` (19, written and passing against the old code first), `EditorSessionTests` (9), `EditorSessionSyncTests` (5). They are the first tests to construct a real `EditTextWindow`. That needed `Tests/WpfResourceAssemblySetup.cs` (the app assembly as WPF's resource assembly) and a null check on `Application.Current` in `NotifyIconUtilities.RefreshTrayIconStyle`. `FindAndReplaceWindow` still can't be constructed in tests, because its XAML needs App.xaml styles, so its interaction is covered through the window methods it calls.
