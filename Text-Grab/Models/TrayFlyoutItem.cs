@@ -69,6 +69,9 @@ public sealed class TrayFlyoutItem
 
     public string AutomationName { get; }
 
+    /// <summary>True when the row is backed by a file path (enables Copy path / Open directory).</summary>
+    public bool IsFile => Kind == TrayFlyoutItemKind.File && !string.IsNullOrWhiteSpace(History.SourcePath);
+
     public static string BuildSnippet(string text)
     {
         if (string.IsNullOrWhiteSpace(text))

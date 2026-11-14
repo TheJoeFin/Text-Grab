@@ -148,6 +148,40 @@ public static partial class TrayFlyoutController
         catch (COMException) { /* clipboard is busy; nothing useful to do */ }
     }
 
+    /// <summary>Copies the file path of a file-backed item to the clipboard.</summary>
+    public static void CopyItemPath(TrayFlyoutItem item)
+    {
+        if (!item.IsFile)
+            return;
+
+        try { System.Windows.Clipboard.SetText(item.History.SourcePath); }
+        catch (COMException) { /* clipboard is busy; nothing useful to do */ }
+    }
+
+    /// <summary>Opens the containing folder of a file-backed item with the file selected.</summary>
+    public static void OpenItemDirectory(TrayFlyoutItem item)
+    {
+        if (!item.IsFile)
+            return;
+
+        string path = item.History.SourcePath;
+        try
+        {
+            if (File.Exists(path))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"");
+            }
+            else if (Path.GetDirectoryName(path) is string dir && Directory.Exists(dir))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"\"{dir}\"");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Tray flyout failed to open directory: {ex}");
+        }
+    }
+
     private static void PositionNearCursor(TrayFlyoutWindow window, bool snapToCorner)
     {
         if (!WindowUtilities.GetMousePosition(out System.Windows.Point mouse))

@@ -130,6 +130,49 @@ public partial class TrayFlyoutWindow : Window
             TrayFlyoutController.ActivateItem(item);
     }
 
+    private void ItemsList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Select (but don't activate) the row under the pointer so the menu and highlight agree.
+        if (e.OriginalSource is DependencyObject source
+            && ItemsControl.ContainerFromElement(ItemsList, source) is ListBoxItem container)
+        {
+            container.IsSelected = true;
+        }
+    }
+
+    private static TrayFlyoutItem? MenuItemTarget(object sender)
+        => (sender as FrameworkElement)?.DataContext as TrayFlyoutItem;
+
+    private void ItemMenuOpen_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is TrayFlyoutItem item)
+            TrayFlyoutController.ActivateItem(item);
+    }
+
+    private void ItemMenuCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is not TrayFlyoutItem item)
+            return;
+
+        TrayFlyoutController.CopyItem(item);
+        TrayFlyoutController.Close();
+    }
+
+    private void ItemMenuCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is not TrayFlyoutItem item)
+            return;
+
+        TrayFlyoutController.CopyItemPath(item);
+        TrayFlyoutController.Close();
+    }
+
+    private void ItemMenuOpenDirectory_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is TrayFlyoutItem item)
+            TrayFlyoutController.CloseThenRun(() => TrayFlyoutController.OpenItemDirectory(item));
+    }
+
     private void ActionButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string action })

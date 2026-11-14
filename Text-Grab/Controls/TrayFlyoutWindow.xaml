@@ -88,6 +88,46 @@
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         </Style>
 
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <!--  Right-click / Apps key menu for a recent item. DataContext flows from the row (the TrayFlyoutItem).  -->
+        <ContextMenu x:Key="FlyoutItemContextMenu">
+            <MenuItem
+                AutomationProperties.AutomationId="TrayFlyout.Item.Open"
+                Click="ItemMenuOpen_Click"
+                Header="Open">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="Open24" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="TrayFlyout.Item.Copy"
+                Click="ItemMenuCopy_Click"
+                Header="Copy">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="Copy24" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="TrayFlyout.Item.CopyPath"
+                Click="ItemMenuCopyPath_Click"
+                Header="Copy path"
+                Visibility="{Binding IsFile, Converter={StaticResource BoolToVisibility}}">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="DocumentLink20" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="TrayFlyout.Item.OpenDirectory"
+                Click="ItemMenuOpenDirectory_Click"
+                Header="Open directory"
+                Visibility="{Binding IsFile, Converter={StaticResource BoolToVisibility}}">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="FolderOpen24" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
         <Style x:Key="FlyoutListItemStyle" TargetType="ListBoxItem">
             <Setter Property="Margin" Value="6,1" />
             <Setter Property="Padding" Value="8,6" />
@@ -95,6 +135,7 @@
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="AutomationProperties.AutomationId" Value="TrayFlyout.Item" />
+            <Setter Property="ContextMenu" Value="{StaticResource FlyoutItemContextMenu}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
@@ -322,6 +363,7 @@
                         ItemTemplate="{StaticResource FlyoutItemTemplate}"
                         KeyboardNavigation.TabNavigation="Once"
                         PreviewMouseLeftButtonUp="ItemsList_PreviewMouseLeftButtonUp"
+                        PreviewMouseRightButtonDown="ItemsList_PreviewMouseRightButtonDown"
                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                         SelectionMode="Single" />
                     <TextBlock
