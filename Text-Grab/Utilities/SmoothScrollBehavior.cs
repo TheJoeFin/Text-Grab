@@ -22,12 +22,18 @@ public static class SmoothScrollBehavior
     private const double EaseTimeConstantSeconds = 0.055;
     // Touch flick deceleration in DIPs per ms^2 (WPF default is 0.001; higher stops sooner).
     private const double FlickDeceleration = 0.0015;
+    private const double ExternalScrollTolerance = 2;
 
     private sealed class ScrollState
     {
         public double Current;
         public double Target;
         public bool IsAnimating;
+
+        // last two offsets this behavior applied, used to spot scrolls caused by something else
+        public double LastApplied;
+        public double PreviousApplied;
+        public bool HasApplied;
 
         // touch manipulation
         public bool IsPanning;
@@ -161,7 +167,10 @@ public static class SmoothScrollBehavior
             return false;
 
         if (!state.IsAnimating)
+        {
             state.Current = sv.VerticalOffset;
+            state.HasApplied = false;
+        }
 
         state.Target = target;
         StartAnimating(sv, state);
@@ -290,6 +299,22 @@ public static class SmoothScrollBehavior
         Active.Remove(sv);
     }
 
+    // After the final frame, confirm the view really landed on the target once layout has run.
+    // Layout (e.g. extent changes while scrolling to the top of a long document) can otherwise
+    // leave it a few lines short of the edge.
+    private static void EnsureSettledAtTarget(ScrollViewer sv, double target)
+    {
+        sv.Dispatcher.BeginInvoke(() =>
+        {
+            if (States.TryGetValue(sv, out ScrollState? state) && state.IsAnimating)
+                return;
+
+            double expected = Math.Clamp(target, 0, sv.ScrollableHeight);
+            if (Math.Abs(sv.VerticalOffset - expected) > 0.5)
+                sv.ScrollToVerticalOffset(expected);
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
     private static void CompositionTarget_Rendering(object? sender, EventArgs e)
     {
         double now = Clock.Elapsed.TotalSeconds;
@@ -307,17 +332,37 @@ public static class SmoothScrollBehavior
                 continue;
             }
 
+            // Something else moved the view (scrollbar drag, caret BringIntoView, programmatic scroll):
+            // VerticalOffset matches neither of the last two positions we applied (it lags one layout pass).
+            // Yield to it instead of dragging the view back along our stale path.
+            if (state.HasApplied
+                && Math.Abs(sv.VerticalOffset - state.LastApplied) > ExternalScrollTolerance
+                && Math.Abs(sv.VerticalOffset - state.PreviousApplied) > ExternalScrollTolerance)
+            {
+                state.IsAnimating = false;
+                Active.RemoveAt(i);
+                state.HasApplied = false;
+                continue;
+            }
+
             state.Target = Math.Clamp(state.Target, 0, sv.ScrollableHeight);
             state.Current += (state.Target - state.Current) * blend;
 
-            if (Math.Abs(state.Target - state.Current) < 0.5)
+            bool settled = Math.Abs(state.Target - state.Current) < 0.5;
+            if (settled)
             {
                 state.Current = state.Target;
                 state.IsAnimating = false;
                 Active.RemoveAt(i);
             }
 
+            state.PreviousApplied = state.HasApplied ? state.LastApplied : state.Current;
+            state.LastApplied = state.Current;
+            state.HasApplied = !settled;
             sv.ScrollToVerticalOffset(state.Current);
+
+            if (settled)
+                EnsureSettledAtTarget(sv, state.Target);
         }
 
         if (Active.Count == 0)
