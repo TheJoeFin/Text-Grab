@@ -44,7 +44,14 @@ public partial class LanguageSettings : Page
 
         RemoveFuriganaToggle.IsChecked = DefaultSettings.RemoveFurigana;
 
-        if (DefaultSettings.UseTesseract)
+        // Bundled mode: the list, download picker and folder button live on the Tesseract page.
+        // External mode (existing installs): the legacy section stays exactly as it was.
+        bool useLegacySection = DefaultSettings.UseTesseract && TesseractHelper.Mode == TesseractEngineMode.External;
+        TesseractBundledLinkPanel.Visibility = DefaultSettings.UseTesseract && !useLegacySection
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        if (useLegacySection)
         {
             TesseractLanguagesStackPanel.Visibility = Visibility.Visible;
             await LoadTesseractContent();
@@ -163,10 +170,22 @@ public partial class LanguageSettings : Page
         string tempFilePath = Path.Combine(AutomationProfile.GetTemporaryDirectory(), pickedLanguageFile);
 
         TesseractGitHubFileDownloader fileDownloader = new(AppServices.Provider.GetRequiredService<HttpClient>());
-        await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);
+        TesseractDownloadResult result = await fileDownloader.DownloadFileAsync(pickedLanguageFile, tempFilePath);
+        if (!result.Success)
+        {
+            ErrorsAndOutputText.Text = result.Error;
+            return;
+        }
+
+        ErrorsAndOutputText.Text = string.Empty;
         await CopyFileWithElevatedPermissions(tempFilePath, tesseractFilePath);
         await LoadTesseractContent();
         File.Delete(tempFilePath);
+    }
+
+    private void OpenTesseractPageLink_Click(object sender, RoutedEventArgs e)
+    {
+        NavigationService?.Navigate(new TesseractSettings());
     }
 
     private void HyperlinkButton_Click(object sender, RoutedEventArgs e)

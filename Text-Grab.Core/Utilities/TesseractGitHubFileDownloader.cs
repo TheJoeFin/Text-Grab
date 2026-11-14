@@ -1,9 +1,16 @@
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Text_Grab.Utilities;
+
+public sealed record TesseractDownloadResult(bool Success, string? Error)
+{
+    public static readonly TesseractDownloadResult Succeeded = new(true, null);
+    public static TesseractDownloadResult Failed(string error) => new(false, error);
+}
 
 public class TesseractGitHubFileDownloader
 {
@@ -27,30 +34,77 @@ public class TesseractGitHubFileDownloader
         _client = client;
     }
 
-    public async Task DownloadFileAsync(string filenameToDownload, string localDestination)
+    /// <summary>
+    /// Smallest size a downloaded model may have. A truncated file or an HTML error page is far
+    /// smaller than any real .traineddata and would otherwise break every OCR call.
+    /// </summary>
+    public long MinimumPlausibleBytes { get; init; } = 100_000;
+
+    /// <summary>
+    /// Downloads one model to <paramref name="localDestination"/>. The file is written to a
+    /// <c>.tmp</c> sibling, validated, then moved into place, so a failed or cancelled download never
+    /// leaves a corrupt model behind. Failures are reported in the result; cancellation throws.
+    /// </summary>
+    public async Task<TesseractDownloadResult> DownloadFileAsync(
+        string filenameToDownload,
+        string localDestination,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         // Construct the URL to the raw content of the file in the GitHub repository
         // https://github.com/tesseract-ocr/tessdata
         string fileUrl = $"https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/{filenameToDownload}";
+        string tempPath = localDestination + ".tmp";
 
         try
         {
-            // Send a GET request to the specified URL
+            string? folder = Path.GetDirectoryName(localDestination);
+            if (!string.IsNullOrEmpty(folder))
+                Directory.CreateDirectory(folder);
+
             using HttpRequestMessage request = new(HttpMethod.Get, fileUrl);
             request.Headers.Add("User-Agent", UserAgent);
-            HttpResponseMessage response = await _client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-            // Read the response content
-            byte[] fileContents = await response.Content.ReadAsByteArrayAsync();
+            if (!response.IsSuccessStatusCode)
+                return TesseractDownloadResult.Failed($"Download failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
 
-            // Write the content to a file on the local file system
-            await File.WriteAllBytesAsync(localDestination, fileContents);
-            Console.WriteLine("File downloaded successfully.");
+            long? totalBytes = response.Content.Headers.ContentLength;
+            long written = 0;
+
+            await using (Stream source = await response.Content.ReadAsStreamAsync(cancellationToken))
+            await using (FileStream target = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                byte[] buffer = new byte[81920];
+                int read;
+                while ((read = await source.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                    written += read;
+                    if (totalBytes is > 0)
+                        progress?.Report((double)written / totalBytes.Value);
+                }
+            }
+
+            if (written < MinimumPlausibleBytes || (totalBytes is > 0 && written != totalBytes))
+                return TesseractDownloadResult.Failed($"Downloaded file is incomplete or invalid ({written} bytes).");
+
+            File.Move(tempPath, localDestination, overwrite: true);
+            progress?.Report(1);
+            return TesseractDownloadResult.Succeeded;
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            Console.WriteLine($"An error occurred: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException)
+        {
+            return TesseractDownloadResult.Failed(ex.Message);
+        }
+        finally
+        {
+            try { File.Delete(tempPath); }
+            catch (Exception) { /* best effort cleanup */ }
         }
     }
 
