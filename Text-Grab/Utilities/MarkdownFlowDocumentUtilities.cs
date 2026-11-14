@@ -434,6 +434,18 @@ public static partial class MarkdownFlowDocumentUtilities
                     list.ListItems.Add(listItem);
                 }
 
+                // A top-level list made only of to-dos shows just the checkbox, no bullet.
+                // Nested lists keep their bullet so the indentation still reads as a list.
+                if (listBlock.Parent is not ListItemBlock
+                    && !listBlock.IsOrdered
+                    && list.ListItems.Count > 0
+                    && list.ListItems.All(IsTaskListItem))
+                {
+                    list.MarkerStyle = TextMarkerStyle.None;
+                    list.Padding = new Thickness(0);
+                    list.MarkerOffset = 0;
+                }
+
                 blocks.Add(list);
                 break;
 
@@ -1392,6 +1404,35 @@ public static partial class MarkdownFlowDocumentUtilities
     private static MarkdownInlineRole GetInlineRole(DependencyObject element) => (MarkdownInlineRole)element.GetValue(InlineRoleProperty);
     public static bool IsTaskListCheckBox(DependencyObject element) =>
         element is CheckBox && GetInlineRole(element) == MarkdownInlineRole.TaskListMarker;
+
+    /// <summary>True when the list item's first paragraph starts with a task-list checkbox.</summary>
+    public static bool IsTaskListItem(ListItem item) =>
+        item.Blocks.FirstBlock is Paragraph { Inlines.FirstInline: InlineUIContainer { Child: CheckBox } container }
+        && GetInlineRole(container) == MarkdownInlineRole.TaskListMarker;
+
+    /// <summary>True for a task-list item that has a checkbox but no label text yet.</summary>
+    public static bool IsEmptyTaskListItem(ListItem item) =>
+        IsTaskListItem(item)
+        && item.Blocks.FirstBlock is Paragraph paragraph
+        && paragraph.Inlines.Skip(1).All(inline => inline is Run run && string.IsNullOrWhiteSpace(run.Text));
+
+    /// <summary>Creates an unchecked task-list checkbox followed by the separating space, ready to insert at the start of a paragraph.</summary>
+    public static void InsertTaskListMarker(Paragraph paragraph)
+    {
+        CheckBox checkBox = new() { IsChecked = false, VerticalAlignment = VerticalAlignment.Center };
+        SetInlineRole(checkBox, MarkdownInlineRole.TaskListMarker);
+        InlineUIContainer container = new(checkBox) { BaselineAlignment = BaselineAlignment.Center };
+        SetInlineRole(container, MarkdownInlineRole.TaskListMarker);
+        paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, new Run(" "));
+        paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, container);
+    }
+
+    /// <summary>Removes the checkbox and spacing from a task-list item, leaving an empty item.</summary>
+    public static void RemoveTaskListMarker(ListItem item)
+    {
+        if (item.Blocks.FirstBlock is Paragraph paragraph)
+            paragraph.Inlines.Clear();
+    }
     private static void SetCodeFenceInfo(DependencyObject element, string value) => element.SetValue(CodeFenceInfoProperty, value);
     private static string GetCodeFenceInfo(DependencyObject element) => (string)element.GetValue(CodeFenceInfoProperty);
     private static void SetIsTableHeader(DependencyObject element, bool value) => element.SetValue(IsTableHeaderProperty, value);

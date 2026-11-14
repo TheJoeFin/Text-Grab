@@ -550,6 +550,41 @@ Console.WriteLine("hi");
     }
 
     [WpfFact]
+    public void Markdown_TopLevelTaskList_HasNoBullet_ButNestedAndMixedListsKeepIt()
+    {
+        FlowDocument todo = MarkdownFlowDocumentUtilities.CreateFlowDocument("- [ ] a\n- [x] b", new FontFamily("Segoe UI"), 16);
+        Assert.Equal(System.Windows.TextMarkerStyle.None, Assert.IsType<System.Windows.Documents.List>(Assert.Single(todo.Blocks)).MarkerStyle);
+
+        FlowDocument plain = MarkdownFlowDocumentUtilities.CreateFlowDocument("- a\n- b", new FontFamily("Segoe UI"), 16);
+        Assert.Equal(System.Windows.TextMarkerStyle.Disc, Assert.IsType<System.Windows.Documents.List>(Assert.Single(plain.Blocks)).MarkerStyle);
+
+        FlowDocument mixed = MarkdownFlowDocumentUtilities.CreateFlowDocument("- [ ] a\n- b", new FontFamily("Segoe UI"), 16);
+        Assert.Equal(System.Windows.TextMarkerStyle.Disc, Assert.IsType<System.Windows.Documents.List>(Assert.Single(mixed.Blocks)).MarkerStyle);
+
+        FlowDocument nested = MarkdownFlowDocumentUtilities.CreateFlowDocument("- parent\n  - [ ] child", new FontFamily("Segoe UI"), 16);
+        System.Windows.Documents.List outer = Assert.IsType<System.Windows.Documents.List>(Assert.Single(nested.Blocks));
+        System.Windows.Documents.List inner = Assert.IsType<System.Windows.Documents.List>(outer.ListItems.First().Blocks.OfType<System.Windows.Documents.List>().Single());
+        Assert.Equal(System.Windows.TextMarkerStyle.Disc, inner.MarkerStyle);
+    }
+
+    [WpfFact]
+    public void Markdown_TaskListItem_NewMarkerSerializesAsUncheckedCheckbox()
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument("- [x] done", new FontFamily("Segoe UI"), 16);
+        System.Windows.Documents.List list = Assert.IsType<System.Windows.Documents.List>(Assert.Single(document.Blocks));
+        Assert.True(MarkdownFlowDocumentUtilities.IsTaskListItem(list.ListItems.First()));
+        Assert.False(MarkdownFlowDocumentUtilities.IsEmptyTaskListItem(list.ListItems.First()));
+
+        System.Windows.Documents.ListItem next = new(new Paragraph(new Run("next")));
+        list.ListItems.Add(next);
+        MarkdownFlowDocumentUtilities.InsertTaskListMarker((Paragraph)next.Blocks.FirstBlock);
+
+        Assert.True(MarkdownFlowDocumentUtilities.IsTaskListItem(next));
+        Assert.Equal($"- [x] done{Environment.NewLine}- [ ] next",
+            MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true));
+    }
+
+    [WpfFact]
     public void Markdown_TaskListCheckBox_DoesNotDisplaceTextMapping()
     {
         const string markdown = "- [ ] alpha beta gamma";

@@ -233,6 +233,41 @@ public partial class EditTextWindow
         UpdateLineAndColumnText();
     }
 
+    private void MarkdownEditorControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (editorMode != EtwEditorMode.Markdown || e.Key != Key.Enter
+            || Keyboard.Modifiers != ModifierKeys.None
+            || !MarkdownEditorControl.Selection.IsEmpty)
+            return;
+
+        if (FindParent<ListItem>(MarkdownEditorControl.CaretPosition.Parent) is not ListItem item
+            || !MarkdownFlowDocumentUtilities.IsTaskListItem(item))
+            return;
+
+        // Enter on a still-empty to-do ends the list, same as bullets and numbers do:
+        // drop the checkbox and let the default handling leave the list.
+        if (MarkdownFlowDocumentUtilities.IsEmptyTaskListItem(item))
+        {
+            MarkdownFlowDocumentUtilities.RemoveTaskListMarker(item);
+            MarkdownEditorControl.CaretPosition = item.ContentStart.GetInsertionPosition(LogicalDirection.Forward);
+            return;
+        }
+
+        // Otherwise continue the list with a fresh unchecked checkbox.
+        e.Handled = true;
+        EditingCommands.EnterParagraphBreak.Execute(null, MarkdownEditorControl);
+
+        if (FindParent<ListItem>(MarkdownEditorControl.CaretPosition.Parent) is ListItem newItem
+            && newItem != item
+            && !MarkdownFlowDocumentUtilities.IsTaskListItem(newItem)
+            && newItem.Blocks.FirstBlock is Paragraph newParagraph)
+        {
+            MarkdownFlowDocumentUtilities.InsertTaskListMarker(newParagraph);
+            MarkdownEditorControl.CaretPosition = newParagraph.Inlines.FirstInline.NextInline
+                .ContentEnd.GetInsertionPosition(LogicalDirection.Forward);
+        }
+    }
+
     private void MarkdownEditorControl_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         if (editorMode != EtwEditorMode.Markdown || e.Text != " ")

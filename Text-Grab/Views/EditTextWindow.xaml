@@ -977,6 +977,7 @@
                     IsInactiveSelectionHighlightEnabled="True"
                     PreviewDragOver="ETWindow_DragOver"
                     PreviewDrop="ETWindow_Drop"
+                    PreviewKeyDown="MarkdownEditorControl_PreviewKeyDown"
                     SelectionBrush="{DynamicResource ControlStrongFillColorDefaultBrush}"
                     SelectionChanged="MarkdownEditorControl_SelectionChanged"
                     SizeChanged="MarkdownEditorControl_SizeChanged"
