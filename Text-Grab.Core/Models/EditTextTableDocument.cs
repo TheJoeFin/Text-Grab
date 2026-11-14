@@ -563,7 +563,12 @@ public sealed class EditTextTableDocument
         int minimumColumnCount)
     {
         List<List<string>> rows = ParseDelimitedText(text, delimiter);
-        if (!LooksStructured(rows))
+        // A tab is a deliberate column separator, so tolerate ragged rows (e.g. a header with
+        // one extra or truncated column). Commas show up in ordinary prose, so stay strict there.
+        bool isStructured = delimiter == '\t'
+            ? LooksStructured(rows) || LooksLikeRaggedTable(rows)
+            : LooksStructured(rows);
+        if (!isStructured)
             return null;
 
         TrimParserAddedTerminalRow(text, rows);
@@ -826,6 +831,19 @@ public sealed class EditTextTableDocument
             return true;
 
         return nonEmptyRows.Count == 1 && maxColumns >= 2;
+    }
+
+    /// <summary>
+    /// Looser check for tab-delimited text whose rows don't all share the widest row's column
+    /// count: at least two rows must have multiple columns, and they must make up at least
+    /// half of the non-empty rows so prose with a stray tab doesn't qualify.
+    /// </summary>
+    private static bool LooksLikeRaggedTable(List<List<string>> rows)
+    {
+        List<List<string>> nonEmptyRows = rows.Where(row => row.Any(value => !string.IsNullOrWhiteSpace(value))).ToList();
+        int multiColumnRows = nonEmptyRows.Count(row => row.Count >= 2);
+
+        return multiColumnRows >= 2 && multiColumnRows * 2 >= nonEmptyRows.Count;
     }
 
     private int InferLogicalColumnCount()

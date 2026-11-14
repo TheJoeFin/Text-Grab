@@ -18,6 +18,38 @@ public class EditTextTableDocumentTests
     }
 
     [Fact]
+    public void Tsv_RaggedRows_WithOneWiderHeader_IsStillATable()
+    {
+        const string input = "18%\t95%\t5%\t0%\r\nCPU\tMemory\tDisk\tNetwork\tSt\r\n0%\t347.7 MB\t0 MB/s\t0 Mbps\r\n0%\t50.6 MB\t0 MB/s\t0 Mbps\r\n0%\t25.2 MB\t0 MB/s\t0 Mbps";
+
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(input);
+
+        Assert.Equal(EtwStructuredTextFormat.Tsv, document.Format);
+        Assert.Equal(5, document.ColumnCount);
+        Assert.Equal("347.7 MB", document.Rows[2][1]);
+    }
+
+    [Fact]
+    public void Tsv_ProseWithOneStrayTab_StaysPlainText()
+    {
+        const string input = "This is a sentence.\r\nAnother line with a\ttab in it.\r\nA third plain line.\r\nAnd a fourth.";
+
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(input);
+
+        Assert.Equal(EtwStructuredTextFormat.PlainText, document.Format);
+    }
+
+    [Fact]
+    public void Csv_RaggedProse_StaysPlainText()
+    {
+        const string input = "Well, hello there, friend.\r\nNo commas here.\r\nOh, one more, and another, and more.";
+
+        EditTextTableDocument document = EditTextTableDocument.CreateFromText(input);
+
+        Assert.Equal(EtwStructuredTextFormat.PlainText, document.Format);
+    }
+
+    [Fact]
     public void Csv_QuotedFields_RoundTrip()
     {
         const string input = "Name,Notes\r\nJoe,\"Hello, \"\"world\"\"\"";
