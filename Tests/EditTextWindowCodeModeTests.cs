@@ -1,0 +1,494 @@
+using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.AvalonEdit.Folding;
+using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Indentation.CSharp;
+using ICSharpCode.AvalonEdit.Rendering;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using Text_Grab;
+using Text_Grab.Controls;
+using Text_Grab.Core.Editing;
+using Text_Grab.Models;
+using static Tests.EditTextWindowTestHost;
+
+namespace Tests;
+
+/// <summary>
+/// Code mode (issue #645): the text in an AvalonEdit editor, kept in step with the raw text box in
+/// both directions, text and selection.
+/// </summary>
+public class EditTextWindowCodeModeTests
+{
+    private const string CSharpSample = "using System;\r\n\r\nnamespace Demo;\r\n\r\npublic class Greeter\r\n{\r\n    public string Name { get; set; }\r\n}\r\n";
+
+    [WpfFact]
+    public void EnteringCodeMode_ShowsTheTextAndDetectsTheLanguage()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+
+        SwitchMode(window, EtwEditorMode.Code);
+
+        Assert.Equal(EtwEditorMode.Code, window.Session.Mode);
+        Assert.Equal(CSharpSample, CodeEditor(window).Text);
+        Assert.Equal(CodeLanguages.CSharp, window.CodeLanguageName);
+        Assert.Equal("C#", CodeEditor(window).SyntaxHighlighting?.Name);
+    }
+
+    [WpfFact]
+    public void EnteringCodeMode_LeavesNothingToUndo()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+
+        // Undoing the fill would empty the editor, and the text box with it.
+        Assert.False(editor.CanUndo);
+
+        // Coming back after an edit made elsewhere: the history from the first visit is for older text.
+        editor.Document.Insert(0, "// note\r\n");
+        DoEvents();
+        SwitchMode(window, EtwEditorMode.Text);
+        RawTextBox(window).AppendText("// end\r\n");
+        SwitchMode(window, EtwEditorMode.Code);
+
+        Assert.False(editor.CanUndo);
+        Assert.Equal(RawText(window), editor.Text);
+    }
+
+    [WpfFact]
+    public void TypingInTheCodeEditor_UpdatesTheTextAndCaret()
+    {
+        EditTextWindow window = CreateWindow("int x = 1;");
+        SwitchMode(window, EtwEditorMode.Code);
+        TextEditor editor = CodeEditor(window);
+
+        editor.CaretOffset = "int x = ".Length;
+        editor.TextArea.PerformTextInput("4");
+        DoEvents();
+
+        Assert.Equal("int x = 41;", window.Session.Text);
+        Assert.Equal(RawText(window), editor.Text);
+        Assert.Equal(new TextSpan("int x = 4".Length, 0), window.Session.Selection);
+    }
+
+    [WpfFact]
+    public void IndentingSeveralLines_LeavesTheTextBoxSelectionWithTheCodeEditors()
+    {
+        EditTextWindow window = CreateWindow("one\r\ntwo\r\nthree");
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        editor.Select(0, "one\r\ntwo".Length);
+        DoEvents();
+
+        // Tab with lines selected indents each line: one change per line, none of them at the caret.
+        System.Windows.Documents.EditingCommands.TabForward.Execute(null, editor.TextArea);
+        DoEvents();
+
+        Assert.Equal("\tone\r\n\ttwo\r\nthree", window.Session.Text);
+        Assert.Equal(new TextSpan(editor.SelectionStart, editor.SelectionLength), window.Session.Selection);
+    }
+
+    [WpfFact]
+    public void AChangeAfterTheSelection_LeavesTheSameTextSelectedInTheTextBox()
+    {
+        EditTextWindow window = CreateWindow("one two three");
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        editor.Select("one ".Length, "two".Length);
+        DoEvents();
+
+        // Neither the caret nor the selection moves. (AvalonEdit 6.3 raises the caret's PositionChanged
+        // after every update anyway, which re-mirrors the selection, but only because a flag for it is
+        // never reset; the sync of the edit itself must leave the selection right.)
+        editor.Document.Insert(window.Session.Text.Length, "!");
+        DoEvents();
+
+        // Selection-based commands (Select Line, Move Line, Toggle Case, Isolate) read the text box's.
+        Assert.Equal("two", editor.SelectedText);
+        Assert.Equal("two", window.Session.SelectedText);
+    }
+
+    [WpfFact]
+    public void WhileTheFindBarIsOpen_TheCodeMenuDoesNotOfferShiftF3ForToggleCase()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        ContextMenu menu = (ContextMenu)window.FindResource("CodeContextMenu");
+        MenuItem toggleCase = menu.Items.OfType<MenuItem>().Single(item => item.Command == EditTextWindow.ToggleCaseCmd);
+
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent, menu));
+        Assert.Equal("Shift + F3", toggleCase.InputGestureText);
+
+        // Shift+F3 goes to the previous match while the find bar is open.
+        editor.Search.Open();
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent, menu));
+        Assert.Equal(string.Empty, toggleCase.InputGestureText);
+        Assert.Equal(string.Empty, window.ToggleCaseGestureText);
+
+        editor.Search.Close();
+        menu.RaiseEvent(new RoutedEventArgs(ContextMenu.OpenedEvent, menu));
+        Assert.Equal("Shift + F3", toggleCase.InputGestureText);
+    }
+
+    [WpfFact]
+    public void ATransformAppliesToWhatIsSelectedInTheCodeEditor()
+    {
+        EditTextWindow window = CreateWindow("one\r\ntwo\r\nthree");
+        SwitchMode(window, EtwEditorMode.Code);
+        TextEditor editor = CodeEditor(window);
+
+        editor.Select(0, "one\r\ntwo".Length);
+        DoEvents();
+        window.JoinLinesInEditTextWindow(" ", trimLineBeforeJoining: false);
+        DoEvents();
+
+        Assert.Equal("one two\r\nthree", window.Session.Text);
+        Assert.Equal("one two\r\nthree", editor.Text);
+    }
+
+    [WpfFact]
+    public void AWholeTextChange_ReachesTheCodeEditorAsOneUndoableEdit()
+    {
+        EditTextWindow window = CreateWindow("alpha\r\nbeta");
+        SwitchMode(window, EtwEditorMode.Code);
+        TextEditor editor = CodeEditor(window);
+
+        window.Session.Text = "alpha\r\nBETA";
+        DoEvents();
+
+        Assert.Equal("alpha\r\nBETA", editor.Text);
+        Assert.True(editor.CanUndo);
+
+        editor.Undo();
+        DoEvents();
+
+        Assert.Equal("alpha\r\nbeta", editor.Text);
+        Assert.Equal("alpha\r\nbeta", window.Session.Text);
+    }
+
+    [WpfFact]
+    public void SettingTheSessionSelection_SelectsInTheCodeEditor()
+    {
+        EditTextWindow window = CreateWindow("first second third");
+        SwitchMode(window, EtwEditorMode.Code);
+        TextEditor editor = CodeEditor(window);
+
+        window.SelectInEditor("first ".Length, "second".Length);
+        DoEvents();
+
+        Assert.Equal("second", editor.SelectedText);
+        Assert.Equal("second", window.Session.SelectedText);
+    }
+
+    [WpfFact]
+    public void SwitchingModes_KeepsEditsMadeInEachEditor()
+    {
+        EditTextWindow window = CreateWindow("abc");
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor(window).Document.Insert(3, "def");
+        DoEvents();
+
+        SwitchMode(window, EtwEditorMode.Text);
+        Assert.Equal("abcdef", RawText(window));
+
+        RawTextBox(window).AppendText("ghi");
+        SwitchMode(window, EtwEditorMode.Code);
+        Assert.Equal("abcdefghi", CodeEditor(window).Text);
+    }
+
+    [WpfFact]
+    public void PickingALanguage_IsKeptOverDetection()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        window.SetCodeLanguage(CodeLanguages.Python);
+
+        SwitchMode(window, EtwEditorMode.Code);
+
+        Assert.Equal(CodeLanguages.Python, window.CodeLanguageName);
+        Assert.Equal("Python", CodeEditor(window).SyntaxHighlighting?.Name);
+    }
+
+    [WpfFact]
+    public void HistoryRestoresTheCodeLanguage()
+    {
+        HistoryInfo history = new()
+        {
+            TextContent = "x = 1",
+            EditorMode = EtwEditorMode.Code,
+            CodeLanguage = CodeLanguages.Python,
+        };
+
+        EditTextWindow window = new(history);
+
+        Assert.Equal(CodeLanguages.Python, window.CodeLanguageName);
+        Assert.Equal(CodeLanguages.Python, window.AsHistoryItem().CodeLanguage);
+    }
+
+    [WpfFact]
+    public void APlainTextChoice_SurvivesHistory()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        window.SetCodeLanguage(null);
+
+        HistoryInfo saved = window.AsHistoryItem();
+        EditTextWindow restored = new(saved);
+        SwitchMode(restored, EtwEditorMode.Code);
+
+        // Saved as "" (plain text), not null (no choice), so the C# the text looks like isn't detected.
+        Assert.Equal(string.Empty, saved.CodeLanguage);
+        Assert.Null(restored.CodeLanguageName);
+        Assert.Null(CodeEditor(restored).SyntaxHighlighting);
+    }
+
+    [WpfFact]
+    public void ShowingAHistoryItemInAnEmptyWindow_RestoresItsCodeLanguage()
+    {
+        EditTextWindow window = CreateWindow(string.Empty);
+
+        window.ShowHistoryItem(new HistoryInfo
+        {
+            TextContent = CSharpSample,
+            EditorMode = EtwEditorMode.Code,
+            CodeLanguage = CodeLanguages.Python,
+        });
+
+        Assert.Equal(EtwEditorMode.Code, window.Session.Mode);
+        Assert.Equal(CodeLanguages.Python, window.CodeLanguageName);
+        Assert.Equal(CSharpSample, CodeEditor(window).Text);
+    }
+
+    [WpfFact]
+    public void TheCodeEditorLeavesCtrlDAndCtrlIToTheWindow()
+    {
+        CodeEditor editor = new();
+
+        Assert.DoesNotContain(editor.TextArea.CommandBindings.Cast<CommandBinding>(),
+            binding => binding.Command == AvalonEditCommands.DeleteLine || binding.Command == AvalonEditCommands.IndentSelection);
+    }
+
+    [WpfFact]
+    public void TheLanguagesFoldedByBraces_AreTheOnesIndentedByBraces()
+    {
+        CodeEditor editor = new();
+
+        foreach (CodeLanguage language in CodeLanguages.All)
+        {
+            editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition(language.Name);
+            bool indentsByBraces = editor.TextArea.IndentationStrategy is CSharpIndentationStrategy;
+
+            // One list for both (PowerShell folded by braces but wasn't indented by them).
+            Assert.True(
+                CodeFolding.UsesBraceBlocks(language.Name) == indentsByBraces,
+                $"{language.Name}: folded by braces {CodeFolding.UsesBraceBlocks(language.Name)}, indented by braces {indentsByBraces}");
+        }
+    }
+
+    [WpfFact]
+    public void FoldingMarkers_AppearOnlyForLanguagesWithAFoldingRule()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+
+        Assert.NotNull(editor.Foldings);
+        Assert.Contains(editor.TextArea.LeftMargins, margin => margin is FoldingMargin);
+        // The class body and the property's braces are on one line, so only the class folds.
+        Assert.Single(editor.Foldings!.AllFoldings);
+
+        window.SetCodeLanguage(CodeLanguages.Python);
+
+        Assert.Null(editor.Foldings);
+        Assert.DoesNotContain(editor.TextArea.LeftMargins, margin => margin is FoldingMargin);
+    }
+
+    [WpfFact]
+    public void Folding_FollowsEditsAndKeepsCollapsedRegionsCollapsed()
+    {
+        EditTextWindow window = CreateWindow("class A\r\n{\r\n    int x;\r\n}\r\n");
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        FoldingSection classBody = Assert.Single(editor.Foldings!.AllFoldings);
+        classBody.IsFolded = true;
+
+        window.Session.Text += "class B\r\n{\r\n    int y;\r\n}\r\n";
+        DoEvents();
+        editor.UpdateFoldings();
+
+        Assert.Equal(2, editor.Foldings!.AllFoldings.Count());
+        Assert.True(editor.Foldings.AllFoldings.First().IsFolded);
+        Assert.False(editor.Foldings.AllFoldings.Last().IsFolded);
+    }
+
+    [WpfFact]
+    public async Task EnteringCodeMode_ScansForFoldingOnce()
+    {
+        EditTextWindow window = CreateWindow(CSharpSample);
+        CodeEditor editor = CodeEditor(window);
+
+        SwitchMode(window, EtwEditorMode.Code);
+        // Long enough for the typing delay's scan, if one were still pending.
+        await Task.Delay(Text_Grab.Controls.CodeEditor.FoldingUpdateDelay * 2);
+
+        // Once, for the detected language on the text being shown: not also on the editor's old text
+        // when the language was set, nor again after the typing delay.
+        Assert.Equal(CodeLanguages.CSharp, window.CodeLanguageName);
+        Assert.Single(editor.Foldings!.AllFoldings);
+        Assert.Equal(1, editor.FoldingScanCount);
+    }
+
+    [WpfFact]
+    public async Task EnteringCodeMode_FoldsALargeDocumentOffTheUiThread()
+    {
+        const int classCount = 2_000;
+        string text = string.Concat(Enumerable.Range(0, classCount).Select(i => $"class C{i}\r\n{{\r\n    int x{i};\r\n}}\r\n"));
+        Assert.True(text.Length > 50_000);
+        EditTextWindow window = CreateWindow(text);
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        CodeEditor editor = CodeEditor(window);
+        int scansBefore = editor.FoldingScanCount;
+
+        // Switch without pumping the dispatcher: a scan on the UI thread would have applied its regions
+        // by the time the click returns, and one on a worker thread can't have yet.
+        MenuItem codeModeMenuItem = (MenuItem)window.FindName("CodeModeMenuItem");
+        codeModeMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, codeModeMenuItem));
+
+        Assert.Equal(scansBefore + 1, editor.FoldingScanCount);
+        Assert.Empty(editor.Foldings!.AllFoldings);
+
+        Stopwatch waited = Stopwatch.StartNew();
+        while (!editor.Foldings.AllFoldings.Any() && waited.Elapsed < TimeSpan.FromSeconds(10))
+            await Task.Delay(20);
+
+        Assert.Equal(classCount, editor.Foldings.AllFoldings.Count());
+        Assert.Equal(scansBefore + 1, editor.FoldingScanCount);
+    }
+
+    /// <summary>
+    /// An HTML page whose second line is a script line of about <paramref name="dataLength"/> characters.
+    /// </summary>
+    /// <remarks>
+    /// Four times <see cref="Text_Grab.Controls.CodeEditor.LongLineLength"/> is enough to be a long line.
+    /// Much longer, and a regression would hang these tests instead of failing them: at 300,000 characters,
+    /// laying out and highlighting the line runs for minutes.
+    /// </remarks>
+    private static string PageWithALongScriptLine(int dataLength)
+        => "<script>\r\nvar data = [" + string.Concat(Enumerable.Repeat("\"x\",", dataLength / 4)) + "];\r\nvar after = 1;\r\n</script>\r\n";
+
+    private const int LongScriptLineLength = 4 * Text_Grab.Controls.CodeEditor.LongLineLength;
+
+    [WpfFact]
+    public void ALongLine_ShowsOnlyItsStartThenAMarkerForTheRest()
+    {
+        EditTextWindow window = CreateWindow(PageWithALongScriptLine(LongScriptLineLength));
+        window.SetCodeLanguage(CodeLanguages.Html);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        DocumentLine longLine = editor.Document.GetLineByNumber(2);
+
+        VisualLine visualLine = editor.TextArea.TextView.GetOrConstructVisualLine(longLine);
+
+        VisualLineElement marker = visualLine.Elements[^1];
+        Assert.IsType<FormattedTextElement>(marker);
+        Assert.Equal(Text_Grab.Controls.CodeEditor.LongLineLength, marker.RelativeTextOffset);
+        Assert.Equal(longLine.Length - Text_Grab.Controls.CodeEditor.LongLineLength, marker.DocumentLength);
+        // The text itself is all still there.
+        Assert.Equal(window.Session.Text, editor.Text);
+    }
+
+    [WpfFact]
+    public void ALongLine_IsLeftPlain_AndTheLinesAfterItHighlightAsBefore()
+    {
+        EditTextWindow window = CreateWindow(PageWithALongScriptLine(LongScriptLineLength));
+        window.SetCodeLanguage(CodeLanguages.Html);
+        SwitchMode(window, EtwEditorMode.Code);
+        IHighlighter highlighter = (IHighlighter)CodeEditor(window).TextArea.TextView.GetService(typeof(IHighlighter))!;
+
+        EditTextWindow shortWindow = CreateWindow(PageWithALongScriptLine(8));
+        shortWindow.SetCodeLanguage(CodeLanguages.Html);
+        SwitchMode(shortWindow, EtwEditorMode.Code);
+        IHighlighter shortHighlighter = (IHighlighter)CodeEditor(shortWindow).TextArea.TextView.GetService(typeof(IHighlighter))!;
+
+        // Highlighted, a line makes about a section per token, and AvalonEdit applies them in quadratic time.
+        Assert.Empty(highlighter.HighlightLine(2).Sections);
+
+        // The script state carries over the long line unscanned, so the next line is still script.
+        Assert.Equal(Describe(shortHighlighter.HighlightLine(3)), Describe(highlighter.HighlightLine(3)));
+        Assert.NotEmpty(highlighter.HighlightLine(3).Sections);
+
+        static string[] Describe(HighlightedLine line) => line.Sections
+            .Select(section => $"{section.Offset - line.DocumentLine.Offset}+{section.Length} {section.Color?.Name}")
+            .ToArray();
+    }
+
+    [WpfFact]
+    public void AFoldStartingInTheHiddenPartOfALongLine_IsNotOffered()
+    {
+        string text = "class A\r\n" + new string('x', Text_Grab.Controls.CodeEditor.LongLineLength * 2) + " {\r\n    int y;\r\n}\r\n";
+        Assert.NotEmpty(CodeFolding.Find(text, CodeLanguages.CSharp));
+        EditTextWindow window = CreateWindow(text);
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+
+        SwitchMode(window, EtwEditorMode.Code);
+
+        // Its marker would sit beside text that doesn't show where it starts, and collapsing it would
+        // hide the lines below with nothing in their place.
+        Assert.Empty(CodeEditor(window).Foldings!.AllFoldings);
+    }
+
+    [WpfFact]
+    public void ShowingARangeInsideACollapsedRegion_ExpandsIt()
+    {
+        EditTextWindow window = CreateWindow("class A\r\n{\r\n    int target;\r\n}");
+        window.SetCodeLanguage(CodeLanguages.CSharp);
+        SwitchMode(window, EtwEditorMode.Code);
+        FoldingSection classBody = Assert.Single(CodeEditor(window).Foldings!.AllFoldings);
+        classBody.IsFolded = true;
+
+        window.SelectInEditor(window.Session.Text.IndexOf("target"), "target".Length);
+
+        Assert.False(classBody.IsFolded);
+    }
+
+    [WpfFact]
+    public void TheCodeEditor_ScrollsInPixelsSoTheSmoothWheelCanEaseIt()
+    {
+        string longText = string.Join("\r\n", Enumerable.Range(1, 400).Select(i => $"int line{i} = {i};"));
+        EditTextWindow window = CreateWindow(longText);
+        SwitchMode(window, EtwEditorMode.Code);
+        CodeEditor editor = CodeEditor(window);
+        ScrollViewer scrollViewer = Text_Grab.Utilities.WindowUtilities.GetScrollViewer(editor)!;
+
+        Assert.True(Text_Grab.Utilities.SmoothScrollBehavior.GetIsEnabled(editor));
+
+        // A fractional offset survives: the editor scrolls by pixels, not whole lines, so each frame
+        // of the eased scroll moves it a little rather than snapping line to line.
+        scrollViewer.ScrollToVerticalOffset(37.5);
+        LayOut(window);
+        Assert.Equal(37.5, scrollViewer.VerticalOffset, 3);
+
+        // One wheel notch down engages the eased scroll instead of AvalonEdit's instant jump.
+        Assert.True(Text_Grab.Utilities.SmoothScrollBehavior.ScrollBy(editor, -120));
+    }
+
+    [WpfFact]
+    public void EveryCodeLanguage_HasAHighlightingDefinition()
+    {
+        foreach (CodeLanguage language in CodeLanguages.All)
+            Assert.True(HighlightingManager.Instance.GetDefinition(language.Name) is not null, $"No highlighting definition named '{language.Name}'.");
+    }
+
+    [Theory]
+    [InlineData(null, CodeLanguages.Python, ".py")]
+    [InlineData(null, null, ".txt")]
+    [InlineData(@"C:\Temp\script.ps1", CodeLanguages.Python, ".ps1")]
+    public void SaveExtension_InCodeModeFollowsTheLanguage(string? openedFilePath, string? languageName, string expected)
+    {
+        Assert.Equal(expected, EditTextWindow.GetDefaultSaveExtension(openedFilePath, EtwEditorMode.Code, null, languageName));
+    }
+}

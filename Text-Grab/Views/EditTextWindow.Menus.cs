@@ -128,6 +128,8 @@ public partial class EditTextWindow
 
     private void EditMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
+        ToggleCaseMenuItem.InputGestureText = ToggleCaseGestureText;
+
         // Load text-only templates fresh each time the Edit menu opens and use them to
         // populate the Grab Templates group in both apply flyouts.
         List<GrabTemplate> textOnlyTemplates = [.. GrabTemplateManager.GetAllTemplates().Where(template => template.IsTextOnly && template.IsValid)];
@@ -438,6 +440,7 @@ public partial class EditTextWindow
                 {
                     EtwEditorMode.Spreadsheet => SymbolRegular.Table24,
                     EtwEditorMode.Markdown => SymbolRegular.Markdown20,
+                    EtwEditorMode.Code => SymbolRegular.Code24,
                     _ => SymbolRegular.TextT24,
                 }
             };
@@ -460,16 +463,23 @@ public partial class EditTextWindow
 
         if (string.IsNullOrWhiteSpace(Session.Text))
         {
-            ResetSpreadsheetUndoHistory();
-            Session.Text = selectedHistory.TextContent;
-            tableDocument = EditTextTableDocument.TryDeserialize(selectedHistory.EditTextTableDocumentJson);
-            editorMode = selectedHistory.EditorMode;
-            SetEditorMode(editorMode);
+            ShowHistoryItem(selectedHistory);
             return;
         }
 
         EditTextWindow etw = new(selectedHistory);
         etw.Show();
+    }
+
+    /// <summary>Shows a history item in this (empty) window: its text, table, code language and mode.</summary>
+    internal void ShowHistoryItem(HistoryInfo history)
+    {
+        ResetSpreadsheetUndoHistory();
+        Session.Text = history.TextContent;
+        tableDocument = EditTextTableDocument.TryDeserialize(history.EditTextTableDocumentJson);
+        RestoreCodeLanguage(history);
+        editorMode = history.EditorMode;
+        SetEditorMode(editorMode);
     }
 
     private void ClearRecentTextMenuItems()

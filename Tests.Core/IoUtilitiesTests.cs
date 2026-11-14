@@ -19,7 +19,11 @@ public class IoUtilitiesTests
     [InlineData(@"C:\Temp\notes.md", EtwEditorMode.Markdown)]
     [InlineData(@"C:\Temp\notes.markdown", EtwEditorMode.Markdown)]
     [InlineData(@"C:\Temp\notes.txt", EtwEditorMode.Text)]
-    [InlineData(@"C:\Temp\data.json", EtwEditorMode.Text)]
+    [InlineData(@"C:\Temp\notes.log", EtwEditorMode.Text)]
+    [InlineData(@"C:\Temp\data.json", EtwEditorMode.Code)]
+    [InlineData(@"C:\Temp\Program.CS", EtwEditorMode.Code)]
+    [InlineData(@"C:\Temp\script.py", EtwEditorMode.Code)]
+    [InlineData(@"C:\Temp\App.xaml", EtwEditorMode.Code)]
     public void GetEditorModeForPath_UsesFileExtension(string path, EtwEditorMode expectedMode)
     {
         Assert.Equal(expectedMode, IoUtilities.GetEditorModeForPath(path));

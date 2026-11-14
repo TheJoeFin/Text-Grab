@@ -47,6 +47,7 @@ internal static class EditTextWindowTestHost
         {
             EtwEditorMode.Markdown => "MarkdownModeMenuItem",
             EtwEditorMode.Spreadsheet => "SpreadsheetModeMenuItem",
+            EtwEditorMode.Code => "CodeModeMenuItem",
             _ => "RawTextModeMenuItem",
         };
         MenuItem menuItem = (MenuItem)window.FindName(menuItemName);
@@ -77,4 +78,6 @@ internal static class EditTextWindowTestHost
     }
 
     public static DataGrid Grid(EditTextWindow window) => (DataGrid)window.FindName("SpreadsheetDataGrid");
+
+    public static Text_Grab.Controls.CodeEditor CodeEditor(EditTextWindow window) => (Text_Grab.Controls.CodeEditor)window.FindName("CodeEditorControl");
 }

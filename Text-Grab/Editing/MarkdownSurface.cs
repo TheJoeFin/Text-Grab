@@ -30,4 +30,9 @@ internal sealed class MarkdownSurface(
     public void SetText(string text) => loadDocumentFromText(text);
 
     public void SelectAndShow(TextSpan range) => selectAndShow(range);
+
+    /// <summary>Does nothing: the rendered document is not the text, so it is left where it is.</summary>
+    public void ScrollToEnd()
+    {
+    }
 }

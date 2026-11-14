@@ -279,6 +279,12 @@ public partial class EditTextWindow
             return;
         }
 
+        if (editorMode == EtwEditorMode.Code)
+        {
+            UpdateCodeLineAndColumnText();
+            return;
+        }
+
         if (editorMode == EtwEditorMode.Markdown)
         {
             HideSelectionSpecificUi();

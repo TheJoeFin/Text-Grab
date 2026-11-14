@@ -26,4 +26,10 @@ internal interface IEditorSurface
     /// brings the range into view.
     /// </summary>
     void SelectAndShow(TextSpan range);
+
+    /// <summary>
+    /// Scrolls to the end of the document, for text appended as it arrives (transcription, files added
+    /// to the end). Editors that re-render the text rather than show it as text do nothing.
+    /// </summary>
+    void ScrollToEnd();
 }

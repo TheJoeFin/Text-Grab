@@ -8,4 +8,11 @@ public readonly record struct TextSpan(int Start, int Length)
 {
     /// <summary>The offset just past the span's last character.</summary>
     public int End => Start + Length;
+
+    /// <summary>This span, cut down to fit a text of <paramref name="textLength"/> characters.</summary>
+    public TextSpan ClampTo(int textLength)
+    {
+        int start = Math.Clamp(Start, 0, textLength);
+        return new TextSpan(start, Math.Clamp(Length, 0, textLength - start));
+    }
 }
