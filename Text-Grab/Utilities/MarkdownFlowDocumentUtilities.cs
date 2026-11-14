@@ -480,12 +480,12 @@ public static partial class MarkdownFlowDocumentUtilities
             case ThematicBreakBlock thematicBreakBlock:
                 Paragraph breakParagraph = new()
                 {
-                    Margin = new Thickness(0, 8, 0, 8)
+                    Margin = new Thickness(0, 14, 0, 14)
                 };
                 SetBlockRole(breakParagraph, MarkdownBlockRole.ThematicBreak);
                 SetQuoteDepth(breakParagraph, quoteDepth);
                 SetRawSpan(breakParagraph, thematicBreakBlock.Span.Start, thematicBreakBlock.Span.End + 1);
-                Run breakRun = new("----------");
+                Run breakRun = new(" ");
                 SetRawSpan(breakRun, thematicBreakBlock.Span.Start, thematicBreakBlock.Span.End + 1);
                 breakParagraph.Inlines.Add(breakRun);
                 blocks.Add(breakParagraph);
@@ -1207,6 +1207,15 @@ public static partial class MarkdownFlowDocumentUtilities
                 {
                     paragraph.FontWeight = FontWeights.SemiBold;
                     paragraph.FontSize = theme.BaseFontSize + Math.Max(2, 14 - (headingLevel * 2));
+                }
+                else if (GetBlockRole(paragraph) == MarkdownBlockRole.ThematicBreak)
+                {
+                    // A real rule: the paragraph's bottom border spans the full width,
+                    // while its single-space run keeps the line itself nearly invisible.
+                    paragraph.FontSize = 2;
+                    paragraph.Background = Brushes.Transparent;
+                    paragraph.BorderBrush = theme.BorderBrush;
+                    paragraph.BorderThickness = new Thickness(0, 0, 0, 1);
                 }
                 else if (GetBlockRole(paragraph) == MarkdownBlockRole.CodeBlock)
                 {
