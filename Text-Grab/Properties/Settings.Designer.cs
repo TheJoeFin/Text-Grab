@@ -598,7 +598,19 @@ namespace Text_Grab.Properties {
                 this["TesseractPath"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TesseractEngineMode {
+            get {
+                return ((string)(this["TesseractEngineMode"]));
+            }
+            set {
+                this["TesseractEngineMode"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]

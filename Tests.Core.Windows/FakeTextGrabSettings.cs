@@ -38,6 +38,7 @@ internal sealed class FakeTextGrabSettings : ITextGrabSettings
     public bool UiAutomationFallbackToOcr { get; set; } = true;
     public bool UseTesseract { get; set; }
     public string TesseractPath { get; set; } = string.Empty;
+    public string TesseractEngineMode { get; set; } = string.Empty;
     public string LastUsedLang { get; set; } = string.Empty;
     public int TtsSpeakWordLimit { get; set; } = 100;
     public string TtsVoiceName { get; set; } = string.Empty;
