@@ -585,6 +585,20 @@ Console.WriteLine("hi");
     }
 
     [WpfFact]
+    public void Markdown_CodeBlock_ExposesCodeAndLanguageForCopyAndPopOut()
+    {
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument("```csharp\nint x = 1;\nint y = 2;\n```", new FontFamily("Segoe UI"), 16);
+        Paragraph paragraph = Assert.IsType<Paragraph>(Assert.Single(document.Blocks));
+
+        Assert.True(MarkdownFlowDocumentUtilities.TryGetCodeBlock(paragraph, out string code, out string info));
+        Assert.Equal("int x = 1;\nint y = 2;", code.Replace("\r\n", "\n"));
+        Assert.Equal("C#", Text_Grab.Core.Editing.CodeLanguages.FindByFenceInfo(info)?.Name);
+        Assert.Equal("Python", Text_Grab.Core.Editing.CodeLanguages.FindByFenceInfo("py")?.Name);
+        Assert.Null(Text_Grab.Core.Editing.CodeLanguages.FindByFenceInfo("unknownlang"));
+        Assert.False(MarkdownFlowDocumentUtilities.TryGetCodeBlock(new Paragraph(new Run("plain")), out _, out _));
+    }
+
+    [WpfFact]
     public void Markdown_TaskListCheckBox_DoesNotDisplaceTextMapping()
     {
         const string markdown = "- [ ] alpha beta gamma";

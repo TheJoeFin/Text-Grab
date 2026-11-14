@@ -1414,6 +1414,23 @@ public static partial class MarkdownFlowDocumentUtilities
     public static bool IsTaskListCheckBox(DependencyObject element) =>
         element is CheckBox && GetInlineRole(element) == MarkdownInlineRole.TaskListMarker;
 
+    /// <summary>
+    /// For a rendered code block paragraph, returns its code text and fence info string
+    /// (the language after the opening backticks, empty when none).
+    /// </summary>
+    public static bool TryGetCodeBlock(Paragraph? paragraph, out string code, out string fenceInfo)
+    {
+        code = string.Empty;
+        fenceInfo = string.Empty;
+        if (paragraph is null || GetBlockRole(paragraph) != MarkdownBlockRole.CodeBlock)
+            return false;
+
+        code = MarkdownDocumentUtilities.NormalizeDocumentText(
+            string.Concat(paragraph.Inlines.Select(GetCodeInlineText)));
+        fenceInfo = GetCodeFenceInfo(paragraph);
+        return true;
+    }
+
     /// <summary>True when the list item's first paragraph starts with a task-list checkbox.</summary>
     public static bool IsTaskListItem(ListItem item) =>
         item.Blocks.FirstBlock is Paragraph { Inlines.FirstInline: InlineUIContainer { Child: CheckBox } container }

@@ -977,7 +977,10 @@
                     IsInactiveSelectionHighlightEnabled="True"
                     PreviewDragOver="ETWindow_DragOver"
                     PreviewDrop="ETWindow_Drop"
+                    MouseLeave="MarkdownEditorControl_MouseLeave"
+                    MouseMove="MarkdownEditorControl_MouseMove"
                     PreviewKeyDown="MarkdownEditorControl_PreviewKeyDown"
+                    ScrollViewer.ScrollChanged="MarkdownEditorControl_ScrollChanged"
                     SelectionBrush="{DynamicResource ControlStrongFillColorDefaultBrush}"
                     SelectionChanged="MarkdownEditorControl_SelectionChanged"
                     SizeChanged="MarkdownEditorControl_SizeChanged"
@@ -986,6 +989,33 @@
                     VerticalScrollBarVisibility="Auto"
                     Visibility="Collapsed"
                     utils:SmoothScrollBehavior.IsEnabled="True" />
+                <StackPanel
+                    x:Name="CodeBlockActionsPanel"
+                    Margin="0,0,24,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Orientation="Vertical"
+                    MouseLeave="CodeBlockActionsPanel_MouseLeave"
+                    Panel.ZIndex="10"
+                    Visibility="Collapsed">
+                    <Button
+                        x:Name="CopyCodeBlockButton"
+                        Padding="6,4"
+                        AutomationProperties.Name="Copy code"
+                        Click="CopyCodeBlockButton_Click"
+                        ToolTip="Copy code">
+                        <ui:SymbolIcon FontSize="14" Symbol="Copy24" />
+                    </Button>
+                    <Button
+                        x:Name="OpenCodeBlockButton"
+                        Margin="0,4,0,0"
+                        Padding="6,4"
+                        AutomationProperties.Name="Open code in new window"
+                        Click="OpenCodeBlockButton_Click"
+                        ToolTip="Open in a new window in code mode">
+                        <ui:SymbolIcon FontSize="14" Symbol="WindowNew24" />
+                    </Button>
+                </StackPanel>
                 <DataGrid
                     x:Name="SpreadsheetDataGrid"
                     x:FieldModifier="private"

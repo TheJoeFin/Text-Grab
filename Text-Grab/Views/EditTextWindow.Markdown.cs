@@ -21,6 +21,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
+using Text_Grab.Core.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -196,6 +197,7 @@ public partial class EditTextWindow
 
     private void MarkdownEditorControl_TextChanged(object sender, TextChangedEventArgs e)
     {
+        HideCodeBlockActions();
         if (isApplyingMarkdownDocument)
             return;
 
@@ -231,6 +233,88 @@ public partial class EditTextWindow
 
         SyncMarkdownTextFromDocument();
         UpdateLineAndColumnText();
+    }
+
+    private Paragraph? hoveredCodeParagraph;
+
+    private void MarkdownEditorControl_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (editorMode != EtwEditorMode.Markdown)
+            return;
+
+        Point mouse = e.GetPosition(MarkdownEditorControl);
+
+        // Blank space to the right of short code lines doesn't hit-test as text, so while the
+        // buttons are showing, stay put anywhere within the block's vertical extent. That lets
+        // the mouse travel across the block to the top-right corner without losing them.
+        if (hoveredCodeParagraph is not null && CodeBlockActionsPanel.Visibility == Visibility.Visible)
+        {
+            Rect first = hoveredCodeParagraph.ContentStart.GetCharacterRect(LogicalDirection.Forward);
+            Rect last = hoveredCodeParagraph.ContentEnd.GetCharacterRect(LogicalDirection.Backward);
+            if (mouse.Y >= first.Top - 8 && mouse.Y <= last.Bottom + 8)
+                return;
+        }
+
+        TextPointer? pointer = MarkdownEditorControl.GetPositionFromPoint(mouse, false);
+        Paragraph? paragraph = pointer is null ? null : FindParent<Paragraph>(pointer.Parent);
+        if (!MarkdownFlowDocumentUtilities.TryGetCodeBlock(paragraph, out _, out _))
+        {
+            HideCodeBlockActions();
+            return;
+        }
+
+        if (ReferenceEquals(paragraph, hoveredCodeParagraph) && CodeBlockActionsPanel.Visibility == Visibility.Visible)
+            return;
+
+        hoveredCodeParagraph = paragraph;
+        Rect blockStart = paragraph!.ContentStart.GetCharacterRect(LogicalDirection.Forward);
+        Point inGrid = MarkdownEditorControl.TranslatePoint(blockStart.TopLeft, (UIElement)CodeBlockActionsPanel.Parent);
+        // Inside the block's top-right corner, so reaching the buttons never leaves the block.
+        CodeBlockActionsPanel.Margin = new Thickness(0, Math.Max(0, inGrid.Y + 2), 28, 0);
+        CodeBlockActionsPanel.Visibility = Visibility.Visible;
+    }
+
+    private void HideCodeBlockActions()
+    {
+        hoveredCodeParagraph = null;
+        CodeBlockActionsPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void MarkdownEditorControl_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!CodeBlockActionsPanel.IsMouseOver)
+            HideCodeBlockActions();
+    }
+
+    private void CodeBlockActionsPanel_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!MarkdownEditorControl.IsMouseOver)
+            HideCodeBlockActions();
+    }
+
+    private void MarkdownEditorControl_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        if (e.VerticalChange != 0 || e.ExtentHeightChange != 0)
+            HideCodeBlockActions();
+    }
+
+    private void CopyCodeBlockButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!MarkdownFlowDocumentUtilities.TryGetCodeBlock(hoveredCodeParagraph, out string code, out _))
+            return;
+
+        try { System.Windows.Clipboard.SetDataObject(code, true); } catch { }
+    }
+
+    private void OpenCodeBlockButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!MarkdownFlowDocumentUtilities.TryGetCodeBlock(hoveredCodeParagraph, out string code, out string fenceInfo))
+            return;
+
+        EditTextWindow codeWindow = new(code, false);
+        codeWindow.SetCodeLanguage(CodeLanguages.FindByFenceInfo(fenceInfo)?.Name);
+        codeWindow.SetEditorMode(EtwEditorMode.Code);
+        codeWindow.Show();
     }
 
     private void MarkdownEditorControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

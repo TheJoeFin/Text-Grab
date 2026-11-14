@@ -86,6 +86,46 @@ public static class CodeLanguages
             language.Extensions.Any(candidate => string.Equals(candidate, normalized, StringComparison.OrdinalIgnoreCase)));
     }
 
+    private static readonly Dictionary<string, string> FenceAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["csharp"] = CSharp,
+        ["c-sharp"] = CSharp,
+        ["c++"] = Cpp,
+        ["c"] = Cpp,
+        ["javascript"] = JavaScript,
+        ["typescript"] = JavaScript,
+        ["node"] = JavaScript,
+        ["powershell"] = PowerShell,
+        ["pwsh"] = PowerShell,
+        ["python"] = Python,
+        ["sql"] = Sql,
+        ["tsql"] = Sql,
+        ["vb"] = VisualBasic,
+        ["vbnet"] = VisualBasic,
+        ["diff"] = Patch,
+        ["md"] = Markdown,
+        ["latex"] = TeX,
+    };
+
+    /// <summary>
+    /// The language for a markdown code fence info string (for example <c>csharp</c>, <c>js</c> or
+    /// <c>json title="x"</c>): matches by name, alias, then file extension; null when unknown.
+    /// </summary>
+    public static CodeLanguage? FindByFenceInfo(string? info)
+    {
+        if (string.IsNullOrWhiteSpace(info))
+            return null;
+
+        string token = info.Trim().Split([' ', '\t', '{'], 2)[0];
+        if (Find(token) is CodeLanguage byName)
+            return byName;
+
+        if (FenceAliases.TryGetValue(token, out string? aliasTarget))
+            return Find(aliasTarget);
+
+        return FindByExtension(token);
+    }
+
     /// <summary>The display name for a language name; <see cref="PlainTextDisplayName"/> for none.</summary>
     public static string GetDisplayName(string? name)
     {
