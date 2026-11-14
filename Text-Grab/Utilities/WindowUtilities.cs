@@ -3,12 +3,14 @@ using Fasetto.Word;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Text_Grab.Controls;
 using Text_Grab.Extensions;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -447,7 +449,11 @@ public static partial class WindowUtilities
 
     public static void ShouldShutDown()
     {
-        bool zeroOpenWindows = Application.Current.Windows.Count < 1;
+        // The tray flyout is created once and then only hidden, so while hidden it must not
+        // keep the process alive after Run in the background is turned off.
+        bool zeroOpenWindows = !Application.Current.Windows
+            .OfType<Window>()
+            .Any(window => window is not TrayFlyoutWindow || window.IsVisible);
 
         bool shouldShutDown = false;
 
