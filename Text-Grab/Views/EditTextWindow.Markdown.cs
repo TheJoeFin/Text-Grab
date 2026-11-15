@@ -256,7 +256,19 @@ public partial class EditTextWindow
         }
 
         TextPointer? pointer = MarkdownEditorControl.GetPositionFromPoint(mouse, false);
-        Paragraph? paragraph = pointer is null ? null : FindParent<Paragraph>(pointer.Parent);
+        ShowCodeBlockActionsFor(pointer is null ? null : FindParent<Paragraph>(pointer.Parent));
+    }
+
+    // Touch has no hover, so a tap in a code block (which has just placed the caret there) brings up its buttons.
+    private void MarkdownEditorControl_TouchTapped(object sender, TouchTappedEventArgs e)
+    {
+        if (editorMode == EtwEditorMode.Markdown)
+            ShowCodeBlockActionsFor(FindParent<Paragraph>(MarkdownEditorControl.CaretPosition.Parent));
+    }
+
+    /// <summary>Shows the copy and open buttons when <paramref name="paragraph"/> is a code block, or hides them.</summary>
+    private void ShowCodeBlockActionsFor(Paragraph? paragraph)
+    {
         if (!MarkdownFlowDocumentUtilities.TryGetCodeBlock(paragraph, out _, out _))
         {
             HideCodeBlockActions();

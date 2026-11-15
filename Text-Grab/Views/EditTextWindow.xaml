@@ -988,6 +988,8 @@
                     TextChanged="MarkdownEditorControl_TextChanged"
                     VerticalScrollBarVisibility="Auto"
                     Visibility="Collapsed"
+                    utils:RichTextBoxTouchBehavior.IsEnabled="True"
+                    utils:RichTextBoxTouchBehavior.Tapped="MarkdownEditorControl_TouchTapped"
                     utils:SmoothScrollBehavior.IsEnabled="True" />
                 <StackPanel
                     x:Name="CodeBlockActionsPanel"

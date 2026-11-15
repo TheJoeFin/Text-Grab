@@ -118,6 +118,11 @@ public static class SmoothScrollBehavior
         EventManager.RegisterClassHandler(typeof(ScrollViewer), UIElement.MouseWheelEvent,
             new MouseWheelEventHandler(ScrollViewer_MouseWheel));
 
+        // Ahead of ScrollViewer's own handling: its overlay scroll bars sit inside the viewport,
+        // so it would otherwise take a finger on the bar as a pan of the content.
+        EventManager.RegisterClassHandler(typeof(ScrollViewer), UIElement.ManipulationStartingEvent,
+            new EventHandler<ManipulationStartingEventArgs>(ScrollViewer_ManipulationStarting));
+
         // Lists scroll a whole item per wheel notch by default, which is abrupt. Defaulting them to
         // pixel scrolling keeps virtualization but gives the ScrollViewer pixel offsets we can ease.
         // Done as a metadata default (not on Loaded) so the panel is created in pixel mode.
@@ -125,6 +130,15 @@ public static class SmoothScrollBehavior
         VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(ListBox), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
         VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(DataGrid), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
         VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
+    }
+
+    private static void ScrollViewer_ManipulationStarting(object? sender, ManipulationStartingEventArgs e)
+    {
+        if (sender is UIElement scrollViewer && IsOnScrollBar(e, scrollViewer))
+        {
+            e.Cancel();
+            e.Handled = true;
+        }
     }
 
     private static void ScrollViewer_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -183,14 +197,44 @@ public static class SmoothScrollBehavior
 
     // Touch panning uses WPF's manipulation events, which give us thresholding and inertia for free.
 
+    private static bool UsesRichTextTouch(object? element) =>
+        element is RichTextBox box && RichTextBoxTouchBehavior.GetIsEnabled(box);
+
     private static void Element_ManipulationStarting(object? sender, ManipulationStartingEventArgs e)
     {
         if (sender is not UIElement element)
             return;
 
+        // A finger on a scroll bar drags the bar. Cancelling hands the touch back to the mouse,
+        // which the bar's thumb and buttons work with; panning here would scroll the other way.
+        // (Covers controls whose inner ScrollViewer doesn't pan on its own.)
+        if (IsOnScrollBar(e, element))
+        {
+            e.Cancel();
+            return;
+        }
+
         e.ManipulationContainer = element;
         e.Mode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
         e.Handled = true;
+    }
+
+    private static bool IsOnScrollBar(ManipulationStartingEventArgs e, UIElement element)
+    {
+        foreach (IManipulator manipulator in e.Manipulators)
+        {
+            // Hit-test where the finger is: by now the touch is captured to the manipulated
+            // element, so TouchDevice.DirectlyOver reports that element, not what is under the finger.
+            for (DependencyObject? current = element.InputHitTest(manipulator.GetPosition(element)) as DependencyObject;
+                current is Visual && current != element;
+                current = VisualTreeHelper.GetParent(current))
+            {
+                if (current is ScrollBar)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static void Element_ManipulationStarted(object? sender, ManipulationStartedEventArgs e)
@@ -204,18 +248,25 @@ public static class SmoothScrollBehavior
         if (state.IsAnimating)
             StopAnimating(sv, state);
 
-        state.IsPanning = true;
+        // Keep WPF capture's mouse suppression, but let the rich-text controller own the movement.
+        state.IsPanning = !UsesRichTextTouch(control);
+        if (!state.IsPanning)
+        {
+            e.Handled = true;
+            return;
+        }
+
         state.Current = sv.VerticalOffset;
         state.HorizontalCurrent = sv.HorizontalOffset;
     }
 
     private static void Element_ManipulationInertiaStarting(object? sender, ManipulationInertiaStartingEventArgs e)
     {
-        e.TranslationBehavior = new InertiaTranslationBehavior
-        {
-            InitialVelocity = e.InitialVelocities.LinearVelocity,
-            DesiredDeceleration = FlickDeceleration,
-        };
+        // Configure the lazy behavior in place; its getter can discard a replacement instance.
+        e.TranslationBehavior.DesiredDeceleration = FlickDeceleration;
+        if (UsesRichTextTouch(sender))
+            e.TranslationBehavior.InitialVelocity = default;
+
         e.Handled = true;
     }
 
@@ -223,6 +274,12 @@ public static class SmoothScrollBehavior
     {
         if (sender is not Control control || WindowUtilities.GetScrollViewer(control) is not ScrollViewer sv)
             return;
+
+        if (UsesRichTextTouch(control))
+        {
+            e.Handled = true;
+            return;
+        }
 
         ScrollState state = States.GetOrCreateValue(sv);
         Vector translation = e.DeltaManipulation.Translation;
@@ -258,6 +315,8 @@ public static class SmoothScrollBehavior
             && States.TryGetValue(sv, out ScrollState? state))
         {
             state.IsPanning = false;
+            if (UsesRichTextTouch(control))
+                e.Handled = true;
         }
     }
 
@@ -265,6 +324,7 @@ public static class SmoothScrollBehavior
     {
         // Once a pan is under way, keep the promoted mouse-move from extending a text selection
         if (sender is Control control
+            && !UsesRichTextTouch(control)
             && WindowUtilities.GetScrollViewer(control) is ScrollViewer sv
             && States.TryGetValue(sv, out ScrollState? state)
             && state.IsPanning)
