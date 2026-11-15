@@ -50,8 +50,15 @@ public sealed class TrayFlyoutItem
             },
         };
 
-        AutomationName = $"{KindLabel(kind)}: {Title}";
+        IsMissing = IsFile && !File.Exists(history.SourcePath);
+
+        AutomationName = IsMissing
+            ? $"{KindLabel(kind)} (missing): {Title}"
+            : $"{KindLabel(kind)}: {Title}";
     }
+
+    /// <summary>True when a file-backed row points at a file that no longer exists on disk.</summary>
+    public bool IsMissing { get; }
 
     public TrayFlyoutItemKind Kind { get; }
 

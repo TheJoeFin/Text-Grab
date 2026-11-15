@@ -187,6 +187,15 @@
 
         <DataTemplate x:Key="FlyoutItemTemplate">
             <Grid AutomationProperties.Name="{Binding AutomationName}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />

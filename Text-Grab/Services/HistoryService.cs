@@ -194,6 +194,36 @@ public partial class HistoryService : IDisposable
         });
     }
 
+    /// <summary>Removes a file from the recent files list (and any PDF history entry for the same path).</summary>
+    public void RemoveRecentFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return;
+
+        string fullPath = Path.GetFullPath(path);
+        WithRecentFilesLock(() =>
+        {
+            List<HistoryInfo> recentFiles = HistoryFileUtilities.LoadHistoryBlocking("RecentFiles").HistoryItems;
+            if (recentFiles.RemoveAll(history => string.Equals(history.SourcePath, fullPath, StringComparison.OrdinalIgnoreCase)) > 0)
+            {
+                string json = JsonSerializer.Serialize(recentFiles);
+                bool saved = Task.Run(() => FileUtilities.SaveTextFile(json, "RecentFiles.json", FileStorageKind.WithHistory)).GetAwaiter().GetResult();
+                if (!saved)
+                    throw new IOException("Failed to save recent files history.");
+            }
+            return true;
+        });
+
+        EnsureImageHistoryLoaded();
+        TouchHistoryCache();
+        foreach (HistoryInfo pdf in HistoryWithImage
+            .Where(h => h.IsPdfDocument && string.Equals(h.SourcePath, fullPath, StringComparison.OrdinalIgnoreCase))
+            .ToList())
+        {
+            RemoveImageHistoryItem(pdf);
+        }
+    }
+
     private static T WithRecentFilesLock<T>(Func<T> action)
     {
         string historyPath = Task.Run(FileUtilities.GetPathToHistory).GetAwaiter().GetResult();

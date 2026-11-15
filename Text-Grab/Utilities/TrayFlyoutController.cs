@@ -90,6 +90,15 @@ public static partial class TrayFlyoutController
 
     public static void ActivateItem(TrayFlyoutItem item)
     {
+        if (item.Kind == TrayFlyoutItemKind.File
+            && s_window is { IsVisible: true } window
+            && !File.Exists(item.History.SourcePath))
+        {
+            // Keep the flyout open and show the prompt over it.
+            _ = PromptForMissingFile(window, item);
+            return;
+        }
+
         CloseThenRun(() => OpenItem(item));
     }
 
@@ -117,6 +126,59 @@ public static partial class TrayFlyoutController
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Tray flyout failed to open item: {ex}");
+        }
+    }
+
+    private static async Task PromptForMissingFile(TrayFlyoutWindow window, TrayFlyoutItem item)
+    {
+        string path = item.History.SourcePath;
+        bool directoryExists = Path.GetDirectoryName(path) is string dir && Directory.Exists(dir);
+
+        Wpf.Ui.Controls.MessageBox box = new()
+        {
+            Title = "File not found",
+            Content = $"{path}\n\nThis file no longer exists.",
+            PrimaryButtonText = "Remove recent item",
+            CloseButtonText = "Cancel",
+            Owner = window,
+            // The flyout is topmost, so the prompt must be too or it opens behind it.
+            Topmost = true,
+            // Buttons share the dialog width; widen it so the labels aren't clipped.
+            MinWidth = 520,
+            ShowInTaskbar = false,
+        };
+
+        if (directoryExists)
+            box.SecondaryButtonText = "Open directory";
+
+        Wpf.Ui.Controls.MessageBoxResult result;
+        window.SuppressDeactivateHide = true;
+        try
+        {
+            result = await box.ShowDialogAsync();
+        }
+        finally
+        {
+            window.SuppressDeactivateHide = false;
+        }
+
+        if (result == Wpf.Ui.Controls.MessageBoxResult.Secondary)
+        {
+            CloseThenRun(() => OpenItemDirectory(item));
+            return;
+        }
+
+        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+        {
+            Singleton<HistoryService>.Instance.RemoveRecentFile(path);
+            window.PrepareForShow();
+        }
+
+        // Back to the flyout.
+        if (window.IsVisible)
+        {
+            window.Activate();
+            window.FocusSearch();
         }
     }
 

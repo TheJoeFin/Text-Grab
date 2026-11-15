@@ -93,9 +93,12 @@ public partial class TrayFlyoutWindow : Window
         _ = DwmSetWindowAttribute(handle, DwmWindowCornerPreference, ref roundedCorners, sizeof(int));
     }
 
+    /// <summary>True while an owned dialog is showing, so losing activation to it doesn't dismiss the flyout.</summary>
+    public bool SuppressDeactivateHide { get; set; }
+
     private void Window_Deactivated(object? sender, EventArgs e)
     {
-        if (IsVisible)
+        if (IsVisible && !SuppressDeactivateHide)
             Hide();
     }
 
