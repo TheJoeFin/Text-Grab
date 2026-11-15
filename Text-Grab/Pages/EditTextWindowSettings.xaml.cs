@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Text_Grab.Properties;
@@ -26,6 +27,19 @@ public partial class EditTextWindowSettings : Page
         EditWindowIsOnTopCheckBox.IsChecked = DefaultSettings.EditWindowIsOnTop;
         EditWindowIsWordWrapOnCheckBox.IsChecked = DefaultSettings.EditWindowIsWordWrapOn;
         RestoreEtwPositionsCheckBox.IsChecked = DefaultSettings.RestoreEtwPositions;
+        EtwRememberFilePlacementCheckBox.IsChecked = DefaultSettings.EtwRememberFilePlacement;
+        EtwDefaultWidthBox.Value = DefaultSettings.EtwDefaultWidth;
+        EtwDefaultHeightBox.Value = DefaultSettings.EtwDefaultHeight;
+        EtwDefaultWidthPercentBox.Value = DefaultSettings.EtwDefaultWidthPercent;
+        EtwDefaultHeightPercentBox.Value = DefaultSettings.EtwDefaultHeightPercent;
+        bool usePercent = string.Equals(DefaultSettings.EtwDefaultSizeMode, "Percent", StringComparison.OrdinalIgnoreCase);
+        EtwSizeModePixelsRadio.IsChecked = !usePercent;
+        EtwSizeModePercentRadio.IsChecked = usePercent;
+        UpdateSizeModePanels(usePercent);
+
+        string anchor = DefaultSettings.EtwDefaultAnchor ?? "MiddleCenter";
+        foreach (RadioButton anchorRadio in EtwAnchorGrid.Children.OfType<RadioButton>())
+            anchorRadio.IsChecked = string.Equals(anchorRadio.Tag?.ToString(), anchor, StringComparison.OrdinalIgnoreCase);
 
         // Toolbar & UI
         EditWindowBottomBarIsHiddenCheckBox.IsChecked = DefaultSettings.EditWindowBottomBarIsHidden;
@@ -92,6 +106,69 @@ public partial class EditTextWindowSettings : Page
         if (!_loaded) return;
         DefaultSettings.RestoreEtwPositions = RestoreEtwPositionsCheckBox.IsChecked == true;
         DefaultSettings.Save();
+    }
+
+    private void EtwRememberFilePlacementCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        DefaultSettings.EtwRememberFilePlacement = EtwRememberFilePlacementCheckBox.IsChecked == true;
+        DefaultSettings.Save();
+    }
+
+    private void EtwDefaultSizeBox_ValueChanged(object sender, Wpf.Ui.Controls.NumberBoxValueChangedEventArgs args)
+    {
+        if (!_loaded || args.NewValue is not double value)
+            return;
+
+        int pixels = (int)Math.Clamp(Math.Round(value), 200, 10000);
+        int percent = (int)Math.Clamp(Math.Round(value), 10, 100);
+
+        if (ReferenceEquals(sender, EtwDefaultWidthBox))
+            DefaultSettings.EtwDefaultWidth = pixels;
+        else if (ReferenceEquals(sender, EtwDefaultHeightBox))
+            DefaultSettings.EtwDefaultHeight = pixels;
+        else if (ReferenceEquals(sender, EtwDefaultWidthPercentBox))
+            DefaultSettings.EtwDefaultWidthPercent = percent;
+        else if (ReferenceEquals(sender, EtwDefaultHeightPercentBox))
+            DefaultSettings.EtwDefaultHeightPercent = percent;
+        else
+            return;
+
+        DefaultSettings.Save();
+    }
+
+    private void EtwSizeModeRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded || sender is not RadioButton { IsChecked: true } radioButton)
+            return;
+
+        bool usePercent = string.Equals(radioButton.Tag?.ToString(), "Percent", StringComparison.Ordinal);
+        DefaultSettings.EtwDefaultSizeMode = usePercent ? "Percent" : "Pixels";
+        DefaultSettings.Save();
+        UpdateSizeModePanels(usePercent);
+    }
+
+    private void EtwAnchorRadio_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded || sender is not RadioButton { IsChecked: true } radioButton || radioButton.Tag is not string anchor)
+            return;
+
+        DefaultSettings.EtwDefaultAnchor = anchor;
+        DefaultSettings.Save();
+    }
+
+    private void UpdateSizeModePanels(bool usePercent)
+    {
+        EtwPixelSizePanel.Visibility = usePercent ? Visibility.Collapsed : Visibility.Visible;
+        EtwPercentSizePanel.Visibility = usePercent ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void EtwDefaultSizeReset_Click(object sender, RoutedEventArgs e)
+    {
+        EtwDefaultWidthBox.Value = 800;
+        EtwDefaultHeightBox.Value = 500;
+        EtwDefaultWidthPercentBox.Value = 60;
+        EtwDefaultHeightPercentBox.Value = 70;
     }
 
     private void EditWindowBottomBarIsHiddenCheckBox_Click(object sender, RoutedEventArgs e)

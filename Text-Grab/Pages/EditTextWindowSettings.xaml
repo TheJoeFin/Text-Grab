@@ -39,12 +39,151 @@
             <ui:ToggleSwitch x:Name="EditWindowIsWordWrapOnCheckBox" AutomationProperties.AutomationId="Settings.EditText.WordWrapToggle" Click="EditWindowIsWordWrapOnCheckBox_Click" />
         </controls:SettingsCard>
 
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Window size and position" />
+
         <controls:SettingsCard
-            Description="Remember and restore the Edit Text Window's size and position between sessions."
-            HeaderText="Restore window size and position on startup"
+            Description="A new Edit Text Window opens where and how large the last one was when closed. Turn off to always open centered at the default size below."
+            HeaderText="New windows reopen at the last size and position"
             Icon="{ui:SymbolIcon WindowLocationTarget20}">
             <ui:ToggleSwitch x:Name="RestoreEtwPositionsCheckBox" AutomationProperties.AutomationId="Settings.EditText.RestorePositionToggle" Click="RestoreEtwPositionsCheckBox_Click" />
         </controls:SettingsCard>
+
+        <controls:SettingsExpander
+            Description="The size of a new window when it isn't restored to its last size, and the fallback if the last position is no longer on a screen."
+            HeaderText="Default window size"
+            Icon="{ui:SymbolIcon ArrowAutofitContent24}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton
+                        x:Name="EtwSizeModePixelsRadio"
+                        AutomationProperties.AutomationId="Settings.EditText.DefaultSize.Pixels"
+                        Click="EtwSizeModeRadio_Click"
+                        Content="Pixels"
+                        GroupName="EtwDefaultSizeMode"
+                        Tag="Pixels" />
+                    <RadioButton
+                        x:Name="EtwSizeModePercentRadio"
+                        Margin="16,0,0,0"
+                        AutomationProperties.AutomationId="Settings.EditText.DefaultSize.Percent"
+                        Click="EtwSizeModeRadio_Click"
+                        Content="Percent of screen"
+                        GroupName="EtwDefaultSizeMode"
+                        Tag="Percent" />
+                </StackPanel>
+
+                <StackPanel x:Name="EtwPixelSizePanel" Margin="0,8,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            Width="90"
+                            VerticalAlignment="Center"
+                            Text="Width (px):" />
+                        <ui:NumberBox
+                            x:Name="EtwDefaultWidthBox"
+                            Width="190"
+                            AutomationProperties.AutomationId="Settings.EditText.DefaultWidth"
+                            LargeChange="100"
+                            Maximum="10000"
+                            Minimum="200"
+                            SmallChange="10"
+                            ValueChanged="EtwDefaultSizeBox_ValueChanged" />
+                    </StackPanel>
+                    <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                        <TextBlock
+                            Width="90"
+                            VerticalAlignment="Center"
+                            Text="Height (px):" />
+                        <ui:NumberBox
+                            x:Name="EtwDefaultHeightBox"
+                            Width="190"
+                            AutomationProperties.AutomationId="Settings.EditText.DefaultHeight"
+                            LargeChange="100"
+                            Maximum="10000"
+                            Minimum="200"
+                            SmallChange="10"
+                            ValueChanged="EtwDefaultSizeBox_ValueChanged" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="EtwPercentSizePanel"
+                    Margin="0,8,0,0"
+                    Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            Width="90"
+                            VerticalAlignment="Center"
+                            Text="Width (%):" />
+                        <ui:NumberBox
+                            x:Name="EtwDefaultWidthPercentBox"
+                            Width="190"
+                            AutomationProperties.AutomationId="Settings.EditText.DefaultWidthPercent"
+                            LargeChange="10"
+                            Maximum="100"
+                            Minimum="10"
+                            SmallChange="5"
+                            ValueChanged="EtwDefaultSizeBox_ValueChanged" />
+                    </StackPanel>
+                    <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                        <TextBlock
+                            Width="90"
+                            VerticalAlignment="Center"
+                            Text="Height (%):" />
+                        <ui:NumberBox
+                            x:Name="EtwDefaultHeightPercentBox"
+                            Width="190"
+                            AutomationProperties.AutomationId="Settings.EditText.DefaultHeightPercent"
+                            LargeChange="10"
+                            Maximum="100"
+                            Minimum="10"
+                            SmallChange="5"
+                            ValueChanged="EtwDefaultSizeBox_ValueChanged" />
+                    </StackPanel>
+                    <TextBlock
+                        Margin="0,6,0,0"
+                        FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="Relative to the usable area of the primary screen (excluding the taskbar)."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Button
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="Settings.EditText.DefaultSizeReset"
+                    Click="EtwDefaultSizeReset_Click"
+                    Content="Reset to default (800 × 500 px, 60% × 70%)" />
+            </StackPanel>
+        </controls:SettingsExpander>
+
+        <controls:SettingsCard
+            Description="Where a new window appears on the screen when it isn't restored to its last position. Pick the point it lines up with."
+            HeaderText="Default window position"
+            Icon="{ui:SymbolIcon Grid24}">
+            <UniformGrid
+                x:Name="EtwAnchorGrid"
+                Columns="3"
+                Rows="3"
+                AutomationProperties.AutomationId="Settings.EditText.DefaultAnchorGrid">
+                <RadioButton Margin="0,0,6,6" AutomationProperties.AutomationId="Settings.EditText.Anchor.TopLeft" AutomationProperties.Name="Top left" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="TopLeft" ToolTip="Top left" />
+                <RadioButton Margin="0,0,6,6" AutomationProperties.AutomationId="Settings.EditText.Anchor.TopCenter" AutomationProperties.Name="Top center" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="TopCenter" ToolTip="Top center" />
+                <RadioButton Margin="0,0,0,6" AutomationProperties.AutomationId="Settings.EditText.Anchor.TopRight" AutomationProperties.Name="Top right" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="TopRight" ToolTip="Top right" />
+                <RadioButton Margin="0,0,6,6" AutomationProperties.AutomationId="Settings.EditText.Anchor.MiddleLeft" AutomationProperties.Name="Middle left" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="MiddleLeft" ToolTip="Middle left" />
+                <RadioButton Margin="0,0,6,6" AutomationProperties.AutomationId="Settings.EditText.Anchor.MiddleCenter" AutomationProperties.Name="Center" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="MiddleCenter" ToolTip="Center" />
+                <RadioButton Margin="0,0,0,6" AutomationProperties.AutomationId="Settings.EditText.Anchor.MiddleRight" AutomationProperties.Name="Middle right" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="MiddleRight" ToolTip="Middle right" />
+                <RadioButton Margin="0,0,6,0" AutomationProperties.AutomationId="Settings.EditText.Anchor.BottomLeft" AutomationProperties.Name="Bottom left" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="BottomLeft" ToolTip="Bottom left" />
+                <RadioButton Margin="0,0,6,0" AutomationProperties.AutomationId="Settings.EditText.Anchor.BottomCenter" AutomationProperties.Name="Bottom center" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="BottomCenter" ToolTip="Bottom center" />
+                <RadioButton Margin="0" AutomationProperties.AutomationId="Settings.EditText.Anchor.BottomRight" AutomationProperties.Name="Bottom right" Click="EtwAnchorRadio_Click" GroupName="EtwAnchor" Tag="BottomRight" ToolTip="Bottom right" />
+            </UniformGrid>
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="A file opened in the Edit Text Window returns to the size and position it had when that file was last closed. Files you haven't opened before use the new window behavior above."
+            HeaderText="Reopen files at their own size and position"
+            Icon="{ui:SymbolIcon DocumentArrowRight24}">
+            <ui:ToggleSwitch x:Name="EtwRememberFilePlacementCheckBox" AutomationProperties.AutomationId="Settings.EditText.RememberFilePlacementToggle" Click="EtwRememberFilePlacementCheckBox_Click" />
+        </controls:SettingsCard>
+
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
 
         <controls:SettingsCard
             Description="Convert Unix (LF) and classic Mac (CR) line endings to Windows (CRLF) when pasting text."
