@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -22,9 +21,7 @@ public partial class GeneralSettings : Page
     #region Fields
 
     private readonly Settings DefaultSettings = AppUtilities.TextGrabSettings;
-    private readonly Brush BadBrush = new SolidColorBrush(Colors.Red);
-    private readonly Brush GoodBrush = new SolidColorBrush(Colors.Transparent);
-    private double InsertDelaySeconds = 1.5;
+    private const double DisabledOpacity = 0.55;
     private bool settingsSet = false;
 
     #endregion Fields
@@ -137,10 +134,11 @@ public partial class GeneralSettings : Page
                 case StartupTaskState.DisabledByUser:
                     // Task is disabled and user must enable it manually.
                     StartupOnLoginCheckBox.IsChecked = false;
-                    StartupOnLoginCheckBox.IsEnabled = false;
+                    SetEnabledState(StartupCard, false);
 
-                    StartupTextBlock.Text = "Auto start is disabled in Task Manager";
-                    StartupTextBlock.Visibility = Visibility.Visible;
+                    StartupNotice.Message = "Windows has blocked Text Grab from starting at sign-in. "
+                        + "Turn Text Grab back on in Windows Settings under Apps > Startup (or in Task Manager's Startup apps tab), then reopen this page.";
+                    StartupNotice.ActionText = "Open Startup settings";
                     break;
                 case StartupTaskState.Enabled:
                     StartupOnLoginCheckBox.IsChecked = true;
@@ -169,10 +167,11 @@ public partial class GeneralSettings : Page
         ErrorCorrectBox.IsChecked = DefaultSettings.CorrectErrors;
         CorrectToLatin.IsChecked = DefaultSettings.CorrectToLatin;
         ParagraphDetectionToggle.IsChecked = DefaultSettings.ParagraphDetection;
-        NeverUseClipboardChkBx.IsChecked = DefaultSettings.NeverAutoUseClipboard;
+        // The setting is stored as "never copy"; the toggle reads as "copy".
+        CopyToClipboardToggle.IsChecked = !DefaultSettings.NeverAutoUseClipboard;
         TryInsertCheckbox.IsChecked = DefaultSettings.TryInsert;
-        InsertDelaySeconds = DefaultSettings.InsertDelay;
-        SecondsTextBox.Text = InsertDelaySeconds.ToString("##.#", System.Globalization.CultureInfo.InvariantCulture);
+        InsertDelayBox.Value = Math.Clamp(DefaultSettings.InsertDelay, InsertDelayBox.Minimum, InsertDelayBox.Maximum);
+
         // Context menu integration - only available for unpackaged apps
         if (!AppUtilities.IsPackaged())
         {
@@ -181,37 +180,86 @@ public partial class GeneralSettings : Page
         }
         else
         {
-            AddToContextMenuCheckBox.IsEnabled = false;
             AddToContextMenuCheckBox.IsChecked = false;
-            RegisterOpenWithCheckBox.IsEnabled = false;
             RegisterOpenWithCheckBox.IsChecked = false;
+            SetEnabledState(ContextMenuCard, false);
+            SetEnabledState(OpenWithCard, false);
+
+            ContextMenuNotice.Message = "Not available in the Microsoft Store version of Text Grab. "
+                + "Install the standalone version from GitHub to add Text Grab to the right-click menu.";
+            OpenWithNotice.Message = "Not needed in the Microsoft Store version. "
+                + "It already appears in \"Open with\" for supported images and PDFs through its app package.";
         }
 
+        UpdateDependentSettings();
         settingsSet = true;
     }
 
-    private void ValidateTextIsNumber(object sender, TextChangedEventArgs e)
+    /// <summary>
+    /// Greys out a setting and blocks input, or restores it. Always pair a disabled
+    /// state with a SettingsNotice that tells the user why and how to fix it.
+    /// </summary>
+    private static void SetEnabledState(UIElement element, bool isEnabled)
     {
-        if (!settingsSet)
+        element.IsEnabled = isEnabled;
+        element.Opacity = isEnabled ? 1 : DisabledOpacity;
+    }
+
+    /// <summary>
+    /// Re-evaluates settings that depend on other settings, enabling or disabling them
+    /// and showing or hiding the notice that explains why.
+    /// </summary>
+    private void UpdateDependentSettings()
+    {
+        // Tray icon: only exists while Text Grab runs in the background.
+        bool runInBackground = RunInBackgroundChkBx.IsChecked is true;
+        SetEnabledState(TrayIconStyleExpander, runInBackground);
+        SetEnabledState(TrayLeftClickExpander, runInBackground);
+        TrayNeedsBackgroundNotice.Message = runInBackground
+            ? string.Empty
+            : "These settings don't apply right now because the tray icon only appears while Text Grab runs in the background.";
+        TrayNeedsBackgroundNotice.ActionText = runInBackground ? string.Empty : "Run in the background";
+
+        // Tray flyout recent items come from history, which is not recorded while history is off.
+        bool historyOn = HistorySwitch.IsChecked is true;
+        TrayHistoryNotice.Message = runInBackground && !historyOn
+            ? "History is turned off, so the flyout's recent items won't update until you turn it back on."
+            : string.Empty;
+        TrayHistoryNotice.ActionText = TrayHistoryNotice.Message.Length > 0 ? "Turn on history" : string.Empty;
+
+        // Pasting sends Ctrl+V, so it needs the grabbed text to be on the clipboard.
+        bool copyOn = CopyToClipboardToggle.IsChecked is true;
+        SetEnabledState(TryInsertExpander, copyOn);
+        TryInsertNotice.Message = copyOn
+            ? string.Empty
+            : "Pasting after a grab needs the text on the clipboard, and copying is turned off.";
+        TryInsertNotice.ActionText = copyOn ? string.Empty : "Turn on copying";
+    }
+
+    private void SetToggleAndSave(ToggleSwitch toggle)
+    {
+        // Setting IsChecked raises Checked, which runs the normal save handler.
+        toggle.IsChecked = true;
+        UpdateDependentSettings();
+    }
+
+    private void TrayNeedsBackgroundNotice_ActionClick(object sender, RoutedEventArgs e) => SetToggleAndSave(RunInBackgroundChkBx);
+
+    private void TrayHistoryNotice_ActionClick(object sender, RoutedEventArgs e) => SetToggleAndSave(HistorySwitch);
+
+    private void TryInsertNotice_ActionClick(object sender, RoutedEventArgs e) => SetToggleAndSave(CopyToClipboardToggle);
+
+    private void StartupNotice_ActionClick(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo("ms-settings:startupapps") { UseShellExecute = true });
+    }
+
+    private void InsertDelayBox_ValueChanged(object sender, NumberBoxValueChangedEventArgs args)
+    {
+        if (!settingsSet || args.NewValue is not double value)
             return;
 
-        if (sender is System.Windows.Controls.TextBox numberInputBox)
-        {
-            bool wasAbleToConvert = double.TryParse(numberInputBox.Text, out double parsedText);
-            if (wasAbleToConvert && parsedText > 0 && parsedText < 10)
-            {
-                InsertDelaySeconds = parsedText;
-                DefaultSettings.InsertDelay = InsertDelaySeconds;
-                DelayTimeErrorSeconds.Visibility = Visibility.Collapsed;
-                numberInputBox.BorderBrush = GoodBrush;
-            }
-            else
-            {
-                InsertDelaySeconds = 3;
-                DelayTimeErrorSeconds.Visibility = Visibility.Visible;
-                numberInputBox.BorderBrush = BadBrush;
-            }
-        }
+        DefaultSettings.InsertDelay = Math.Round(value, 1);
     }
 
     private void FullScreenRDBTN_Checked(object sender, RoutedEventArgs e)
@@ -257,6 +305,7 @@ public partial class GeneralSettings : Page
         DefaultSettings.RunInTheBackground = runInBackgroundSwitch.IsChecked is true;
         ImplementAppOptions.ImplementBackgroundOption(DefaultSettings.RunInTheBackground);
         DefaultSettings.Save();
+        UpdateDependentSettings();
     }
 
     private void SystemThemeRdBtn_Checked(object sender, RoutedEventArgs e)
@@ -426,6 +475,7 @@ public partial class GeneralSettings : Page
             return;
 
         DefaultSettings.UseHistory = true;
+        UpdateDependentSettings();
     }
 
     private void HistorySwitch_Unchecked(object sender, RoutedEventArgs e)
@@ -434,6 +484,7 @@ public partial class GeneralSettings : Page
             return;
 
         DefaultSettings.UseHistory = false;
+        UpdateDependentSettings();
     }
 
     private void ErrorCorrectBox_Checked(object sender, RoutedEventArgs e)
@@ -484,20 +535,22 @@ public partial class GeneralSettings : Page
         DefaultSettings.CorrectToLatin = false;
     }
 
-    private void NeverUseClipboardChkBx_Checked(object sender, RoutedEventArgs e)
-    {
-        if (!settingsSet)
-            return;
-
-        DefaultSettings.NeverAutoUseClipboard = true;
-    }
-
-    private void NeverUseClipboardChkBx_Unchecked(object sender, RoutedEventArgs e)
+    private void CopyToClipboardToggle_Checked(object sender, RoutedEventArgs e)
     {
         if (!settingsSet)
             return;
 
         DefaultSettings.NeverAutoUseClipboard = false;
+        UpdateDependentSettings();
+    }
+
+    private void CopyToClipboardToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.NeverAutoUseClipboard = true;
+        UpdateDependentSettings();
     }
 
     private async void StartupOnLoginCheckBox_Checked(object sender, RoutedEventArgs e)

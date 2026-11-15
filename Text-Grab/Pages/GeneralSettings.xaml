@@ -79,177 +79,11 @@
             </StackPanel>
         </Border>
 
-        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Appearance" />
+        <!--  ===== Startup & background =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Startup &amp; background" />
 
         <controls:SettingsExpander
-            Description="Choose whether Text Grab follows the Windows theme or always uses light or dark."
-            HeaderText="Text Grab theme"
-            Icon="{ui:SymbolIcon Color24}">
-            <StackPanel>
-                <RadioButton
-                    x:Name="SystemThemeRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.Theme.System"
-                    Checked="SystemThemeRdBtn_Checked"
-                    Content="System"
-                    GroupName="ThemeGroup" />
-                <RadioButton
-                    x:Name="LightThemeRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.Theme.Light"
-                    Checked="LightThemeRdBtn_Checked"
-                    Content="Light"
-                    GroupName="ThemeGroup" />
-                <RadioButton
-                    x:Name="DarkThemeRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.Theme.Dark"
-                    Checked="DarkThemeRdBtn_Checked"
-                    Content="Dark"
-                    GroupName="ThemeGroup" />
-            </StackPanel>
-        </controls:SettingsExpander>
-
-        <controls:SettingsExpander
-            Description="Choose whether the system tray icon uses full color or a monochrome outline that follows the taskbar theme."
-            HeaderText="Tray icon style"
-            Icon="{ui:SymbolIcon PaintBucket24}">
-            <StackPanel>
-                <RadioButton
-                    x:Name="ColorTrayIconRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.TrayIconStyle.Color"
-                    Checked="ColorTrayIconRdBtn_Checked"
-                    Content="Color"
-                    GroupName="TrayIconStyleGroup" />
-                <RadioButton
-                    x:Name="MonochromeTrayIconRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.TrayIconStyle.Monochrome"
-                    Checked="MonochromeTrayIconRdBtn_Checked"
-                    Content="Monochrome"
-                    GroupName="TrayIconStyleGroup" />
-            </StackPanel>
-        </controls:SettingsExpander>
-
-        <controls:SettingsExpander
-            Description="Choose what happens when you left-click the system tray icon. The flyout can also be opened with its own hotkey in Keyboard Shortcuts."
-            HeaderText="Tray icon left-click"
-            Icon="{ui:SymbolIcon WindowApps24}">
-            <StackPanel>
-                <RadioButton
-                    x:Name="TrayClickDefaultLaunchRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.TrayLeftClick.DefaultLaunch"
-                    Checked="TrayLeftClickRdBtn_Checked"
-                    Content="Open the default launch window"
-                    GroupName="TrayLeftClickGroup"
-                    Tag="DefaultLaunch" />
-                <RadioButton
-                    x:Name="TrayClickFlyoutRdBtn"
-                    AutomationProperties.AutomationId="Settings.General.TrayLeftClick.Flyout"
-                    Checked="TrayLeftClickRdBtn_Checked"
-                    Content="Show the quick flyout"
-                    GroupName="TrayLeftClickGroup"
-                    Tag="Flyout" />
-                <TextBlock
-                    Margin="0,12,0,4"
-                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                    Text="Flyout recent items" />
-                <CheckBox
-                    x:Name="FlyoutEditTextChkBx"
-                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.EditText"
-                    Checked="FlyoutSource_Changed"
-                    Content="Edit Text windows"
-                    Unchecked="FlyoutSource_Changed" />
-                <CheckBox
-                    x:Name="FlyoutGrabFramesChkBx"
-                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.GrabFrames"
-                    Checked="FlyoutSource_Changed"
-                    Content="Grab Frames"
-                    Unchecked="FlyoutSource_Changed" />
-                <CheckBox
-                    x:Name="FlyoutFilesChkBx"
-                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.Files"
-                    Checked="FlyoutSource_Changed"
-                    Content="Files"
-                    Unchecked="FlyoutSource_Changed" />
-                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
-                    <TextBlock
-                        Margin="0,0,12,0"
-                        VerticalAlignment="Center"
-                        Text="Number of items" />
-                    <ui:NumberBox
-                        x:Name="FlyoutItemCountBox"
-                        Width="120"
-                        AutomationProperties.AutomationId="Settings.General.TrayFlyout.ItemCount"
-                        LargeChange="10"
-                        Maximum="100"
-                        Minimum="1"
-                        SmallChange="1"
-                        ValueChanged="FlyoutItemCountBox_ValueChanged" />
-                </StackPanel>
-            </StackPanel>
-        </controls:SettingsExpander>
-
-        <controls:SettingsExpander
-            Description="Choose whether Text Grab draws its windows with the graphics card or the CPU. Restart Text Grab for a change to take effect."
-            HeaderText="Rendering"
-            Icon="{ui:SymbolIcon DeveloperBoard24}">
-            <StackPanel>
-                <RadioButton
-                    x:Name="RenderingAutoRadio"
-                    AutomationProperties.AutomationId="Settings.General.Rendering.Auto"
-                    Checked="RenderingModeRadio_Checked"
-                    Content="Automatic"
-                    GroupName="RenderingModeGroup"
-                    Tag="Auto" />
-                <TextBlock
-                    Margin="24,0,0,6"
-                    FontSize="12"
-                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                    Text="Use the CPU on Arm64 devices, where the graphics driver can hold on to around 1 GB of memory, and the graphics card everywhere else."
-                    TextWrapping="Wrap" />
-
-                <RadioButton
-                    x:Name="RenderingHardwareRadio"
-                    AutomationProperties.AutomationId="Settings.General.Rendering.Hardware"
-                    Checked="RenderingModeRadio_Checked"
-                    Content="Graphics card"
-                    GroupName="RenderingModeGroup"
-                    Tag="Hardware" />
-                <TextBlock
-                    Margin="24,0,0,6"
-                    FontSize="12"
-                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                    Text="Always render with the graphics card. Uses more memory on some devices."
-                    TextWrapping="Wrap" />
-
-                <RadioButton
-                    x:Name="RenderingSoftwareRadio"
-                    AutomationProperties.AutomationId="Settings.General.Rendering.Software"
-                    Checked="RenderingModeRadio_Checked"
-                    Content="CPU (software)"
-                    GroupName="RenderingModeGroup"
-                    Tag="Software" />
-                <TextBlock
-                    Margin="24,0,0,0"
-                    FontSize="12"
-                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                    Text="Always render with the CPU. Uses far less graphics memory."
-                    TextWrapping="Wrap" />
-            </StackPanel>
-        </controls:SettingsExpander>
-
-        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
-
-        <controls:SettingsCard
-            Description="Clicking the notification opens the copied text into a new Edit Text Window to display and edit text."
-            HeaderText="Show notification when text is copied"
-            Icon="{ui:SymbolIcon Alert24}">
-            <ui:ToggleSwitch
-                Name="ShowToastCheckBox"
-                AutomationProperties.AutomationId="Settings.General.NotificationsToggle"
-                Checked="ShowToastCheckBox_Checked"
-                Unchecked="ShowToastCheckBox_Unchecked" />
-        </controls:SettingsCard>
-
-        <controls:SettingsExpander
-            Description="Which window opens when launching Text Grab."
+            Description="Which window opens when you start Text Grab."
             HeaderText="Default launch window"
             Icon="{ui:SymbolIcon AppFolder24}">
             <StackPanel>
@@ -313,7 +147,7 @@
         </controls:SettingsExpander>
 
         <controls:SettingsCard
-            Description="Run Text Grab in the background and enable hotkeys."
+            Description="Keep Text Grab running with a system tray icon so your keyboard shortcuts work any time."
             HeaderText="Run in the background"
             Icon="{ui:SymbolIcon Desktop24}">
             <ui:ToggleSwitch
@@ -323,50 +157,120 @@
                 Unchecked="RunInBackgroundChkBx_Checked" />
         </controls:SettingsCard>
 
-        <controls:SettingsCard HeaderText="Auto start Text Grab when you login" Icon="{ui:SymbolIcon Power24}">
+        <controls:SettingsCard
+            x:Name="StartupCard"
+            Description="Start Text Grab when you sign in to Windows."
+            HeaderText="Start when I sign in"
+            Icon="{ui:SymbolIcon Power24}">
             <ui:ToggleSwitch
                 Name="StartupOnLoginCheckBox"
                 AutomationProperties.AutomationId="Settings.General.StartupToggle"
                 Checked="StartupOnLoginCheckBox_Checked"
                 Unchecked="StartupOnLoginCheckBox_Unchecked" />
         </controls:SettingsCard>
-        <TextBlock
-            x:Name="StartupTextBlock"
-            Margin="1,0,0,8"
-            AutomationProperties.AutomationId="Settings.General.StartupStatus"
-            FontSize="12"
-            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-            TextWrapping="Wrap"
-            Visibility="Collapsed" />
+        <controls:SettingsNotice
+            x:Name="StartupNotice"
+            ActionClick="StartupNotice_ActionClick"
+            AutomationProperties.AutomationId="Settings.General.StartupStatus" />
 
-        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Integrations" />
+        <!--  ===== System tray =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="System tray" />
 
-        <controls:SettingsCard
-            Description="Right-click on supported image files or PDFs to quickly grab text."
-            HeaderText="Add &quot;Grab text with Text Grab&quot; to the right-click menu"
-            Icon="{ui:SymbolIcon CursorClick24}">
-            <ui:ToggleSwitch
-                Name="AddToContextMenuCheckBox"
-                AutomationProperties.AutomationId="Settings.General.ContextMenuToggle"
-                Checked="AddToContextMenuCheckBox_Checked"
-                Unchecked="AddToContextMenuCheckBox_Unchecked" />
-        </controls:SettingsCard>
+        <controls:SettingsNotice
+            x:Name="TrayNeedsBackgroundNotice"
+            ActionClick="TrayNeedsBackgroundNotice_ActionClick"
+            AutomationProperties.AutomationId="Settings.General.TrayDisabledNotice" />
 
-        <controls:SettingsCard
-            Description="Opens supported images and PDFs directly in Grab Frame when using &quot;Open with&quot; from File Explorer."
-            HeaderText="Register Text Grab as an &quot;Open with&quot; app for image and PDF files"
-            Icon="{ui:SymbolIcon Open24}">
-            <ui:ToggleSwitch
-                Name="RegisterOpenWithCheckBox"
-                AutomationProperties.AutomationId="Settings.General.OpenWithToggle"
-                Checked="RegisterOpenWithCheckBox_Checked"
-                Unchecked="RegisterOpenWithCheckBox_Unchecked" />
-        </controls:SettingsCard>
+        <controls:SettingsExpander
+            x:Name="TrayIconStyleExpander"
+            Description="Full color, or a monochrome outline that follows the taskbar theme."
+            HeaderText="Tray icon style"
+            Icon="{ui:SymbolIcon PaintBucket24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="ColorTrayIconRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayIconStyle.Color"
+                    Checked="ColorTrayIconRdBtn_Checked"
+                    Content="Color"
+                    GroupName="TrayIconStyleGroup" />
+                <RadioButton
+                    x:Name="MonochromeTrayIconRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayIconStyle.Monochrome"
+                    Checked="MonochromeTrayIconRdBtn_Checked"
+                    Content="Monochrome"
+                    GroupName="TrayIconStyleGroup" />
+            </StackPanel>
+        </controls:SettingsExpander>
 
+        <controls:SettingsExpander
+            x:Name="TrayLeftClickExpander"
+            Description="What happens when you left-click the tray icon. The flyout can also be opened with its own shortcut in Keyboard Shortcuts."
+            HeaderText="Tray icon left-click"
+            Icon="{ui:SymbolIcon WindowApps24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="TrayClickDefaultLaunchRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayLeftClick.DefaultLaunch"
+                    Checked="TrayLeftClickRdBtn_Checked"
+                    Content="Open the default launch window"
+                    GroupName="TrayLeftClickGroup"
+                    Tag="DefaultLaunch" />
+                <RadioButton
+                    x:Name="TrayClickFlyoutRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.TrayLeftClick.Flyout"
+                    Checked="TrayLeftClickRdBtn_Checked"
+                    Content="Show the quick flyout"
+                    GroupName="TrayLeftClickGroup"
+                    Tag="Flyout" />
+                <TextBlock
+                    Margin="0,12,0,4"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Recent items shown in the flyout" />
+                <CheckBox
+                    x:Name="FlyoutEditTextChkBx"
+                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.EditText"
+                    Checked="FlyoutSource_Changed"
+                    Content="Edit Text windows"
+                    Unchecked="FlyoutSource_Changed" />
+                <CheckBox
+                    x:Name="FlyoutGrabFramesChkBx"
+                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.GrabFrames"
+                    Checked="FlyoutSource_Changed"
+                    Content="Grab Frames"
+                    Unchecked="FlyoutSource_Changed" />
+                <CheckBox
+                    x:Name="FlyoutFilesChkBx"
+                    AutomationProperties.AutomationId="Settings.General.TrayFlyout.Files"
+                    Checked="FlyoutSource_Changed"
+                    Content="Files"
+                    Unchecked="FlyoutSource_Changed" />
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <TextBlock
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center"
+                        Text="Number of items" />
+                    <ui:NumberBox
+                        x:Name="FlyoutItemCountBox"
+                        Width="120"
+                        AutomationProperties.AutomationId="Settings.General.TrayFlyout.ItemCount"
+                        LargeChange="10"
+                        Maximum="100"
+                        Minimum="1"
+                        SmallChange="1"
+                        ValueChanged="FlyoutItemCountBox_ValueChanged" />
+                </StackPanel>
+            </StackPanel>
+        </controls:SettingsExpander>
+        <controls:SettingsNotice
+            x:Name="TrayHistoryNotice"
+            ActionClick="TrayHistoryNotice_ActionClick"
+            AutomationProperties.AutomationId="Settings.General.TrayHistoryNotice" />
+
+        <!--  ===== Capture =====  -->
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Capture" />
 
         <controls:SettingsCard
-            Description="Try to read barcodes and QR codes when capturing. Disabling may speed up results."
+            Description="Look for barcodes and QR codes when capturing. Turn off for slightly faster results."
             HeaderText="Read barcodes and QR codes"
             Icon="{ui:SymbolIcon BarcodeScanner24}">
             <ui:ToggleSwitch
@@ -378,7 +282,7 @@
 
         <controls:SettingsExpander
             Description="Captures HDR screens at full range and tone-maps them back to SDR so text isn't overly bright. Only affects monitors with HDR turned on."
-            HeaderText="Correct washed-out captures on HDR displays"
+            HeaderText="Fix washed-out captures on HDR displays"
             Icon="{ui:SymbolIcon Hdr24}">
             <controls:SettingsExpander.SettingsContent>
                 <ui:ToggleSwitch
@@ -403,7 +307,118 @@
             </StackPanel>
         </controls:SettingsExpander>
 
-        <controls:SettingsCard HeaderText="Web search engine" Icon="{ui:SymbolIcon Search24}">
+        <!--  ===== Text cleanup =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Text cleanup" />
+
+        <controls:SettingsCard
+            Description="Join lines that were wrapped by the original layout into a single paragraph."
+            HeaderText="Detect paragraph wrapping"
+            Icon="{ui:SymbolIcon TextParagraph24}">
+            <ui:ToggleSwitch
+                Name="ParagraphDetectionToggle"
+                AutomationProperties.AutomationId="Settings.General.ParagraphDetectionToggle"
+                Checked="ParagraphDetectionToggle_Checked"
+                Unchecked="ParagraphDetectionToggle_Unchecked" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="Fix characters that OCR mixes up with digits, such as O and 0 or l and 1."
+            HeaderText="Fix number and letter mix-ups"
+            Icon="{ui:SymbolIcon Wand24}">
+            <ui:ToggleSwitch
+                Name="ErrorCorrectBox"
+                AutomationProperties.AutomationId="Settings.General.ErrorCorrectionToggle"
+                Checked="ErrorCorrectBox_Checked"
+                Unchecked="ErrorCorrectBox_Unchecked" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="Replace Greek and Cyrillic letters that look like Latin letters with the Latin letter."
+            HeaderText="Convert look-alike letters to Latin"
+            Icon="{ui:SymbolIcon TextT24}">
+            <ui:ToggleSwitch
+                Name="CorrectToLatin"
+                AutomationProperties.AutomationId="Settings.General.CorrectToLatinToggle"
+                Checked="CorrectToLatin_Checked"
+                Unchecked="CorrectToLatin_Unchecked" />
+        </controls:SettingsCard>
+
+        <!--  ===== After capture =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="After capture" />
+
+        <controls:SettingsCard
+            Description="Put captured text on the clipboard as soon as it is grabbed."
+            HeaderText="Copy captured text to the clipboard"
+            Icon="{ui:SymbolIcon ClipboardLetter24}">
+            <ui:ToggleSwitch
+                Name="CopyToClipboardToggle"
+                AutomationProperties.AutomationId="Settings.General.CopyToClipboardToggle"
+                Checked="CopyToClipboardToggle_Checked"
+                Unchecked="CopyToClipboardToggle_Unchecked" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="Clicking the notification opens the copied text in a new Edit Text Window."
+            HeaderText="Show a notification when text is copied"
+            Icon="{ui:SymbolIcon Alert24}">
+            <ui:ToggleSwitch
+                Name="ShowToastCheckBox"
+                AutomationProperties.AutomationId="Settings.General.NotificationsToggle"
+                Checked="ShowToastCheckBox_Checked"
+                Unchecked="ShowToastCheckBox_Unchecked" />
+        </controls:SettingsCard>
+
+        <controls:SettingsExpander
+            x:Name="TryInsertExpander"
+            Description="After a Fullscreen Grab, wait briefly and then paste the captured text into the focused text field."
+            HeaderText="Paste into the active field after Fullscreen Grab"
+            Icon="{ui:SymbolIcon ClipboardPaste24}">
+            <controls:SettingsExpander.SettingsContent>
+                <ui:ToggleSwitch
+                    Name="TryInsertCheckbox"
+                    AutomationProperties.AutomationId="Settings.General.InsertAfterCaptureToggle"
+                    Checked="TryInsertCheckbox_Checked"
+                    Unchecked="TryInsertCheckbox_Unchecked" />
+            </controls:SettingsExpander.SettingsContent>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Text="Wait" />
+                <ui:NumberBox
+                    x:Name="InsertDelayBox"
+                    Width="110"
+                    Margin="8,0,0,0"
+                    AutomationProperties.AutomationId="Settings.General.InsertDelay"
+                    LargeChange="1"
+                    MaxDecimalPlaces="1"
+                    Maximum="9.9"
+                    Minimum="0.1"
+                    SmallChange="0.1"
+                    ValueChanged="InsertDelayBox_ValueChanged" />
+                <TextBlock
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Text="seconds before pasting" />
+            </StackPanel>
+        </controls:SettingsExpander>
+        <controls:SettingsNotice
+            x:Name="TryInsertNotice"
+            ActionClick="TryInsertNotice_ActionClick"
+            AutomationProperties.AutomationId="Settings.General.InsertDisabledNotice" />
+
+        <controls:SettingsCard
+            Description="Keep a recent history of Grabs and Edit Text Windows. Also powers the tray flyout's recent items."
+            HeaderText="Keep history"
+            Icon="{ui:SymbolIcon History24}">
+            <ui:ToggleSwitch
+                Name="HistorySwitch"
+                AutomationProperties.AutomationId="Settings.General.HistoryToggle"
+                Checked="HistorySwitch_Checked"
+                Unchecked="HistorySwitch_Unchecked" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard
+            Description="Used by the &quot;search the web&quot; actions on captured text."
+            HeaderText="Web search engine"
+            Icon="{ui:SymbolIcon Search24}">
             <ComboBox
                 x:Name="WebSearchersComboBox"
                 Width="240"
@@ -418,95 +433,119 @@
             </ComboBox>
         </controls:SettingsCard>
 
-        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Correct common errors" />
+        <!--  ===== Windows integration =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Windows integration" />
 
-        <controls:SettingsCard HeaderText="Detect paragraph wrapping — join wrapped lines into one paragraph" Icon="{ui:SymbolIcon TextParagraph24}">
+        <controls:SettingsCard
+            x:Name="ContextMenuCard"
+            Description="Right-click supported image files or PDFs in File Explorer to quickly grab text."
+            HeaderText="Add &quot;Grab text with Text Grab&quot; to the right-click menu"
+            Icon="{ui:SymbolIcon CursorClick24}">
             <ui:ToggleSwitch
-                Name="ParagraphDetectionToggle"
-                AutomationProperties.AutomationId="Settings.General.ParagraphDetectionToggle"
-                Checked="ParagraphDetectionToggle_Checked"
-                Unchecked="ParagraphDetectionToggle_Unchecked" />
+                Name="AddToContextMenuCheckBox"
+                AutomationProperties.AutomationId="Settings.General.ContextMenuToggle"
+                Checked="AddToContextMenuCheckBox_Checked"
+                Unchecked="AddToContextMenuCheckBox_Unchecked" />
         </controls:SettingsCard>
+        <controls:SettingsNotice
+            x:Name="ContextMenuNotice"
+            AutomationProperties.AutomationId="Settings.General.ContextMenuDisabledNotice" />
 
-        <controls:SettingsCard HeaderText="Correct common confusions between numbers and letters" Icon="{ui:SymbolIcon Wand24}">
+        <controls:SettingsCard
+            x:Name="OpenWithCard"
+            Description="Offer Text Grab in File Explorer's &quot;Open with&quot; menu to open images and PDFs directly in Grab Frame."
+            HeaderText="Show Text Grab in &quot;Open with&quot; for images and PDFs"
+            Icon="{ui:SymbolIcon Open24}">
             <ui:ToggleSwitch
-                Name="ErrorCorrectBox"
-                AutomationProperties.AutomationId="Settings.General.ErrorCorrectionToggle"
-                Checked="ErrorCorrectBox_Checked"
-                Unchecked="ErrorCorrectBox_Unchecked" />
+                Name="RegisterOpenWithCheckBox"
+                AutomationProperties.AutomationId="Settings.General.OpenWithToggle"
+                Checked="RegisterOpenWithCheckBox_Checked"
+                Unchecked="RegisterOpenWithCheckBox_Unchecked" />
         </controls:SettingsCard>
+        <controls:SettingsNotice
+            x:Name="OpenWithNotice"
+            AutomationProperties.AutomationId="Settings.General.OpenWithDisabledNotice" />
 
-        <controls:SettingsCard HeaderText="Correct misidentifications between Greek and Cyrillic to Latin letters" Icon="{ui:SymbolIcon TextT24}">
-            <ui:ToggleSwitch
-                Name="CorrectToLatin"
-                AutomationProperties.AutomationId="Settings.General.CorrectToLatinToggle"
-                Checked="CorrectToLatin_Checked"
-                Unchecked="CorrectToLatin_Unchecked" />
-        </controls:SettingsCard>
-
-        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Clipboard" />
-
-        <controls:SettingsCard HeaderText="Never automatically add text to the clipboard" Icon="{ui:SymbolIcon ClipboardLetter24}">
-            <ui:ToggleSwitch
-                Name="NeverUseClipboardChkBx"
-                AutomationProperties.AutomationId="Settings.General.DisableClipboardToggle"
-                Checked="NeverUseClipboardChkBx_Checked"
-                Unchecked="NeverUseClipboardChkBx_Unchecked" />
-        </controls:SettingsCard>
+        <!--  ===== Appearance =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Appearance" />
 
         <controls:SettingsExpander
-            Description="After a Fullscreen Grab, wait and then paste the captured text into the focused text field."
-            HeaderText="Try to insert text in text fields after Fullscreen Grab"
-            Icon="{ui:SymbolIcon ClipboardPaste24}">
-            <controls:SettingsExpander.SettingsContent>
-                <ui:ToggleSwitch
-                    Name="TryInsertCheckbox"
-                    AutomationProperties.AutomationId="Settings.General.InsertAfterCaptureToggle"
-                    Checked="TryInsertCheckbox_Checked"
-                    Unchecked="TryInsertCheckbox_Unchecked" />
-            </controls:SettingsExpander.SettingsContent>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock VerticalAlignment="Center" Text="Insert after" />
-                <TextBox
-                    x:Name="SecondsTextBox"
-                    Width="40"
-                    Height="26"
-                    Margin="8,0,0,0"
-                    HorizontalContentAlignment="Center"
-                    VerticalContentAlignment="Center"
-                    AutomationProperties.AutomationId="Settings.General.InsertDelay"
-                    Background="White"
-                    FontWeight="Medium"
-                    Foreground="Black"
-                    Style="{StaticResource TextBoxStyle1}"
-                    Text="0.5"
-                    TextChanged="ValidateTextIsNumber" />
-                <TextBlock
-                    Margin="8,0,0,0"
-                    VerticalAlignment="Center"
-                    Text="seconds" />
-                <TextBlock
-                    x:Name="DelayTimeErrorSeconds"
-                    Margin="12,0,0,0"
-                    VerticalAlignment="Center"
-                    AutomationProperties.AutomationId="Settings.General.InsertDelayError"
-                    Text="⚠ Pick a number between 0 and 10"
-                    Visibility="Collapsed" />
+            Description="Follow the Windows theme, or always use light or dark."
+            HeaderText="Text Grab theme"
+            Icon="{ui:SymbolIcon Color24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="SystemThemeRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.Theme.System"
+                    Checked="SystemThemeRdBtn_Checked"
+                    Content="System"
+                    GroupName="ThemeGroup" />
+                <RadioButton
+                    x:Name="LightThemeRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.Theme.Light"
+                    Checked="LightThemeRdBtn_Checked"
+                    Content="Light"
+                    GroupName="ThemeGroup" />
+                <RadioButton
+                    x:Name="DarkThemeRdBtn"
+                    AutomationProperties.AutomationId="Settings.General.Theme.Dark"
+                    Checked="DarkThemeRdBtn_Checked"
+                    Content="Dark"
+                    GroupName="ThemeGroup" />
             </StackPanel>
         </controls:SettingsExpander>
 
-        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="History" />
+        <!--  ===== Advanced =====  -->
+        <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Advanced" />
 
-        <controls:SettingsCard
-            Description="Keep recent history of Grabs and Edit Text Windows."
-            HeaderText="Keep history"
-            Icon="{ui:SymbolIcon History24}">
-            <ui:ToggleSwitch
-                Name="HistorySwitch"
-                AutomationProperties.AutomationId="Settings.General.HistoryToggle"
-                Checked="HistorySwitch_Checked"
-                Unchecked="HistorySwitch_Unchecked" />
-        </controls:SettingsCard>
+        <controls:SettingsExpander
+            Description="Draw Text Grab's windows with the graphics card or the CPU. Restart Text Grab for a change to take effect."
+            HeaderText="Rendering"
+            Icon="{ui:SymbolIcon DeveloperBoard24}">
+            <StackPanel>
+                <RadioButton
+                    x:Name="RenderingAutoRadio"
+                    AutomationProperties.AutomationId="Settings.General.Rendering.Auto"
+                    Checked="RenderingModeRadio_Checked"
+                    Content="Automatic"
+                    GroupName="RenderingModeGroup"
+                    Tag="Auto" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="CPU on Arm64 devices, where the graphics driver can hold on to around 1 GB of memory; graphics card everywhere else."
+                    TextWrapping="Wrap" />
+
+                <RadioButton
+                    x:Name="RenderingHardwareRadio"
+                    AutomationProperties.AutomationId="Settings.General.Rendering.Hardware"
+                    Checked="RenderingModeRadio_Checked"
+                    Content="Graphics card"
+                    GroupName="RenderingModeGroup"
+                    Tag="Hardware" />
+                <TextBlock
+                    Margin="24,0,0,6"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Always use the graphics card. Uses more memory on some devices."
+                    TextWrapping="Wrap" />
+
+                <RadioButton
+                    x:Name="RenderingSoftwareRadio"
+                    AutomationProperties.AutomationId="Settings.General.Rendering.Software"
+                    Checked="RenderingModeRadio_Checked"
+                    Content="CPU (software)"
+                    GroupName="RenderingModeGroup"
+                    Tag="Software" />
+                <TextBlock
+                    Margin="24,0,0,0"
+                    FontSize="12"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Always use the CPU. Uses far less graphics memory."
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </controls:SettingsExpander>
 
     </StackPanel>
 </Page>
