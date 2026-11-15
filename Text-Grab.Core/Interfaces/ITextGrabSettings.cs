@@ -59,6 +59,12 @@ public interface ITextGrabSettings
     /// <summary>Cached path to the Tesseract executable; written back once discovered.</summary>
     string TesseractPath { get; set; }
 
+    /// <summary>
+    /// Which Tesseract engine runs: empty (not decided yet), "Bundled" (in-process) or
+    /// "External" (a user-installed tesseract.exe). Decided once, see TesseractEngineModeResolver.
+    /// </summary>
+    string TesseractEngineMode { get; set; }
+
     /// <summary>BCP-47 tag of the language used for the last capture.</summary>
     string LastUsedLang { get; set; }
 

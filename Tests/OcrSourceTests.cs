@@ -466,7 +466,10 @@ December	12	Winter";
             return;
 
         // Then
-        Assert.Equal(fontSampleResultForTesseract, tesseractOutput.RawOutput);
+        // Normalize line endings: the verbatim expected string follows the checkout's
+        // line endings (CRLF on CI), while in-process Tesseract returns LF.
+        static string Norm(string s) => s.Replace("\r\n", "\n");
+        Assert.Equal(Norm(fontSampleResultForTesseract), Norm(tesseractOutput.RawOutput));
     }
     [Fact]
     public void BuildTextFromOcrLines_SpaceJoiningLanguage_DoesNotFilterFurigana()

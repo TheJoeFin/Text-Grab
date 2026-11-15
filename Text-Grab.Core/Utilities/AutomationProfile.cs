@@ -181,6 +181,7 @@ internal sealed class AutomationProfile
         settings["DefaultLaunch"] = TextGrabMode.EditText.ToString();
         settings["LastUsedLang"] = "en-US";
         settings["UseTesseract"] = false;
+        settings["TesseractEngineMode"] = "Bundled";
         settings["UiAutomationEnabled"] = false;
         settings["WindowsAiDescriptionEnabled"] = false;
         settings["EnableFileBackedManagedSettings"] = true;

@@ -385,7 +385,7 @@ public partial class EditTextWindow
         if (captureMenuItem.Items.Count > 0)
             return;
 
-        bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+        bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.IsAvailable();
         List<ILanguage> availableLanguages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(usingTesseract);
         availableLanguages = [.. availableLanguages.Where(CaptureLanguageUtilities.IsStaticImageCompatible)];
         int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(

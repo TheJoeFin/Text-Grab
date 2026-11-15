@@ -74,6 +74,10 @@
             <PackagePath>ThirdPartyNotices\licenses\%(RecursiveDir)</PackagePath>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <!-- Bundled English model (tessdata_fast, Apache-2.0) for the in-process Tesseract engine. -->
+        <None Update="tessdata-bundled\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\Text-Grab-Package\Images\SmallTile.scale-125.png">
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>

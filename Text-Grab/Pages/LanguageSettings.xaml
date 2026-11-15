@@ -131,11 +131,26 @@
             </ListView.ItemTemplate>
         </ui:ListView>
         <StackPanel
+            x:Name="TesseractBundledLinkPanel"
+            Orientation="Vertical"
+            Visibility="Collapsed">
+            <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Tesseract languages" />
+            <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
+                The built-in Tesseract languages, downloads, and models are managed on the Tesseract settings page.
+            </TextBlock>
+            <ui:HyperlinkButton
+                x:Name="OpenTesseractPageLink"
+                AutomationProperties.AutomationId="Settings.Languages.OpenTesseractPageLink"
+                HorizontalAlignment="Left"
+                Click="OpenTesseractPageLink_Click"
+                Content="Open Tesseract settings" />
+        </StackPanel>
+        <StackPanel
             x:Name="TesseractLanguagesStackPanel"
             d:Visibility="Visible"
             Orientation="Vertical"
             Visibility="Collapsed">
-            <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Tesseract languages" />
+            <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Tesseract languages (legacy install)" />
             <!--  auto pull and parse which Tesseract Languages are installed  -->
             <!--  if Tesseract wasn't found, don't show these options  -->
             <!--  Link to the GitHub Repo to download other languages  -->

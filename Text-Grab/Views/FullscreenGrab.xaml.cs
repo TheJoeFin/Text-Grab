@@ -65,7 +65,7 @@ public partial class FullscreenGrab : Window
     {
         InitializeComponent();
         App.SetTheme();
-        usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.CanLocateTesseractExe();
+        usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.IsAvailable();
         InitializeSelectionStyles();
 
         edgePanTimer = new DispatcherTimer

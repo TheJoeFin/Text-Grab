@@ -146,6 +146,9 @@
     <Setting Name="TesseractPath" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="TesseractEngineMode" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
     <Setting Name="ShortcutKeySets" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>

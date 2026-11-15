@@ -48,8 +48,10 @@
     <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.6.5" />
     <!-- GDI+ Bitmap barcode reading/writing (BarcodeReader/BarcodeWriter) for BarcodeUtilities. -->
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.17" />
-    <!-- Tesseract.exe process invocation for TesseractHelper. -->
+    <!-- Tesseract.exe process invocation for the legacy External engine in TesseractHelper. -->
     <PackageReference Include="CliWrap" Version="3.10.5" />
+    <!-- In-process Tesseract 5.5 (win-x64 + win-arm64 natives) for the Bundled engine. -->
+    <PackageReference Include="Tesseract.CrossPlatform" Version="5.5.2.200" />
     <!-- ToastContentBuilder / ToastNotificationManagerCompat for ToastService (v5 F4): the same
          toast plumbing, AUMID and COM-activator registration the app's NotificationUtilities use.
          Same version as Text-Grab.csproj, which keeps its own reference because app code calls

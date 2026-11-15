@@ -23,7 +23,7 @@ internal static class CaptureLanguageUtilities
 
         if (includeTesseract
             && SettingsAccess.Current.UseTesseract
-            && TesseractHelper.CanLocateTesseractExe())
+            && TesseractHelper.IsAvailable())
         {
             List<ILanguage> tesseractLanguages = await TesseractHelper.TesseractLanguages();
 

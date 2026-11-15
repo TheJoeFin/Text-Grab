@@ -19,6 +19,21 @@
 
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Tesseract OCR" />
 
+        <!--  Engine status (Bundled form)  -->
+        <controls:SettingsCard
+            x:Name="EngineStatusCard"
+            AutomationProperties.AutomationId="Settings.Tesseract.EngineStatusCard"
+            Description="Checking the built-in engine..."
+            HeaderText="Built-in Tesseract"
+            Icon="{ui:SymbolIcon Cube24}">
+            <Button
+                x:Name="CopyDetailsButton"
+                AutomationProperties.AutomationId="Settings.Tesseract.CopyDetailsButton"
+                Click="CopyDetailsButton_Click"
+                Content="Copy details"
+                Visibility="Collapsed" />
+        </controls:SettingsCard>
+
         <controls:SettingsCard
             Description="Select Tesseract languages from the language picker where it is supported: Fullscreen Grab mode and the processing of files from the Edit Text Window or the command line."
             HeaderText="Enable Tesseract within Text Grab"
@@ -29,81 +44,211 @@
                 Checked="UseTesseractCheckBox_Checked"
                 Unchecked="UseTesseractCheckBox_Checked" />
         </controls:SettingsCard>
-        <TextBlock
-            x:Name="CouldNotFindTessTxtBlk"
-            AutomationProperties.AutomationId="Settings.Tesseract.NotFoundStatus"
-            Margin="1,4,0,4"
-            Style="{StaticResource TextBodyNormal}"
-            Text="⚠️ Could not locate Tesseract.exe"
-            Visibility="Collapsed" />
 
-        <controls:SettingsExpander
-            Description="Path to tesseract.exe. Set automatically when Tesseract is installed in a known location."
-            HeaderText="Tesseract location"
-            Icon="{ui:SymbolIcon FolderOpen24}"
-            IsExpanded="True">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox
-                    x:Name="TesseractPathTextBox"
-                    AutomationProperties.AutomationId="Settings.Tesseract.Path"
-                    HorizontalAlignment="Stretch"
-                    FontFamily="Cascadia Code"
-                    TextChanged="TesseractPathTextBox_TextChanged">
-                    Enter path to tesseract.exe here. ex: c:/tess/tesseract.exe
-                </TextBox>
+        <!--  Bundled form: languages, models and data folder  -->
+        <StackPanel x:Name="BundledPanel" Orientation="Vertical" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Languages" />
+
+            <ui:ListView
+                x:Name="LanguagesListView"
+                AutomationProperties.AutomationId="Settings.Tesseract.LanguageList"
+                MaxWidth="640"
+                HorizontalAlignment="Left">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="4,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="260" />
+                                <ColumnDefinition Width="90" />
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontFamily="Cascadia Code" Text="{Binding Tag}" />
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}" />
+                            <TextBlock
+                                Grid.Column="2"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding SourceText}" />
+                            <TextBlock
+                                Grid.Column="3"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding SizeText}" />
+                            <Button
+                                Grid.Column="4"
+                                AutomationProperties.AutomationId="Settings.Tesseract.RemoveLanguageButton"
+                                AutomationProperties.Name="{Binding RemoveAutomationName}"
+                                Padding="8,2"
+                                Click="RemoveLanguageButton_Click"
+                                Content="Remove"
+                                Tag="{Binding Tag}"
+                                Visibility="{Binding RemoveVisibility}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ui:ListView>
+
+            <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+                <ComboBox
+                    x:Name="AllLanguagesComboBox"
+                    AutomationProperties.AutomationId="Settings.Tesseract.DownloadLanguageCombo"
+                    Width="300"
+                    IsEditable="True"
+                    IsTextSearchCaseSensitive="False"
+                    IsTextSearchEnabled="True" />
                 <Button
-                    x:Name="OpenPathButton"
-                    AutomationProperties.AutomationId="Settings.Tesseract.OpenFolderButton"
-                    Grid.Column="1"
+                    x:Name="DownloadButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.DownloadButton"
+                    Margin="12,0,0,0"
+                    Click="DownloadButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowDownload24" />
+                        <TextBlock Margin="6,0,0,0" Text="Download" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    x:Name="CancelDownloadButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.CancelDownloadButton"
                     Margin="8,0,0,0"
-                    Click="OpenPathButton_Click"
+                    Click="CancelDownloadButton_Click"
+                    Content="Cancel"
+                    Visibility="Collapsed" />
+            </StackPanel>
+            <ProgressBar
+                x:Name="DownloadProgressBar"
+                AutomationProperties.AutomationId="Settings.Tesseract.DownloadProgress"
+                MaxWidth="640"
+                Margin="0,8,0,0"
+                HorizontalAlignment="Left"
+                Width="640"
+                Maximum="1"
+                Visibility="Collapsed" />
+            <TextBlock
+                x:Name="DownloadResultTextBlock"
+                AutomationProperties.AutomationId="Settings.Tesseract.DownloadResult"
+                Margin="0,6,0,0"
+                Style="{StaticResource TextBodyNormal}"
+                TextWrapping="Wrap" />
+
+            <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
+                <Button
+                    x:Name="OpenDataFolderButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.OpenDataFolderButton"
+                    Click="OpenDataFolderButton_Click"
                     Style="{StaticResource SymbolButton}">
                     <StackPanel Margin="4,0" Orientation="Horizontal">
                         <ui:SymbolIcon Margin="0,0,6,0" Symbol="OpenFolder24" />
-                        <TextBlock Text="Open Folder" />
+                        <TextBlock Text="Open language data folder" />
                     </StackPanel>
                 </Button>
-            </Grid>
-        </controls:SettingsExpander>
-
-        <controls:SettingsExpander
-            Description="Install Tesseract with WinGet, then restart Text Grab so the Tesseract.exe path is set automatically."
-            HeaderText="How do I get Tesseract?"
-            Icon="{ui:SymbolIcon ArrowDownload24}">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Button
-                        x:Name="WinGetCodeCopyButton"
-                        AutomationProperties.AutomationId="Settings.Tesseract.CopyInstallCommandButton"
-                        AutomationProperties.Name="Copy Tesseract install command"
-                        Width="40"
-                        Click="WinGetCodeCopyButton_Click"
-                        Style="{StaticResource SymbolButton}">
-                        <ui:SymbolIcon Symbol="Copy24" />
-                    </Button>
-                    <TextBox x:Name="WinGetInstallTextBox" AutomationProperties.AutomationId="Settings.Tesseract.InstallCommand" FontFamily="Cascadia Code">
-                        winget install -e --id UB-Mannheim.TesseractOCR
-                    </TextBox>
-                </StackPanel>
-                <TextBlock
-                    Margin="0,4,0,8"
-                    FontSize="12"
-                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                    Text="Restart Text Grab after installing Tesseract for the Tesseract.exe path to be automatically set."
-                    TextWrapping="Wrap" />
-                <TextBlock Style="{StaticResource TextBodyNormal}">
-                    The source repository is on GitHub:<LineBreak />
-                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tesseract</Hyperlink>
-                    <LineBreak />
-                    UB Mannheim maintains an installer for Windows:<LineBreak />
-                    <Hyperlink NavigateUri="https://github.com/UB-Mannheim/tesseract/wiki" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/UB-Mannheim/tesseract/wiki/</Hyperlink>
-                </TextBlock>
+                <Button
+                    x:Name="RefreshButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.RefreshButton"
+                    Margin="8,0,0,0"
+                    Click="RefreshButton_Click"
+                    Style="{StaticResource SymbolButton}">
+                    <StackPanel Margin="4,0" Orientation="Horizontal">
+                        <ui:SymbolIcon Margin="0,0,6,0" Symbol="ArrowClockwise24" />
+                        <TextBlock Text="Refresh" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
-        </controls:SettingsExpander>
+
+            <controls:SettingsCard
+                x:Name="DataFolderCard"
+                Margin="0,12,0,3"
+                AutomationProperties.AutomationId="Settings.Tesseract.DataFolderCard"
+                Description=""
+                HeaderText="Language data folder"
+                Icon="{ui:SymbolIcon FolderOpen24}" />
+            <TextBlock
+                x:Name="DataFolderWarningTextBlock"
+                AutomationProperties.AutomationId="Settings.Tesseract.DataFolderWarning"
+                Margin="1,4,0,4"
+                Style="{StaticResource TextBodyNormal}"
+                TextWrapping="Wrap"
+                Visibility="Collapsed" />
+
+            <controls:SettingsCard
+                x:Name="SwitchBackCard"
+                AutomationProperties.AutomationId="Settings.Tesseract.SwitchBackCard"
+                Description="Go back to the tesseract.exe you installed yourself, with the languages from that install."
+                HeaderText="Use my own Tesseract install"
+                Icon="{ui:SymbolIcon ArrowUndo24}"
+                Visibility="Collapsed">
+                <Button
+                    x:Name="SwitchToExternalButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.SwitchToExternalButton"
+                    Click="SwitchToExternalButton_Click"
+                    Content="Switch back" />
+            </controls:SettingsCard>
+
+            <controls:SettingsExpander
+                Description="The bundled English model is the fast one."
+                HeaderText="Get more accurate models"
+                Icon="{ui:SymbolIcon ArrowDownload24}">
+                <TextBlock Style="{StaticResource TextBodyNormal}" TextWrapping="Wrap">
+                    The English model that ships with Text Grab is the 'fast' model. Larger, more accurate models are available from the tessdata repository:<LineBreak />
+                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
+                    <LineBreak />
+                    Languages you download here replace a bundled language with the same name.</TextBlock>
+            </controls:SettingsExpander>
+        </StackPanel>
+
+        <!--  External form (existing installs only)  -->
+        <StackPanel x:Name="ExternalPanel" Orientation="Vertical" Visibility="Collapsed">
+            <TextBlock
+                x:Name="CouldNotFindTessTxtBlk"
+                AutomationProperties.AutomationId="Settings.Tesseract.NotFoundStatus"
+                Margin="1,4,0,4"
+                Style="{StaticResource TextBodyNormal}"
+                Text="⚠️ Could not locate Tesseract.exe"
+                Visibility="Collapsed" />
+
+            <controls:SettingsExpander
+                Description="Path to tesseract.exe. Set automatically when Tesseract is installed in a known location."
+                HeaderText="Tesseract location"
+                Icon="{ui:SymbolIcon FolderOpen24}"
+                IsExpanded="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        x:Name="TesseractPathTextBox"
+                        AutomationProperties.AutomationId="Settings.Tesseract.Path"
+                        HorizontalAlignment="Stretch"
+                        FontFamily="Cascadia Code"
+                        TextChanged="TesseractPathTextBox_TextChanged">
+                        Enter path to tesseract.exe here. ex: c:/tess/tesseract.exe
+                    </TextBox>
+                    <Button
+                        x:Name="OpenPathButton"
+                        AutomationProperties.AutomationId="Settings.Tesseract.OpenFolderButton"
+                        Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Click="OpenPathButton_Click"
+                        Style="{StaticResource SymbolButton}">
+                        <StackPanel Margin="4,0" Orientation="Horizontal">
+                            <ui:SymbolIcon Margin="0,0,6,0" Symbol="OpenFolder24" />
+                            <TextBlock Text="Open Folder" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </controls:SettingsExpander>
+
+            <controls:SettingsCard
+                Description="Use the Tesseract that ships with Text Grab. Languages installed with your own Tesseract are not used by the built-in engine."
+                HeaderText="Switch to built-in Tesseract"
+                Icon="{ui:SymbolIcon Cube24}">
+                <Button
+                    x:Name="SwitchToBundledButton"
+                    AutomationProperties.AutomationId="Settings.Tesseract.SwitchToBundledButton"
+                    Click="SwitchToBundledButton_Click"
+                    Content="Switch" />
+            </controls:SettingsCard>
+        </StackPanel>
 
         <controls:SettingsExpander
             Description="What Tesseract is, how Text Grab uses it, and why you might want it."
@@ -121,21 +266,22 @@
                 </TextBlock>
 
                 <TextBlock FontWeight="SemiBold" Text="How does Text Grab use Tesseract?" />
-                <TextBlock Margin="0,2,0,10" Style="{StaticResource TextBodyNormal}">
-                    Text Grab will capture the image then pass it to the Tesseract EXE. Then Tesseract returns the result of the OCR to Text Grab and error occurs according to user settings.<LineBreak />
-                    Does not use Tesseract: Table Recogintion and the Grab Frame.</TextBlock>
+                <TextBlock
+                    x:Name="HowUsedTextBlock"
+                    Margin="0,2,0,10"
+                    Style="{StaticResource TextBodyNormal}"
+                    TextWrapping="Wrap">
+                    Tesseract is bundled with Text Grab and runs inside the app, so there is nothing else to install. Text Grab hands the captured image straight to the engine and receives the text back, then applies your error-correction settings.<LineBreak />
+                    Source and project:
+                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tesseract" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tesseract</Hyperlink>
+                    <LineBreak />
+                    License notices for Tesseract and the libraries it uses are in the ThirdPartyNotices folder next to Text Grab.<LineBreak />
+                    Does not use Tesseract: Table Recognition and the Grab Frame.</TextBlock>
 
                 <TextBlock FontWeight="SemiBold" Text="Why should I use Tesseract?" />
                 <TextBlock Margin="0,2,0,10" Style="{StaticResource TextBodyNormal}">
                     Tesseract is known for having the best OCR capabilities. While the Windows OCR is convenient and fast, it has not been updated in years and Microsoft has no plans to update it.<LineBreak />
                     Feel free to try Tesseract and hopefully it will work well for you. Ideally Text Grab can bring together the convenience with the power of Tesseract.</TextBlock>
-
-                <TextBlock FontWeight="SemiBold" Text="Adding more language support" />
-                <TextBlock Margin="0,2,0,0" Style="{StaticResource TextBodyNormal}">
-                    The default OCR Models installed by UB Mannheim are the 'fast' models which are not as accurate. Other more accurate models can be downloaded from the tessdata GitHub repository here:<LineBreak />
-                    <Hyperlink NavigateUri="https://github.com/tesseract-ocr/tessdata" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/tesseract-ocr/tessdata</Hyperlink>
-                    <LineBreak />
-                    After downloading language files, place them in the "tessdata" folder in the installed location of Tesseract.</TextBlock>
             </StackPanel>
         </controls:SettingsExpander>
     </StackPanel>

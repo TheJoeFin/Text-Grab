@@ -90,6 +90,7 @@ public class OcrOptionsTests
         public bool UiAutomationFallbackToOcr { get; set; }
         public bool UseTesseract { get; set; }
         public string TesseractPath { get; set; } = string.Empty;
+        public string TesseractEngineMode { get; set; } = string.Empty;
         public string LastUsedLang { get; set; } = string.Empty;
         public int TtsSpeakWordLimit { get; set; }
         public string TtsVoiceName { get; set; } = string.Empty;
