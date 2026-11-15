@@ -12,7 +12,7 @@ namespace Text_Grab.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.11.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "18.13.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -61,7 +61,7 @@ namespace Text_Grab.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool CorrectErrors {
             get {
                 return ((bool)(this["CorrectErrors"]));
@@ -490,7 +490,7 @@ namespace Text_Grab.Properties {
                 this["TrayIconStyle"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("DefaultLaunch")]
@@ -502,7 +502,7 @@ namespace Text_Grab.Properties {
                 this["TrayLeftClickAction"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("20")]
@@ -514,7 +514,7 @@ namespace Text_Grab.Properties {
                 this["TrayFlyoutItemCount"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("EditText,GrabFrames,Files")]
@@ -526,7 +526,7 @@ namespace Text_Grab.Properties {
                 this["TrayFlyoutSources"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
@@ -538,7 +538,7 @@ namespace Text_Grab.Properties {
                 this["RenderingMode"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -550,7 +550,7 @@ namespace Text_Grab.Properties {
                 this["WarnBeforeOpeningEmailLinks"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -562,7 +562,7 @@ namespace Text_Grab.Properties {
                 this["WarnBeforeOpeningTelephoneLinks"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -598,7 +598,7 @@ namespace Text_Grab.Properties {
                 this["TesseractPath"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -610,7 +610,7 @@ namespace Text_Grab.Properties {
                 this["TesseractEngineMode"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -634,7 +634,7 @@ namespace Text_Grab.Properties {
                 this["RestoreEtwPositions"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("800")]
@@ -646,7 +646,7 @@ namespace Text_Grab.Properties {
                 this["EtwDefaultWidth"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("500")]
@@ -658,43 +658,7 @@ namespace Text_Grab.Properties {
                 this["EtwDefaultHeight"] = value;
             }
         }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Pixels")]
-        public string EtwDefaultSizeMode {
-            get {
-                return ((string)(this["EtwDefaultSizeMode"]));
-            }
-            set {
-                this["EtwDefaultSizeMode"] = value;
-            }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("60")]
-        public int EtwDefaultWidthPercent {
-            get {
-                return ((int)(this["EtwDefaultWidthPercent"]));
-            }
-            set {
-                this["EtwDefaultWidthPercent"] = value;
-            }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("70")]
-        public int EtwDefaultHeightPercent {
-            get {
-                return ((int)(this["EtwDefaultHeightPercent"]));
-            }
-            set {
-                this["EtwDefaultHeightPercent"] = value;
-            }
-        }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("MiddleCenter")]
@@ -706,7 +670,43 @@ namespace Text_Grab.Properties {
                 this["EtwDefaultAnchor"] = value;
             }
         }
-
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Pixels")]
+        public string EtwDefaultSizeMode {
+            get {
+                return ((string)(this["EtwDefaultSizeMode"]));
+            }
+            set {
+                this["EtwDefaultSizeMode"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("60")]
+        public int EtwDefaultWidthPercent {
+            get {
+                return ((int)(this["EtwDefaultWidthPercent"]));
+            }
+            set {
+                this["EtwDefaultWidthPercent"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("70")]
+        public int EtwDefaultHeightPercent {
+            get {
+                return ((int)(this["EtwDefaultHeightPercent"]));
+            }
+            set {
+                this["EtwDefaultHeightPercent"] = value;
+            }
+        }
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -766,7 +766,7 @@ namespace Text_Grab.Properties {
                 this["LookupSearchHistory"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -778,7 +778,7 @@ namespace Text_Grab.Properties {
                 this["LookupSources"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Window")]
@@ -790,7 +790,7 @@ namespace Text_Grab.Properties {
                 this["LookupWindowStyle"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -874,7 +874,7 @@ namespace Text_Grab.Properties {
                 this["FsgSelectionStyle"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("CopyMatches")]
@@ -1042,7 +1042,7 @@ namespace Text_Grab.Properties {
                 this["AudioTranscriptionModel"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("BaseMultilingual")]
@@ -1054,7 +1054,7 @@ namespace Text_Grab.Properties {
                 this["LiveTranscriptionModel"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Auto")]

@@ -12,7 +12,7 @@
       <Value Profile="(Default)">Fullscreen</Value>
     </Setting>
     <Setting Name="CorrectErrors" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="EditWindowStartFullscreen" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
