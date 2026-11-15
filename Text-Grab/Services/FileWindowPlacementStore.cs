@@ -10,8 +10,8 @@ using Text_Grab.Utilities;
 namespace Text_Grab.Services;
 
 /// <summary>
-/// Remembers the size and position of the Edit Text Window per opened file, so reopening a file brings it
-/// back where it was. This is separate from the "last used" bounds that new, empty windows restore.
+/// Remembers the normal size, position, and maximized state of the Edit Text Window per opened file.
+/// This is separate from the "last used" placement that new, empty windows restore.
 /// </summary>
 internal static class FileWindowPlacementStore
 {
@@ -19,7 +19,7 @@ internal static class FileWindowPlacementStore
     private const int MaxEntries = 100;
     private static readonly object gate = new();
 
-    /// <param name="Bounds">"left,top,width,height" in device-independent pixels.</param>
+    /// <param name="Bounds">"left,top,width,height,state" in device-independent pixels; older entries omit state.</param>
     internal sealed record Entry(string Key, string Bounds, DateTimeOffset SavedAt);
 
     internal static string KeyForFile(string path) => Path.GetFullPath(path);

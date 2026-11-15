@@ -177,7 +177,7 @@
         </controls:SettingsCard>
 
         <controls:SettingsCard
-            Description="A file opened in the Edit Text Window returns to the size and position it had when that file was last closed. Files you haven't opened before use the new window behavior above."
+            Description="A file opened in the Edit Text Window returns to its last size, position, and maximized state. Maximized windows keep their normal size for Restore Down. Files you haven't opened before use the new window behavior above."
             HeaderText="Reopen files at their own size and position"
             Icon="{ui:SymbolIcon DocumentArrowRight24}">
             <ui:ToggleSwitch x:Name="EtwRememberFilePlacementCheckBox" AutomationProperties.AutomationId="Settings.EditText.RememberFilePlacementToggle" Click="EtwRememberFilePlacementCheckBox_Click" />

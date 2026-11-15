@@ -3,6 +3,8 @@ using Fasetto.Word;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -79,8 +81,8 @@ public static partial class WindowUtilities
     }
 
     /// <summary>
-    /// The window's "left,top,width,height" as stored in settings. Uses the restored bounds when the
-    /// window is maximized or minimized so the remembered size is the normal-state one.
+    /// The window's normal-state "left,top,width,height,state" as stored in settings.
+    /// Capture before Closed, while RestoreBounds is still available. Minimized windows reopen normally.
     /// </summary>
     public static string GetWindowBoundsString(Window window)
     {
@@ -88,23 +90,20 @@ public static partial class WindowUtilities
 
         if (window.WindowState != WindowState.Normal)
         {
-            try
-            {
-                Rect restore = window.RestoreBounds;
-                if (!restore.IsEmpty)
-                    (left, top, width, height) = (restore.Left, restore.Top, restore.Width, restore.Height);
-            }
-            catch (InvalidOperationException)
-            {
-                // Fall back to the live values.
-            }
+            Rect restore = window.RestoreBounds;
+            if (restore.IsEmpty)
+                throw new InvalidOperationException("Window placement must be captured before the window is closed.");
+
+            (left, top, width, height) = (restore.Left, restore.Top, restore.Width, restore.Height);
         }
 
-        return $"{left},{top},{width},{height}";
+        WindowState state = window.WindowState == WindowState.Maximized ? WindowState.Maximized : WindowState.Normal;
+        return FormattableString.Invariant($"{left},{top},{width},{height},{state}");
     }
 
     /// <summary>
-    /// Applies a stored "left,top,width,height" string when it parses and still intersects a screen.
+    /// Applies stored normal bounds and optional state when the bounds still intersect a screen.
+    /// Older four-value placements restore as normal windows.
     /// </summary>
     /// <returns>True when the bounds were applied.</returns>
     public static bool TryApplyStoredBounds(Window passedWindow, string? storedPositionString)
@@ -114,21 +113,36 @@ public static partial class WindowUtilities
 
         List<string> storedPosition = [.. storedPositionString.Split(',')];
 
-        if (storedPosition.Count != 4)
+        if (storedPosition.Count is not (4 or 5))
+        {
+            Debug.WriteLine("Could not restore window placement: expected four bounds and an optional window state.");
             return false;
+        }
 
-        bool couldParseX = double.TryParse(storedPosition[0], out double parsedX);
-        bool couldParseY = double.TryParse(storedPosition[1], out double parsedY);
-        bool couldParseW = double.TryParse(storedPosition[2], out double parsedWid);
-        bool couldParseH = double.TryParse(storedPosition[3], out double parsedHei);
-
-        if (!(couldParseX && couldParseY && couldParseW && couldParseH))
+        WindowState state = WindowState.Normal;
+        if (storedPosition.Count == 5
+            && (!Enum.TryParse(storedPosition[4], out state) || state is not (WindowState.Normal or WindowState.Maximized)))
+        {
+            Debug.WriteLine("Could not restore window placement: invalid window state.");
             return false;
+        }
 
-        if (parsedHei < 10 || parsedWid < 10)
+        CultureInfo culture = storedPosition.Count == 5 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+        bool couldParseX = double.TryParse(storedPosition[0], NumberStyles.Float, culture, out double parsedX);
+        bool couldParseY = double.TryParse(storedPosition[1], NumberStyles.Float, culture, out double parsedY);
+        bool couldParseW = double.TryParse(storedPosition[2], NumberStyles.Float, culture, out double parsedWid);
+        bool couldParseH = double.TryParse(storedPosition[3], NumberStyles.Float, culture, out double parsedHei);
+
+        if (!(couldParseX && couldParseY && couldParseW && couldParseH)
+            || !double.IsFinite(parsedX) || !double.IsFinite(parsedY)
+            || !double.IsFinite(parsedWid) || !double.IsFinite(parsedHei)
+            || parsedHei < 10 || parsedWid < 10)
+        {
+            Debug.WriteLine("Could not restore window placement: invalid window bounds.");
             return false;
+        }
 
-        Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
+        Rect storedSize = new(parsedX, parsedY, parsedWid, parsedHei);
         bool isStoredRectWithinScreen = false;
 
         foreach (DisplayInfo screen in DisplayInfo.AllDisplayInfos)
@@ -141,13 +155,18 @@ public static partial class WindowUtilities
         }
 
         if (!isStoredRectWithinScreen)
+        {
+            Debug.WriteLine("Could not restore window placement: the saved bounds are no longer on a screen.");
             return false;
+        }
 
         passedWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+        passedWindow.WindowState = WindowState.Normal;
         passedWindow.Left = storedSize.X;
         passedWindow.Top = storedSize.Y;
         passedWindow.Width = storedSize.Width;
         passedWindow.Height = storedSize.Height;
+        passedWindow.WindowState = state;
         return true;
     }
 

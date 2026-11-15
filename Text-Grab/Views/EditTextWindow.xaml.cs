@@ -1770,6 +1770,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void RestoreWindowSettings()
     {
+        RestorePositionMenuItem.IsChecked = DefaultSettings.RestoreEtwPositions;
+
+        if (DefaultSettings.RestoreEtwPositions && !placedFromFileBounds)
+            WindowUtilities.SetWindowPosition(this);
+
         if (DefaultSettings.EditWindowStartFullscreen
                     && string.IsNullOrWhiteSpace(OpenedFilePath)
                     && !LaunchedFromNotification)
@@ -1785,11 +1790,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             AlwaysOnTop.IsChecked = true;
             Topmost = true;
         }
-
-        RestorePositionMenuItem.IsChecked = DefaultSettings.RestoreEtwPositions;
-
-        if (DefaultSettings.RestoreEtwPositions && !placedFromFileBounds)
-            WindowUtilities.SetWindowPosition(this);
 
         if (!DefaultSettings.EditWindowIsWordWrapOn)
         {
@@ -2181,12 +2181,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         ClearDynamicMenuItems();
 
-        string windowSizeAndPosition = WindowUtilities.GetWindowBoundsString(this);
-        if (!string.IsNullOrWhiteSpace(OpenedFilePath) && DefaultSettings.EtwRememberFilePlacement)
-            FileWindowPlacementStore.SetBounds(OpenedFilePath, windowSizeAndPosition);
-        else
-            DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
-
         // Save calc pane width to settings when closing with pane open
         if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
         {
@@ -2242,25 +2236,27 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (allowCloseAfterPendingFilePrompt)
         {
             allowCloseAfterPendingFilePrompt = false;
-            SaveWindowTextToHistoryIfNeeded();
-            return;
         }
-
-        if (isShowingPendingFileClosePrompt)
+        else if (isShowingPendingFileClosePrompt)
         {
             e.Cancel = true;
             return;
         }
-
-        if (!hasPendingFileEdits)
+        else if (hasPendingFileEdits)
         {
-            SaveWindowTextToHistoryIfNeeded();
+            e.Cancel = true;
+            isShowingPendingFileClosePrompt = true;
+            _ = HandlePendingFileClosePromptAsync();
             return;
         }
 
-        e.Cancel = true;
-        isShowingPendingFileClosePrompt = true;
-        _ = HandlePendingFileClosePromptAsync();
+        SaveWindowTextToHistoryIfNeeded();
+
+        string windowSizeAndPosition = WindowUtilities.GetWindowBoundsString(this);
+        if (!string.IsNullOrWhiteSpace(OpenedFilePath) && DefaultSettings.EtwRememberFilePlacement)
+            FileWindowPlacementStore.SetBounds(OpenedFilePath, windowSizeAndPosition);
+        else
+            DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
     }
 
     private void Window_Initialized(object sender, EventArgs e)
