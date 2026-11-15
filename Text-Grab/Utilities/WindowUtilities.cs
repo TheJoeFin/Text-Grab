@@ -75,45 +75,80 @@ public static partial class WindowUtilities
         if (passedWindow is GrabFrame)
             storedPositionString = AppUtilities.TextGrabSettings.GrabFrameWindowSizeAndPosition;
 
-        List<string> storedPosition = [.. storedPositionString.Split(',')];
+        TryApplyStoredBounds(passedWindow, storedPositionString);
+    }
 
-        bool isStoredRectWithinScreen = false;
+    /// <summary>
+    /// The window's "left,top,width,height" as stored in settings. Uses the restored bounds when the
+    /// window is maximized or minimized so the remembered size is the normal-state one.
+    /// </summary>
+    public static string GetWindowBoundsString(Window window)
+    {
+        double left = window.Left, top = window.Top, width = window.Width, height = window.Height;
 
-        if (storedPosition != null
-            && storedPosition.Count == 4)
+        if (window.WindowState != WindowState.Normal)
         {
-            bool couldParseX = double.TryParse(storedPosition[0], out double parsedX);
-            bool couldParseY = double.TryParse(storedPosition[1], out double parsedY);
-            bool couldParseW = double.TryParse(storedPosition[2], out double parsedWid);
-            bool couldParseH = double.TryParse(storedPosition[3], out double parsedHei);
-
-            bool couldParseAll = couldParseX && couldParseY && couldParseW && couldParseH;
-
-            Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
-            DisplayInfo[] allScreens = DisplayInfo.AllDisplayInfos;
-
-            if (parsedHei < 10 || parsedWid < 10)
-                return;
-
-            foreach (DisplayInfo screen in allScreens)
+            try
             {
-                Rect screenRect = new(screen.Bounds.Left, screen.Bounds.Top, screen.Bounds.Width, screen.Bounds.Height);
-                DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(passedWindow);
-                screenRect = screenRect.GetScaledDownByDpi(dpi);
-                if (screenRect.IntersectsWith(storedSize))
-                    isStoredRectWithinScreen = true;
+                Rect restore = window.RestoreBounds;
+                if (!restore.IsEmpty)
+                    (left, top, width, height) = (restore.Left, restore.Top, restore.Width, restore.Height);
             }
-
-            if (isStoredRectWithinScreen && couldParseAll)
+            catch (InvalidOperationException)
             {
-                passedWindow.Left = storedSize.X;
-                passedWindow.Top = storedSize.Y;
-                passedWindow.Width = storedSize.Width;
-                passedWindow.Height = storedSize.Height;
-
-                return;
+                // Fall back to the live values.
             }
         }
+
+        return $"{left},{top},{width},{height}";
+    }
+
+    /// <summary>
+    /// Applies a stored "left,top,width,height" string when it parses and still intersects a screen.
+    /// </summary>
+    /// <returns>True when the bounds were applied.</returns>
+    public static bool TryApplyStoredBounds(Window passedWindow, string? storedPositionString)
+    {
+        if (string.IsNullOrWhiteSpace(storedPositionString))
+            return false;
+
+        List<string> storedPosition = [.. storedPositionString.Split(',')];
+
+        if (storedPosition.Count != 4)
+            return false;
+
+        bool couldParseX = double.TryParse(storedPosition[0], out double parsedX);
+        bool couldParseY = double.TryParse(storedPosition[1], out double parsedY);
+        bool couldParseW = double.TryParse(storedPosition[2], out double parsedWid);
+        bool couldParseH = double.TryParse(storedPosition[3], out double parsedHei);
+
+        if (!(couldParseX && couldParseY && couldParseW && couldParseH))
+            return false;
+
+        if (parsedHei < 10 || parsedWid < 10)
+            return false;
+
+        Rect storedSize = new((int)parsedX, (int)parsedY, (int)parsedWid, (int)parsedHei);
+        bool isStoredRectWithinScreen = false;
+
+        foreach (DisplayInfo screen in DisplayInfo.AllDisplayInfos)
+        {
+            Rect screenRect = new(screen.Bounds.Left, screen.Bounds.Top, screen.Bounds.Width, screen.Bounds.Height);
+            DpiScale dpi = System.Windows.Media.VisualTreeHelper.GetDpi(passedWindow);
+            screenRect = screenRect.GetScaledDownByDpi(dpi);
+            if (screenRect.IntersectsWith(storedSize))
+                isStoredRectWithinScreen = true;
+        }
+
+        if (!isStoredRectWithinScreen)
+            return false;
+
+        passedWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+        passedWindow.Left = storedSize.X;
+        passedWindow.Top = storedSize.Y;
+        passedWindow.Width = storedSize.Width;
+        passedWindow.Height = storedSize.Height;
+        return true;
     }
 
     public static void LaunchFullScreenGrab(TextBox? destinationTextBox = null)

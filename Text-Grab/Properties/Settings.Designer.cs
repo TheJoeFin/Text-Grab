@@ -634,6 +634,90 @@ namespace Text_Grab.Properties {
                 this["RestoreEtwPositions"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("800")]
+        public int EtwDefaultWidth {
+            get {
+                return ((int)(this["EtwDefaultWidth"]));
+            }
+            set {
+                this["EtwDefaultWidth"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("500")]
+        public int EtwDefaultHeight {
+            get {
+                return ((int)(this["EtwDefaultHeight"]));
+            }
+            set {
+                this["EtwDefaultHeight"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Pixels")]
+        public string EtwDefaultSizeMode {
+            get {
+                return ((string)(this["EtwDefaultSizeMode"]));
+            }
+            set {
+                this["EtwDefaultSizeMode"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("60")]
+        public int EtwDefaultWidthPercent {
+            get {
+                return ((int)(this["EtwDefaultWidthPercent"]));
+            }
+            set {
+                this["EtwDefaultWidthPercent"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("70")]
+        public int EtwDefaultHeightPercent {
+            get {
+                return ((int)(this["EtwDefaultHeightPercent"]));
+            }
+            set {
+                this["EtwDefaultHeightPercent"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("MiddleCenter")]
+        public string EtwDefaultAnchor {
+            get {
+                return ((string)(this["EtwDefaultAnchor"]));
+            }
+            set {
+                this["EtwDefaultAnchor"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwRememberFilePlacement {
+            get {
+                return ((bool)(this["EtwRememberFilePlacement"]));
+            }
+            set {
+                this["EtwRememberFilePlacement"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

@@ -100,6 +100,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private string historyId = string.Empty;
     private int numberOfContextMenuItems;
     private string? OpenedFilePath;
+    private bool placedFromFileBounds;
     private readonly DispatcherTimer EscapeKeyTimer = new();
     private int EscapeKeyTimerCount = 0;
 
@@ -155,12 +156,14 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+        ApplyDefaultWindowSize();
     }
 
     public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
     {
         InitializeComponent();
         App.SetTheme();
+        ApplyDefaultWindowSize();
 
         if (isEncoded)
             ReadEncodedString(possiblyEncodedString);
@@ -1724,6 +1727,42 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         DefaultSettings.RestoreEtwPositions = restoreMenuItem.IsChecked;
     }
 
+    // The size a new window opens at (centered) unless the last-used bounds are restored over it.
+    private void ApplyDefaultWindowSize()
+    {
+        double width = DefaultSettings.EtwDefaultWidth;
+        double height = DefaultSettings.EtwDefaultHeight;
+
+        if (string.Equals(DefaultSettings.EtwDefaultSizeMode, "Percent", StringComparison.OrdinalIgnoreCase))
+        {
+            // Percent of the primary screen's work area (excludes the taskbar), in device-independent pixels.
+            Rect workArea = SystemParameters.WorkArea;
+            width = workArea.Width * Math.Clamp(DefaultSettings.EtwDefaultWidthPercent, 10, 100) / 100d;
+            height = workArea.Height * Math.Clamp(DefaultSettings.EtwDefaultHeightPercent, 10, 100) / 100d;
+        }
+
+        Width = Math.Max(width, MinWidth);
+        Height = Math.Max(height, MinHeight);
+
+        // Center is the XAML default (CenterScreen); any other anchor lines the window up with that point of the work area.
+        string anchor = DefaultSettings.EtwDefaultAnchor ?? "MiddleCenter";
+        if (string.Equals(anchor, "MiddleCenter", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        const double edgeMargin = 24;
+        Rect area = SystemParameters.WorkArea;
+        double left = anchor.EndsWith("Left", StringComparison.OrdinalIgnoreCase) ? area.Left + edgeMargin
+            : anchor.EndsWith("Right", StringComparison.OrdinalIgnoreCase) ? area.Right - Width - edgeMargin
+            : area.Left + ((area.Width - Width) / 2);
+        double top = anchor.StartsWith("Top", StringComparison.OrdinalIgnoreCase) ? area.Top + edgeMargin
+            : anchor.StartsWith("Bottom", StringComparison.OrdinalIgnoreCase) ? area.Bottom - Height - edgeMargin
+            : area.Top + ((area.Height - Height) / 2);
+
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = Math.Max(left, area.Left);
+        Top = Math.Max(top, area.Top);
+    }
+
     private void RestoreThisPosition_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.SetWindowPosition(this);
@@ -1749,7 +1788,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         RestorePositionMenuItem.IsChecked = DefaultSettings.RestoreEtwPositions;
 
-        if (DefaultSettings.RestoreEtwPositions)
+        if (DefaultSettings.RestoreEtwPositions && !placedFromFileBounds)
             WindowUtilities.SetWindowPosition(this);
 
         if (!DefaultSettings.EditWindowIsWordWrapOn)
@@ -2142,8 +2181,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         ClearDynamicMenuItems();
 
-        string windowSizeAndPosition = $"{this.Left},{this.Top},{this.Width},{this.Height}";
-        DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
+        string windowSizeAndPosition = WindowUtilities.GetWindowBoundsString(this);
+        if (!string.IsNullOrWhiteSpace(OpenedFilePath) && DefaultSettings.EtwRememberFilePlacement)
+            FileWindowPlacementStore.SetBounds(OpenedFilePath, windowSizeAndPosition);
+        else
+            DefaultSettings.EditTextWindowSizeAndPosition = windowSizeAndPosition;
 
         // Save calc pane width to settings when closing with pane open
         if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)

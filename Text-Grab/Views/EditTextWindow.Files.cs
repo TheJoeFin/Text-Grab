@@ -264,6 +264,10 @@ public partial class EditTextWindow
             return;
         }
 
+        // A file opened into a blank window takes that file's remembered placement; replacing the text of a
+        // window that is already in use never moves it.
+        bool windowWasBlank = string.IsNullOrEmpty(OpenedFilePath) && string.IsNullOrEmpty(Session.Text);
+
         SetToLoading("Loading file...");
         try
         {
@@ -276,6 +280,11 @@ public partial class EditTextWindow
             ResetSpreadsheetUndoHistory();
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
+
+            if (shouldTrackOpenedFile && windowWasBlank && DefaultSettings.EtwRememberFilePlacement
+                && FileWindowPlacementStore.GetBounds(pathOfFileToOpen) is string fileBounds
+                && WindowUtilities.TryApplyStoredBounds(this, fileBounds))
+                placedFromFileBounds = true;
             string? fileCodeLanguage = null;
 
             if (KindOpened == OpenContentKind.TextFile)

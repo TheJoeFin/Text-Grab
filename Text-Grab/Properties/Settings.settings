@@ -155,6 +155,27 @@
     <Setting Name="RestoreEtwPositions" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="EtwDefaultWidth" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">800</Value>
+    </Setting>
+    <Setting Name="EtwDefaultHeight" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">500</Value>
+    </Setting>
+    <Setting Name="EtwDefaultAnchor" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MiddleCenter</Value>
+    </Setting>
+    <Setting Name="EtwDefaultSizeMode" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Pixels</Value>
+    </Setting>
+    <Setting Name="EtwDefaultWidthPercent" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">60</Value>
+    </Setting>
+    <Setting Name="EtwDefaultHeightPercent" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">70</Value>
+    </Setting>
+    <Setting Name="EtwRememberFilePlacement" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="EtwUseMargins" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
