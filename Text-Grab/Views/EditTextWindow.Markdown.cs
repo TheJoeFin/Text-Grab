@@ -164,7 +164,9 @@ public partial class EditTextWindow
             .Replace("\n", "<br />", StringComparison.Ordinal);
     }
 
-    private void EnterMarkdownMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Markdown);
+    internal void EnterMarkdownMode() => SetEditorMode(EtwEditorMode.Markdown);
+
+    private void EnterMarkdownMode_Click(object sender, RoutedEventArgs e) => EnterMarkdownMode();
 
     private void OpenNewWindowWithMarkdownSelection()
     {

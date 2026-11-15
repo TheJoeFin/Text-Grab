@@ -428,6 +428,8 @@ public partial class App : System.Windows.Application
                     etw.Activate();
                     return true;
                 }
+            case "paste-markdown":
+            case "paste-code":
             case "edit-text":
                 {
                     EditTextWindow etw = new();
@@ -439,8 +441,14 @@ public partial class App : System.Windows.Application
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"edit-text protocol: clipboard read failed. {ex.Message}");
+                        Debug.WriteLine($"{command} protocol: clipboard read failed. {ex.Message}");
                     }
+
+                    if (command == "paste-markdown")
+                        etw.EnterMarkdownMode();
+                    else if (command == "paste-code")
+                        etw.EnterCodeMode();
+
                     etw.Show();
                     etw.Activate();
                     return true;

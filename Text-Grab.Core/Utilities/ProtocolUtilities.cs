@@ -9,6 +9,8 @@ namespace Text_Grab.Utilities;
 /// data payload (like a copied table) travels via the clipboard.
 /// Supported URIs:
 ///   text-grab://paste-spreadsheet      Edit Text window in spreadsheet mode, paste clipboard
+///   text-grab://paste-markdown         Edit Text window in Markdown mode, paste clipboard text
+///   text-grab://paste-code             Edit Text window in code mode, paste clipboard text
 ///   text-grab://edit-text              Edit Text window with clipboard text
 ///   text-grab://grab-frame[?path=...]  Grab Frame, optionally opening a local image/PDF
 ///   text-grab://grab-text?path=...     OCR a local image/PDF straight to the clipboard (no window)

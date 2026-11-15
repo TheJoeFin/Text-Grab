@@ -12,6 +12,8 @@ public class ProtocolUtilitiesTests
 {
     [Theory]
     [InlineData("text-grab://paste-spreadsheet")]
+    [InlineData("text-grab://paste-markdown")]
+    [InlineData("text-grab://paste-code")]
     [InlineData("TEXT-GRAB://EDIT-TEXT")]
     [InlineData("text-grab:grab-frame")]
     public void IsProtocolUri_RecognizesProtocolArguments(string argument)
@@ -33,6 +35,8 @@ public class ProtocolUtilitiesTests
 
     [Theory]
     [InlineData("text-grab://paste-spreadsheet", "paste-spreadsheet")]
+    [InlineData("text-grab://paste-markdown", "paste-markdown")]
+    [InlineData("text-grab://paste-code", "paste-code")]
     [InlineData("text-grab://edit-text", "edit-text")]
     [InlineData("text-grab://grab-frame", "grab-frame")]
     [InlineData("text-grab://grab-text", "grab-text")]
@@ -51,6 +55,12 @@ public class ProtocolUtilitiesTests
     [InlineData("TEXT-GRAB://Paste-Spreadsheet", "paste-spreadsheet")]
     [InlineData("text-grab://paste-spreadsheet/", "paste-spreadsheet")]
     [InlineData("text-grab:paste-spreadsheet", "paste-spreadsheet")]
+    [InlineData("TEXT-GRAB://Paste-Markdown", "paste-markdown")]
+    [InlineData("text-grab://paste-markdown/", "paste-markdown")]
+    [InlineData("text-grab:paste-markdown", "paste-markdown")]
+    [InlineData("TEXT-GRAB://Paste-Code", "paste-code")]
+    [InlineData("text-grab://paste-code/", "paste-code")]
+    [InlineData("text-grab:paste-code", "paste-code")]
     public void TryParseProtocolUri_NormalizesCommandForms(string uri, string expectedCommand)
     {
         bool parsed = ProtocolUtilities.TryParseProtocolUri(uri, out string command, out _);

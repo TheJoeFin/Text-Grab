@@ -86,7 +86,9 @@ public partial class EditTextWindow
     private void ShowWhitespaceMenuItem_Click(object sender, RoutedEventArgs e)
         => CodeEditorControl.ShowWhitespace = ShowWhitespaceMenuItem.IsChecked;
 
-    private void EnterCodeMode_Click(object sender, RoutedEventArgs e) => SetEditorMode(EtwEditorMode.Code);
+    internal void EnterCodeMode() => SetEditorMode(EtwEditorMode.Code);
+
+    private void EnterCodeMode_Click(object sender, RoutedEventArgs e) => EnterCodeMode();
 
     /// <summary>
     /// <see cref="SetEditorMode"/>'s half of entering code mode, before the editor is shown: fills the
