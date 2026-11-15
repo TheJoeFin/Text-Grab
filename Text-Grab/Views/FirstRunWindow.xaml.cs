@@ -19,6 +19,7 @@ public partial class FirstRunWindow : FluentWindow
     {
         InitializeComponent();
         App.SetTheme();
+        VersionTextBlock.Text = $"Version {AppUtilities.GetAppVersion()}";
     }
 
     private async void FirstRun_Loaded(object sender, RoutedEventArgs e)
@@ -79,10 +80,10 @@ public partial class FirstRunWindow : FluentWindow
         settingsInitialized = true;
     }
 
-    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    private void ExternalLink_Click(object sender, RoutedEventArgs e)
     {
-        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-        e.Handled = true;
+        if (sender is FrameworkElement { Tag: string target })
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
     }
 
     private void NotificationsCheckBox_Checked(object sender, RoutedEventArgs e)
@@ -127,20 +128,35 @@ public partial class FirstRunWindow : FluentWindow
     }
     private void RadioButton_Checked(object sender, RoutedEventArgs e)
     {
+        TextGrabMode selectedMode = GetSelectedMode();
+        StartButtonText.Text = $"Start with {GetModeShortName(selectedMode)}";
+
         if (!settingsInitialized)
             return;
 
-        if (GrabFrameRDBTN.IsChecked is bool gfOn && gfOn)
-            DefaultSettings.DefaultLaunch = TextGrabMode.GrabFrame.ToString();
-        else if (FullScreenRDBTN.IsChecked is bool fsgOn && fsgOn)
-            DefaultSettings.DefaultLaunch = TextGrabMode.Fullscreen.ToString();
-        else if (QuickLookupRDBTN.IsChecked is bool qslOn && qslOn)
-            DefaultSettings.DefaultLaunch = TextGrabMode.QuickLookup.ToString();
-        else
-            DefaultSettings.DefaultLaunch = TextGrabMode.EditText.ToString();
-
+        DefaultSettings.DefaultLaunch = selectedMode.ToString();
         DefaultSettings.Save();
     }
+
+    private TextGrabMode GetSelectedMode()
+    {
+        if (GrabFrameRDBTN.IsChecked is true)
+            return TextGrabMode.GrabFrame;
+        if (FullScreenRDBTN.IsChecked is true)
+            return TextGrabMode.Fullscreen;
+        if (QuickLookupRDBTN.IsChecked is true)
+            return TextGrabMode.QuickLookup;
+
+        return TextGrabMode.EditText;
+    }
+
+    private static string GetModeShortName(TextGrabMode mode) => mode switch
+    {
+        TextGrabMode.Fullscreen => "Full Screen",
+        TextGrabMode.GrabFrame => "Grab Frame",
+        TextGrabMode.QuickLookup => "Quick Lookup",
+        _ => "Edit Text",
+    };
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         WindowUtilities.OpenOrActivateWindow<SettingsWindow>();

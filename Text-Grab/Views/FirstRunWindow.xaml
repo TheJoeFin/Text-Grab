@@ -6,12 +6,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Welcome to Text Grab"
-    AutomationProperties.AutomationId="FirstRunWindow"
     Width="1120"
     Height="820"
     MinWidth="760"
     MinHeight="620"
     Padding="0"
+    AutomationProperties.AutomationId="FirstRunWindow"
     Background="{DynamicResource ApplicationBackgroundBrush}"
     Closed="Window_Closed"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -21,70 +21,185 @@
     <Window.Resources>
         <ui:ImageIcon x:Key="TextGrabIcon" Source="/Text-Grab;component/Images/TealSelect40.png" />
 
-        <SolidColorBrush x:Key="WelcomeAccentFillBrush" Color="#18308E98" />
-        <SolidColorBrush x:Key="WelcomeAccentFillStrongBrush" Color="#24308E98" />
-        <SolidColorBrush x:Key="WelcomeCardBorderBrush" Color="#33308E98" />
+        <!--  Brand teal, used for accents that read on both light and dark themes  -->
+        <SolidColorBrush x:Key="BrandTealBrush" Color="#308E98" />
+        <SolidColorBrush x:Key="BrandTealSubtleBrush" Color="#24308E98" />
+        <SolidColorBrush x:Key="BrandTealSubtleStrokeBrush" Color="#59308E98" />
+        <SolidColorBrush x:Key="BrandTealSelectedFillBrush" Color="#16308E98" />
+        <SolidColorBrush x:Key="BrandTealButtonBrush" Color="#1F6F78" />
+        <SolidColorBrush x:Key="BrandTealButtonHoverBrush" Color="#25808A" />
+        <SolidColorBrush x:Key="BrandTealButtonPressedBrush" Color="#1A5E66" />
 
-        <Style x:Key="SectionTitle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="28" />
+        <!--  Type ramp  -->
+        <Style x:Key="HeroTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="34" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
-        <Style x:Key="SectionBody" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="15" />
+        <Style x:Key="HeroSubtitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="LineHeight" Value="24" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
-        <Style x:Key="CardTitle" TargetType="TextBlock">
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="20" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
-        <Style x:Key="CardBody" TargetType="TextBlock">
+        <Style x:Key="SectionSubtitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="ItemTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="BodyText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="CaptionText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="LineHeight" Value="16" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <!--  Surfaces  -->
         <Style x:Key="SurfaceCard" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorBaseAltBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WelcomeCardBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="18" />
-            <Setter Property="Padding" Value="24" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
 
-        <Style
-            x:Key="ModeCard"
-            BasedOn="{StaticResource SurfaceCard}"
-            TargetType="Border">
-            <Setter Property="Margin" Value="0,0,0,20" />
-            <Setter Property="Padding" Value="20" />
-        </Style>
-
-        <Style x:Key="InfoChip" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource WelcomeAccentFillStrongBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WelcomeCardBorderBrush}" />
+        <Style x:Key="IconTile" TargetType="Border">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Background" Value="{StaticResource BrandTealSubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrandTealSubtleStrokeBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="999" />
-            <Setter Property="Margin" Value="0,0,10,10" />
-            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
 
+        <Style x:Key="IconTileSymbol" TargetType="ui:SymbolIcon">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="Foreground" Value="{StaticResource BrandTealBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="StepBadge" TargetType="Border">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Background" Value="{StaticResource BrandTealSubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrandTealSubtleStrokeBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+        </Style>
+
+        <Style x:Key="StepBadgeText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="SectionHeader" TargetType="Grid">
+            <Setter Property="Margin" Value="0,40,0,16" />
+        </Style>
+
+        <Style x:Key="PreviewFrame" TargetType="Border">
+            <Setter Property="Height" Value="184" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+        </Style>
+
+        <Style x:Key="SettingRow" TargetType="Border">
+            <Setter Property="MinHeight" Value="72" />
+            <Setter Property="Padding" Value="20,14" />
+        </Style>
+
+        <Style x:Key="RowDivider" TargetType="Border">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource DividerStrokeColorDefaultBrush}" />
+        </Style>
+
+        <!--  Focus visuals  -->
+        <Style x:Key="CardFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle
+                            Margin="-3"
+                            RadiusX="11"
+                            RadiusY="11"
+                            SnapsToDevicePixels="True"
+                            Stroke="{DynamicResource FocusStrokeColorOuterBrush}"
+                            StrokeThickness="2" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ButtonFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle
+                            Margin="-3"
+                            RadiusX="7"
+                            RadiusY="7"
+                            SnapsToDevicePixels="True"
+                            Stroke="{DynamicResource FocusStrokeColorOuterBrush}"
+                            StrokeThickness="2" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  Buttons  -->
         <Style x:Key="WelcomeSecondaryButton" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-            <Setter Property="Height" Value="42" />
-            <Setter Property="Margin" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="16,0" />
-            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ButtonFocusVisual}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
@@ -93,22 +208,22 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="12"
+                            CornerRadius="4"
                             SnapsToDevicePixels="True">
                             <ContentPresenter
                                 Margin="{TemplateBinding Padding}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                RecognizesAccessKey="True" />
+                                RecognizesAccessKey="True"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{DynamicResource SolidBackgroundFillColorBaseAltBrush}" />
-                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource WelcomeCardBorderBrush}" />
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{StaticResource WelcomeAccentFillBrush}" />
-                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource Teal}" />
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="border" Property="Opacity" Value="0.45" />
@@ -120,19 +235,192 @@
         </Style>
 
         <Style
-            x:Key="ModePreviewButton"
+            x:Key="TryModeButton"
             BasedOn="{StaticResource WelcomeSecondaryButton}"
             TargetType="Button">
-            <Setter Property="Width" Value="200" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,0,20,20" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
         </Style>
 
-        <Style x:Key="HeroStatCard" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorBaseBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WelcomeCardBorderBrush}" />
+        <Style x:Key="WelcomePrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BrandTealButtonBrush}" />
+            <Setter Property="BorderBrush" Value="#26FFFFFF" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="14" />
-            <Setter Property="Margin" Value="0,0,14,0" />
-            <Setter Property="Padding" Value="16,14" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ButtonFocusVisual}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border
+                            x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            SnapsToDevicePixels="True">
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                RecognizesAccessKey="True"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrandTealButtonHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrandTealButtonPressedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ResourceLinkButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ButtonFocusVisual}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border
+                            x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4"
+                            SnapsToDevicePixels="True">
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center"
+                                RecognizesAccessKey="True"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  A whole card that acts as one radio button in the default-launch group  -->
+        <Style x:Key="ModeCardRadio" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource CardFocusVisual}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type RadioButton}">
+                        <Grid>
+                            <Border
+                                x:Name="CardBackground"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" />
+                            <Border
+                                x:Name="SelectedFill"
+                                Background="{StaticResource BrandTealSelectedFillBrush}"
+                                CornerRadius="8"
+                                Opacity="0" />
+                            <Border
+                                x:Name="SelectedRing"
+                                BorderBrush="{StaticResource BrandTealBrush}"
+                                BorderThickness="2"
+                                CornerRadius="8"
+                                Opacity="0" />
+                            <ContentPresenter
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                RecognizesAccessKey="False" />
+                            <Grid
+                                Height="40"
+                                Margin="0,20,20,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top">
+                                <Ellipse
+                                    x:Name="UncheckedRing"
+                                    Width="20"
+                                    Height="20"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Stroke="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                                    StrokeThickness="1.5" />
+                                <Border
+                                    x:Name="DefaultPill"
+                                    Height="24"
+                                    Padding="8,0,10,0"
+                                    VerticalAlignment="Center"
+                                    Background="{StaticResource BrandTealButtonBrush}"
+                                    CornerRadius="12"
+                                    Visibility="Collapsed">
+                                    <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                        <ui:SymbolIcon
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            Foreground="White"
+                                            Symbol="Checkmark12" />
+                                        <TextBlock
+                                            Margin="4,0,0,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="12"
+                                            FontWeight="SemiBold"
+                                            Foreground="White"
+                                            Text="Default" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBackground" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                <Setter TargetName="UncheckedRing" Property="Stroke" Value="{StaticResource BrandTealBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="SelectedFill" Property="Opacity" Value="1" />
+                                <Setter TargetName="SelectedRing" Property="Opacity" Value="1" />
+                                <Setter TargetName="UncheckedRing" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="DefaultPill" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -140,6 +428,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -153,783 +442,831 @@
             Grid.Row="1"
             HorizontalScrollBarVisibility="Disabled"
             VerticalScrollBarVisibility="Auto">
-            <Grid MaxWidth="1180" Margin="32,24,32,32">
-                <StackPanel>
-                    <Border Style="{StaticResource SurfaceCard}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="340" />
-                            </Grid.ColumnDefinitions>
+            <StackPanel MaxWidth="1040" Margin="40,20,40,40">
 
-                            <StackPanel Margin="0,0,24,0">
-                                <TextBlock
-                                    FontSize="40"
-                                    FontWeight="SemiBold"
-                                    Text="Welcome to Text Grab"
-                                    TextWrapping="Wrap" />
-
-                                <TextBlock
-                                    Margin="0,14,0,0"
-                                    FontSize="17"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="Grab text from anywhere on screen, launch the mode that fits the moment, and keep the app ready exactly how you like it."
-                                    TextWrapping="Wrap" />
-
-                                <TextBlock
-                                    Margin="0,22,0,0"
-                                    FontSize="15"
-                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                    Text="Choose a default mode, try each experience live, and dial in the startup options that make Text Grab feel like part of Windows."
-                                    TextWrapping="Wrap" />
-
-                                <StackPanel Margin="0,28,0,0" Orientation="Horizontal">
-                                    <Button
-                                        x:Name="OkayButton"
-                                        AutomationProperties.AutomationId="FirstRun.StartButton"
-                                        Width="220"
-                                        Click="OkayButton_Click"
-                                        Style="{StaticResource TealColor}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Margin="0,0,8,0" Symbol="Play24" />
-                                            <TextBlock Foreground="White" Text="Start with selected mode" />
-                                        </StackPanel>
-                                    </Button>
-
-                                    <Button
-                                        x:Name="SettingsButton"
-                                        AutomationProperties.AutomationId="FirstRun.OpenSettingsButton"
-                                        Width="160"
-                                        Margin="12,0,0,0"
-                                        Click="SettingsButton_Click"
-                                        Style="{StaticResource WelcomeSecondaryButton}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Margin="0,0,8,0" Symbol="Settings24" />
-                                            <TextBlock Text="Open Settings" />
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
-
-                                <UniformGrid Margin="0,28,0,0" Columns="3">
-                                    <Border Style="{StaticResource HeroStatCard}">
-                                        <StackPanel>
-                                            <ui:SymbolIcon FontSize="20" Symbol="AppsList24" />
-                                            <TextBlock
-                                                Margin="0,12,0,0"
-                                                FontSize="16"
-                                                FontWeight="SemiBold"
-                                                Text="Four focused modes" />
-                                            <TextBlock
-                                                Margin="0,6,0,0"
-                                                Style="{StaticResource CardBody}"
-                                                Text="Pick one default and still jump into the others instantly." />
-                                        </StackPanel>
-                                    </Border>
-
-                                    <Border Style="{StaticResource HeroStatCard}">
-                                        <StackPanel>
-                                            <ui:SymbolIcon FontSize="20" Symbol="Clipboard24" />
-                                            <TextBlock
-                                                Margin="0,12,0,0"
-                                                FontSize="16"
-                                                FontWeight="SemiBold"
-                                                Text="Clipboard-first flow" />
-                                            <TextBlock
-                                                Margin="0,6,0,0"
-                                                Style="{StaticResource CardBody}"
-                                                Text="Capture text, paste fast, and open edit tools only when you need them." />
-                                        </StackPanel>
-                                    </Border>
-
-                                    <Border Margin="0" Style="{StaticResource HeroStatCard}">
-                                        <StackPanel>
-                                            <ui:SymbolIcon FontSize="20" Symbol="ShieldTask24" />
-                                            <TextBlock
-                                                Margin="0,12,0,0"
-                                                FontSize="16"
-                                                FontWeight="SemiBold"
-                                                Text="Private by design" />
-                                            <TextBlock
-                                                Margin="0,6,0,0"
-                                                Style="{StaticResource CardBody}"
-                                                Text="Built on the OCR engine in Windows so your captured text stays local." />
-                                        </StackPanel>
-                                    </Border>
-                                </UniformGrid>
-                            </StackPanel>
-
-                            <Border
-                                Grid.Column="1"
-                                Padding="22"
-                                Background="{StaticResource WelcomeAccentFillBrush}"
-                                BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="18">
-                                <StackPanel>
-                                    <Border
-                                        Width="82"
-                                        Height="82"
-                                        HorizontalAlignment="Left"
-                                        Background="{StaticResource WelcomeAccentFillStrongBrush}"
-                                        CornerRadius="24">
-                                        <Image
-                                            Width="50"
-                                            Height="50"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Source="/Text-Grab;component/Images/TealSelect40.png" />
-                                    </Border>
-
-                                    <TextBlock
-                                        Margin="0,18,0,0"
-                                        FontSize="22"
-                                        FontWeight="SemiBold"
-                                        Text="Ready in a minute" />
-
-                                    <TextBlock
-                                        Margin="0,10,0,0"
-                                        Style="{StaticResource SectionBody}"
-                                        Text="Start with one mode, then grow into the rest as you go." />
-
-                                    <Border
-                                        Margin="0,18,0,0"
-                                        Padding="14"
-                                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                        BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="14">
-                                        <StackPanel>
-                                            <TextBlock
-                                                FontSize="15"
-                                                FontWeight="SemiBold"
-                                                Text="1. Pick a default launch" />
-                                            <TextBlock
-                                                Margin="0,6,0,0"
-                                                Style="{StaticResource CardBody}"
-                                                Text="Fullscreen, Grab Frame, Edit Text, or Quick Lookup." />
-                                        </StackPanel>
-                                    </Border>
-
-                                    <Border
-                                        Margin="0,12,0,0"
-                                        Padding="14"
-                                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                        BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="14">
-                                        <StackPanel>
-                                            <TextBlock
-                                                FontSize="15"
-                                                FontWeight="SemiBold"
-                                                Text="2. Try each mode live" />
-                                            <TextBlock
-                                                Margin="0,6,0,0"
-                                                Style="{StaticResource CardBody}"
-                                                Text="Every preview card below can launch its mode immediately." />
-                                        </StackPanel>
-                                    </Border>
-
-                                    <Border
-                                        Margin="0,12,0,0"
-                                        Padding="14"
-                                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                        BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="14">
-                                        <StackPanel>
-                                            <TextBlock
-                                                FontSize="15"
-                                                FontWeight="SemiBold"
-                                                Text="3. Keep it ready" />
-                                            <TextBlock
-                                                Margin="0,6,0,0"
-                                                Style="{StaticResource CardBody}"
-                                                Text="Turn on notifications, background mode, and startup if that matches your workflow." />
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </Border>
-
-                    <Border
-                        Height="1"
-                        Margin="0,26,0,6"
-                        Background="{StaticResource WelcomeCardBorderBrush}"
-                        Opacity="0.8" />
-
-                    <StackPanel Margin="0,22,0,0">
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="Pick the mode that should launch by default" />
-                        <TextBlock
-                            Margin="0,10,0,0"
-                            Style="{StaticResource SectionBody}"
-                            Text="Each mode is built for a different kind of text work. Choose the one you want fastest access to, then try the others anytime."
-                            TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <UniformGrid Margin="0,22,0,0" Columns="2">
-                        <Border Style="{StaticResource ModeCard}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon
-                                            Margin="0,2,10,0"
-                                            FontSize="22"
-                                            Symbol="SlideAdd20" />
-                                        <TextBlock Style="{StaticResource CardTitle}" Text="Full Screen" />
-                                    </StackPanel>
-                                    <TextBlock
-                                        Margin="0,10,0,0"
-                                        Style="{StaticResource CardBody}"
-                                        Text="Like a screenshot tool for text. Draw once, copy fast, and send the result straight to the clipboard." />
-                                </StackPanel>
-
-                                <Border
-                                    Grid.Row="1"
-                                    Margin="0,18,0,0"
-                                    Padding="10"
-                                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <Image
-                                        Height="190"
-                                        Source="/Text-Grab;component/Images/FSG.png"
-                                        Stretch="UniformToFill" />
-                                </Border>
-
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Best for quick one-off captures anywhere on screen." />
-
-                                <Button
-                                    x:Name="TryFullscreen"
-                                    AutomationProperties.AutomationId="FirstRun.PreviewFullscreenButton"
-                                    Grid.Row="3"
-                                    Margin="0,18,0,0"
-                                    Click="TryFullscreen_Click"
-                                    Style="{StaticResource ModePreviewButton}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Play24" />
-                                        <TextBlock Text="Try it now" />
-                                    </StackPanel>
-                                </Button>
-
-                                <RadioButton
-                                    x:Name="FullScreenRDBTN"
-                                    AutomationProperties.AutomationId="FirstRun.DefaultFullscreenRadio"
-                                    Grid.Row="4"
-                                    Margin="0,18,0,0"
-                                    Checked="RadioButton_Checked"
-                                    GroupName="DefaultLaunch">
-                                    <TextBlock Style="{StaticResource CardBody}" Text="Use Full Screen as my default launch" />
-                                </RadioButton>
-                            </Grid>
+                <!--  Hero  -->
+                <Border
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <Grid>
+                        <Border CornerRadius="11">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,1" EndPoint="1,0">
+                                    <GradientStop Offset="0" Color="#00308E98" />
+                                    <GradientStop Offset="0.45" Color="#0A308E98" />
+                                    <GradientStop Offset="1" Color="#3D308E98" />
+                                </LinearGradientBrush>
+                            </Border.Background>
                         </Border>
 
-                        <Border Style="{StaticResource ModeCard}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon
-                                            Margin="0,2,10,0"
-                                            FontSize="22"
-                                            Symbol="PanelBottom20" />
-                                        <TextBlock Style="{StaticResource CardTitle}" Text="Grab Frame" />
-                                    </StackPanel>
-                                    <TextBlock
-                                        Margin="0,10,0,0"
-                                        Style="{StaticResource CardBody}"
-                                        Text="Keep an OCR frame floating on top, inspect text in place, and work with images or PDFs without leaving the app." />
-                                </StackPanel>
-
-                                <Border
-                                    Grid.Row="1"
-                                    Margin="0,18,0,0"
-                                    Padding="10"
-                                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <Image
-                                        Height="190"
-                                        Source="/Text-Grab;component/Images/GF.png"
-                                        Stretch="UniformToFill" />
-                                </Border>
-
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Best for repeated grabs, overlays, PDFs, and tighter control." />
-
-                                <Button
-                                    x:Name="TryGrabFrame"
-                                    AutomationProperties.AutomationId="FirstRun.PreviewGrabFrameButton"
-                                    Grid.Row="3"
-                                    Margin="0,18,0,0"
-                                    Click="TryGrabFrame_Click"
-                                    Style="{StaticResource ModePreviewButton}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Play24" />
-                                        <TextBlock Text="Show Grab Frame" />
-                                    </StackPanel>
-                                </Button>
-
-                                <RadioButton
-                                    x:Name="GrabFrameRDBTN"
-                                    AutomationProperties.AutomationId="FirstRun.DefaultGrabFrameRadio"
-                                    Grid.Row="4"
-                                    Margin="0,18,0,0"
-                                    Checked="RadioButton_Checked"
-                                    GroupName="DefaultLaunch">
-                                    <TextBlock Style="{StaticResource CardBody}" Text="Use Grab Frame as my default launch" />
-                                </RadioButton>
-                            </Grid>
-                        </Border>
-
-                        <Border Style="{StaticResource ModeCard}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon
-                                            Margin="0,2,10,0"
-                                            FontSize="22"
-                                            Symbol="Window20" />
-                                        <TextBlock Style="{StaticResource CardTitle}" Text="Edit Text Window" />
-                                    </StackPanel>
-                                    <TextBlock
-                                        Margin="0,10,0,0"
-                                        Style="{StaticResource CardBody}"
-                                        Text="Clean up OCR results in a focused plain-text workspace with tools for casing, trimming, regex, and fast corrections." />
-                                </StackPanel>
-
-                                <Border
-                                    Grid.Row="1"
-                                    Margin="0,18,0,0"
-                                    Padding="10"
-                                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <Image
-                                        Height="190"
-                                        Source="/Text-Grab;component/Images/ETW.png"
-                                        Stretch="UniformToFill" />
-                                </Border>
-
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Best when you want OCR plus lightweight cleanup in one place." />
-
-                                <Button
-                                    x:Name="TryEditWindow"
-                                    AutomationProperties.AutomationId="FirstRun.PreviewEditTextButton"
-                                    Grid.Row="3"
-                                    Margin="0,18,0,0"
-                                    Click="TryEditWindow_Click"
-                                    Style="{StaticResource ModePreviewButton}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Play24" />
-                                        <TextBlock Text="Open Edit Window" />
-                                    </StackPanel>
-                                </Button>
-
-                                <RadioButton
-                                    x:Name="EditWindowRDBTN"
-                                    AutomationProperties.AutomationId="FirstRun.DefaultEditTextRadio"
-                                    Grid.Row="4"
-                                    Margin="0,18,0,0"
-                                    Checked="RadioButton_Checked"
-                                    GroupName="DefaultLaunch">
-                                    <TextBlock Style="{StaticResource CardBody}" Text="Use Edit Text Window as my default launch" />
-                                </RadioButton>
-                            </Grid>
-                        </Border>
-
-                        <Border Style="{StaticResource ModeCard}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon
-                                            Margin="0,2,10,0"
-                                            FontSize="22"
-                                            Symbol="SlideSearch20" />
-                                        <TextBlock Style="{StaticResource CardTitle}" Text="Quick Simple Lookup" />
-                                    </StackPanel>
-                                    <TextBlock
-                                        Margin="0,10,0,0"
-                                        Style="{StaticResource CardBody}"
-                                        Text="Store your own reusable snippets, search them instantly, and copy the right text without doing a new OCR pass." />
-                                </StackPanel>
-
-                                <Border
-                                    Grid.Row="1"
-                                    Margin="0,18,0,0"
-                                    Padding="10"
-                                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <Image
-                                        Height="190"
-                                        Source="/Text-Grab;component/Images/QSL.png"
-                                        Stretch="UniformToFill" />
-                                </Border>
-
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Best for personal text libraries, templates, and rapid copy/paste workflows." />
-
-                                <Button
-                                    x:Name="TryQuickLookup"
-                                    AutomationProperties.AutomationId="FirstRun.PreviewQuickLookupButton"
-                                    Grid.Row="3"
-                                    Margin="0,18,0,0"
-                                    Click="TryQuickLookup_Click"
-                                    Style="{StaticResource ModePreviewButton}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Play24" />
-                                        <TextBlock Text="Launch Quick Lookup" />
-                                    </StackPanel>
-                                </Button>
-
-                                <RadioButton
-                                    x:Name="QuickLookupRDBTN"
-                                    AutomationProperties.AutomationId="FirstRun.DefaultQuickLookupRadio"
-                                    Grid.Row="4"
-                                    Margin="0,18,0,0"
-                                    Checked="RadioButton_Checked"
-                                    GroupName="DefaultLaunch">
-                                    <TextBlock Style="{StaticResource CardBody}" Text="Use Quick Lookup as my default launch" />
-                                </RadioButton>
-                            </Grid>
-                        </Border>
-                    </UniformGrid>
-
-                    <StackPanel Margin="0,8,0,0">
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="Set up the experience around that launch" />
-                        <TextBlock
-                            Margin="0,10,0,0"
-                            Style="{StaticResource SectionBody}"
-                            Text="These quick choices mirror the settings most people touch first. Everything else stays available in the full Settings window."
-                            TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <UniformGrid Margin="0,22,0,0" Columns="3">
-                        <Border Style="{StaticResource ModeCard}">
-                            <StackPanel>
-                                <ui:SymbolIcon FontSize="24" Symbol="Alert24" />
-                                <TextBlock
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardTitle}"
-                                    Text="Notifications" />
-                                <TextBlock
-                                    Margin="0,10,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Open copied text in an Edit Text Window straight from the toast notification." />
-                                <ui:ToggleSwitch
-                                    x:Name="NotificationsCheckBox"
-                                    AutomationProperties.AutomationId="FirstRun.NotificationsToggle"
-                                    Margin="0,20,0,0"
-                                    Checked="NotificationsCheckBox_Checked"
-                                    Unchecked="NotificationsCheckBox_Checked">
-                                    <TextBlock Style="{StaticResource CardBody}" Text="Enable notifications" />
-                                </ui:ToggleSwitch>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource ModeCard}">
-                            <StackPanel>
-                                <ui:SymbolIcon FontSize="24" Symbol="WindowConsole20" />
-                                <TextBlock
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardTitle}"
-                                    Text="Background mode" />
-                                <TextBlock
-                                    Margin="0,10,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Keep Text Grab running in the background so hotkeys and faster relaunch are ready when you need them." />
-                                <ui:ToggleSwitch x:Name="BackgroundCheckBox" AutomationProperties.AutomationId="FirstRun.BackgroundToggle" Margin="0,20,0,0">
-                                    <TextBlock Style="{StaticResource CardBody}" Text="Run Text Grab in the background" />
-                                </ui:ToggleSwitch>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Style="{StaticResource ModeCard}">
-                            <StackPanel>
-                                <ui:SymbolIcon FontSize="24" Symbol="ArrowAutofitUp24" />
-                                <TextBlock
-                                    Margin="0,14,0,0"
-                                    Style="{StaticResource CardTitle}"
-                                    Text="Startup" />
-                                <TextBlock
-                                    Margin="0,10,0,0"
-                                    Style="{StaticResource CardBody}"
-                                    Text="Launch Text Grab when Windows starts so your preferred mode is always close at hand." />
-                                <ui:ToggleSwitch
-                                    x:Name="StartupCheckbox"
-                                    AutomationProperties.AutomationId="FirstRun.StartupToggle"
-                                    Margin="0,20,0,0"
-                                    Checked="StartupCheckbox_Checked"
-                                    Unchecked="StartupCheckbox_Checked">
-                                    <TextBlock
-                                        x:Name="StartupTextblock"
-                                        AutomationProperties.AutomationId="FirstRun.StartupStatus"
-                                        Style="{StaticResource CardBody}"
-                                        Text="Start Text Grab on startup" />
-                                </ui:ToggleSwitch>
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
-
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border
-                            Grid.Column="0"
-                            Margin="0,0,12,0"
-                            Style="{StaticResource SurfaceCard}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionTitle}" Text="Why Text Grab feels different" />
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource SectionBody}"
-                                    Text="Text Grab is designed to be fast, practical, and privacy-friendly without turning OCR into a bloated workflow."
-                                    TextWrapping="Wrap" />
-
-                                <Border
-                                    Margin="0,18,0,0"
-                                    Padding="16"
-                                    Background="{StaticResource WelcomeAccentFillBrush}"
-                                    BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <StackPanel>
-                                        <TextBlock
-                                            FontSize="15"
-                                            FontWeight="SemiBold"
-                                            Text="Built for speed" />
-                                        <TextBlock
-                                            Margin="0,6,0,0"
-                                            Style="{StaticResource CardBody}"
-                                            Text="Capture text, send it to the clipboard, and move on without fighting a heavy interface." />
-                                    </StackPanel>
-                                </Border>
-
-                                <Border
-                                    Margin="0,12,0,0"
-                                    Padding="16"
-                                    Background="{StaticResource WelcomeAccentFillBrush}"
-                                    BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <StackPanel>
-                                        <TextBlock
-                                            FontSize="15"
-                                            FontWeight="SemiBold"
-                                            Text="Built for privacy" />
-                                        <TextBlock
-                                            Margin="0,6,0,0"
-                                            Style="{StaticResource CardBody}"
-                                            Text="The app leans on the OCR engine built into Windows instead of shipping captured text off-device." />
-                                    </StackPanel>
-                                </Border>
-
-                                <Border
-                                    Margin="0,12,0,0"
-                                    Padding="16"
-                                    Background="{StaticResource WelcomeAccentFillBrush}"
-                                    BorderBrush="{StaticResource WelcomeCardBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <StackPanel>
-                                        <TextBlock
-                                            FontSize="15"
-                                            FontWeight="SemiBold"
-                                            Text="Built to fit into Windows" />
-                                        <TextBlock
-                                            Margin="0,6,0,0"
-                                            Style="{StaticResource CardBody}"
-                                            Text="Jump lists, the clipboard manager, startup, and background hotkeys all work together so Text Grab feels native." />
-                                    </StackPanel>
-                                </Border>
-
-                                <TextBlock Margin="0,20,0,0" Style="{StaticResource CardBody}">
-                                    Need help, want to file feedback, or just want to see what's new?<LineBreak />
-                                    <LineBreak />
-                                    <Hyperlink
-                                        Foreground="DeepSkyBlue"
-                                        NavigateUri="https://github.com/TheJoeFin/Text-Grab/"
-                                        RequestNavigate="Hyperlink_RequestNavigate">
-                                        Visit the GitHub project
-                                    </Hyperlink>
-                                    <LineBreak />
-                                    <Hyperlink
-                                        Foreground="DeepSkyBlue"
-                                        NavigateUri="mailto:support@textgrab.net"
-                                        RequestNavigate="Hyperlink_RequestNavigate">
-                                        Email support@TextGrab.net
-                                    </Hyperlink>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-
-                        <Border
-                            Grid.Column="1"
-                            Margin="12,0,0,0"
-                            Style="{StaticResource SurfaceCard}">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionTitle}" Text="Need more detail?" />
-                                <TextBlock
-                                    Margin="0,12,0,0"
-                                    Style="{StaticResource SectionBody}"
-                                    Text="The essentials stay front and center. The rest is still here when you want a deeper tour."
-                                    TextWrapping="Wrap" />
-
-                                <Expander Margin="0,18,0,0" Header="How Full Screen works">
-                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource CardBody}">
-                                        Draw around the text you want or click a single word. Text Grab reads the selection with Windows OCR, copies the result to the clipboard, and lets you paste it anywhere. If nothing is recognized, you can immediately try again.
-                                    </TextBlock>
-                                </Expander>
-
-                                <Expander Margin="0,12,0,0" Header="How Grab Frame works">
-                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource CardBody}">
-                                        Grab Frame stays on top, can be moved or resized, and reads text inside its border. You can select word borders, read everything in-frame, drop in images or PDFs, zoom in, and switch to table-oriented workflows.
-                                    </TextBlock>
-                                </Expander>
-
-                                <Expander Margin="0,12,0,0" Header="What the Edit Text Window can do">
-                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource CardBody}">
-                                        Edit Text is a plain-text workspace for fixing OCR output. It includes tools for trimming spaces, changing case, isolating selections, replacing reserved characters, running find and replace, and extracting regex matches.
-                                    </TextBlock>
-                                </Expander>
-
-                                <Expander Margin="0,12,0,0" Header="Where Quick Simple Lookup fits in">
-                                    <TextBlock Margin="0,10,0,0" Style="{StaticResource CardBody}">
-                                        Quick Simple Lookup is the non-OCR companion mode. Store reusable text items, search them instantly, hit Enter to copy, and paste the result wherever you need it.
-                                    </TextBlock>
-                                </Expander>
-
-                                <Border
-                                    Margin="0,20,0,0"
-                                    Padding="16"
-                                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="14">
-                                    <TextBlock Style="{StaticResource CardBody}">
-                                        You can always reopen this screen from Settings if you want the guided overview again later.
-                                    </TextBlock>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <Border Margin="0,28,0,0" Style="{StaticResource SurfaceCard}">
-                        <Grid>
+                        <Grid Margin="40,36,40,32">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                            <StackPanel>
+                            <StackPanel VerticalAlignment="Center">
+                                <Border
+                                    Padding="10,3"
+                                    HorizontalAlignment="Left"
+                                    Background="{StaticResource BrandTealSubtleBrush}"
+                                    BorderBrush="{StaticResource BrandTealSubtleStrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="11">
+                                    <TextBlock
+                                        x:Name="VersionTextBlock"
+                                        AutomationProperties.AutomationId="FirstRun.Version"
+                                        FontSize="12"
+                                        FontWeight="SemiBold"
+                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                        Text="Version" />
+                                </Border>
+
                                 <TextBlock
-                                    FontSize="18"
-                                    FontWeight="SemiBold"
-                                    Text="You're set." />
+                                    Margin="0,14,0,0"
+                                    Style="{StaticResource HeroTitle}"
+                                    Text="Welcome to Text Grab" />
+
                                 <TextBlock
-                                    Margin="0,8,0,0"
-                                    Style="{StaticResource SectionBody}"
-                                    Text="Start with the selected mode now, jump into Settings for the full control surface, or review the licenses that ship with the app."
-                                    TextWrapping="Wrap" />
+                                    MaxWidth="560"
+                                    Margin="0,10,0,0"
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource HeroSubtitle}"
+                                    Text="Grab text from anywhere on screen, launch the mode that fits the moment, and keep the app ready exactly how you like it." />
                             </StackPanel>
 
-                            <StackPanel
+                            <Image
                                 Grid.Column="1"
-                                Margin="24,0,0,0"
-                                HorizontalAlignment="Right"
+                                Width="112"
+                                Height="112"
+                                Margin="32,0,8,0"
                                 VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                                <Button
-                                    x:Name="LicensesButton"
-                                    AutomationProperties.AutomationId="FirstRun.LicensesButton"
-                                    Width="120"
-                                    Margin="0,0,12,0"
-                                    Click="LicensesButton_Click"
-                                    Style="{StaticResource WelcomeSecondaryButton}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="DocumentText24" />
-                                        <TextBlock Text="Licenses" />
-                                    </StackPanel>
-                                </Button>
+                                AutomationProperties.Name="Text Grab logo"
+                                RenderOptions.BitmapScalingMode="HighQuality"
+                                Source="/Text-Grab;component/Images/Text-Grab-Icon.png">
+                                <Image.Effect>
+                                    <DropShadowEffect
+                                        BlurRadius="36"
+                                        Direction="270"
+                                        Opacity="0.4"
+                                        ShadowDepth="10"
+                                        Color="#0B2F33" />
+                                </Image.Effect>
+                            </Image>
 
-                                <Button
-                                    Width="140"
-                                    Margin="0,0,12,0"
-                                    Click="SettingsButton_Click"
-                                    Style="{StaticResource WelcomeSecondaryButton}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Settings24" />
-                                        <TextBlock Text="Open Settings" />
-                                    </StackPanel>
-                                </Button>
+                            <Border
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Margin="0,28,0,0"
+                                Style="{StaticResource RowDivider}" />
 
-                                <Button
-                                    Width="210"
-                                    Click="OkayButton_Click"
-                                    Style="{StaticResource TealColor}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Margin="0,0,8,0" Symbol="Checkmark24" />
-                                        <TextBlock Foreground="White" Text="Start with selected mode" />
+                            <Grid
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
+                                Margin="0,24,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="Flash24" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                        <TextBlock Style="{StaticResource ItemTitle}" Text="Built for speed" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            Style="{StaticResource CaptionText}"
+                                            Text="Capture text, send it to the clipboard, and move on without fighting a heavy interface." />
                                     </StackPanel>
-                                </Button>
-                            </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Column="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="ShieldTask24" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                        <TextBlock Style="{StaticResource ItemTitle}" Text="Private by design" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            Style="{StaticResource CaptionText}"
+                                            Text="Built on the OCR engine in Windows, so your captured text stays on your device." />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Column="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="WindowApps24" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                        <TextBlock Style="{StaticResource ItemTitle}" Text="Fits into Windows" />
+                                        <TextBlock
+                                            Margin="0,2,0,0"
+                                            Style="{StaticResource CaptionText}"
+                                            Text="Jump lists, the clipboard manager, startup, and background hotkeys all work together." />
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
                         </Grid>
+                    </Grid>
+                </Border>
+
+                <!--  Step 1: default mode  -->
+                <Grid Style="{StaticResource SectionHeader}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource StepBadge}">
+                        <TextBlock Style="{StaticResource StepBadgeText}" Text="1" />
                     </Border>
-                </StackPanel>
-            </Grid>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Choose your default mode" />
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            Style="{StaticResource SectionSubtitle}"
+                            Text="Each mode is built for a different kind of text work. Select the one Text Grab should open by default, and try any of them right now." />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.IsSharedSizeScope="True">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Full Screen  -->
+                    <Grid>
+                        <RadioButton
+                            x:Name="FullScreenRDBTN"
+                            AutomationProperties.AutomationId="FirstRun.DefaultFullscreenRadio"
+                            AutomationProperties.HelpText="Use Full Screen as the default launch mode"
+                            AutomationProperties.Name="Full Screen"
+                            Checked="RadioButton_Checked"
+                            GroupName="DefaultLaunch"
+                            Style="{StaticResource ModeCardRadio}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeHeader" />
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeDescription" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid Margin="0,0,96,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="SlideAdd24" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CardTitle}"
+                                        Text="Full Screen" />
+                                </Grid>
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource BodyText}"
+                                    Text="Like a screenshot tool for text. Draw once, copy fast, and send the result straight to the clipboard." />
+                                <Border
+                                    Grid.Row="2"
+                                    Margin="0,16,0,0"
+                                    Style="{StaticResource PreviewFrame}">
+                                    <Border.Background>
+                                        <ImageBrush
+                                            AlignmentY="Top"
+                                            ImageSource="/Text-Grab;component/Images/FSG.png"
+                                            Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                                <Grid
+                                    Grid.Row="3"
+                                    MinHeight="32"
+                                    Margin="0,16,0,0"
+                                    VerticalAlignment="Bottom">
+                                    <TextBlock
+                                        Margin="0,0,156,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Best for quick one-off captures anywhere on screen." />
+                                </Grid>
+                            </Grid>
+                        </RadioButton>
+                        <Button
+                            x:Name="TryFullscreen"
+                            AutomationProperties.AutomationId="FirstRun.PreviewFullscreenButton"
+                            Click="TryFullscreen_Click"
+                            Style="{StaticResource TryModeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon
+                                    Margin="0,0,6,0"
+                                    FontSize="14"
+                                    Symbol="Play24" />
+                                <TextBlock Text="Try Full Screen" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!--  Grab Frame  -->
+                    <Grid Grid.Column="2">
+                        <RadioButton
+                            x:Name="GrabFrameRDBTN"
+                            AutomationProperties.AutomationId="FirstRun.DefaultGrabFrameRadio"
+                            AutomationProperties.HelpText="Use Grab Frame as the default launch mode"
+                            AutomationProperties.Name="Grab Frame"
+                            Checked="RadioButton_Checked"
+                            GroupName="DefaultLaunch"
+                            Style="{StaticResource ModeCardRadio}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeHeader" />
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeDescription" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid Margin="0,0,96,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="PanelBottom20" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CardTitle}"
+                                        Text="Grab Frame" />
+                                </Grid>
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource BodyText}"
+                                    Text="Keep an OCR frame floating on top, inspect text in place, and work with images or PDFs without leaving the app." />
+                                <Border
+                                    Grid.Row="2"
+                                    Margin="0,16,0,0"
+                                    Style="{StaticResource PreviewFrame}">
+                                    <Border.Background>
+                                        <ImageBrush
+                                            AlignmentY="Top"
+                                            ImageSource="/Text-Grab;component/Images/GF.png"
+                                            Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                                <Grid
+                                    Grid.Row="3"
+                                    MinHeight="32"
+                                    Margin="0,16,0,0"
+                                    VerticalAlignment="Bottom">
+                                    <TextBlock
+                                        Margin="0,0,156,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Best for repeated grabs, overlays, PDFs, and tighter control." />
+                                </Grid>
+                            </Grid>
+                        </RadioButton>
+                        <Button
+                            x:Name="TryGrabFrame"
+                            AutomationProperties.AutomationId="FirstRun.PreviewGrabFrameButton"
+                            Click="TryGrabFrame_Click"
+                            Style="{StaticResource TryModeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon
+                                    Margin="0,0,6,0"
+                                    FontSize="14"
+                                    Symbol="Play24" />
+                                <TextBlock Text="Try Grab Frame" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!--  Edit Text  -->
+                    <Grid Grid.Row="2">
+                        <RadioButton
+                            x:Name="EditWindowRDBTN"
+                            AutomationProperties.AutomationId="FirstRun.DefaultEditTextRadio"
+                            AutomationProperties.HelpText="Use the Edit Text Window as the default launch mode"
+                            AutomationProperties.Name="Edit Text Window"
+                            Checked="RadioButton_Checked"
+                            GroupName="DefaultLaunch"
+                            Style="{StaticResource ModeCardRadio}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeHeader" />
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeDescription" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid Margin="0,0,96,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="Window24" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CardTitle}"
+                                        Text="Edit Text Window" />
+                                </Grid>
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource BodyText}"
+                                    Text="Clean up OCR results in a focused plain-text workspace with tools for casing, trimming, regex, and fast corrections." />
+                                <Border
+                                    Grid.Row="2"
+                                    Margin="0,16,0,0"
+                                    Style="{StaticResource PreviewFrame}">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/Text-Grab;component/Images/ETW.png" Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                                <Grid
+                                    Grid.Row="3"
+                                    MinHeight="32"
+                                    Margin="0,16,0,0"
+                                    VerticalAlignment="Bottom">
+                                    <TextBlock
+                                        Margin="0,0,156,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Best for OCR plus lightweight cleanup in one place." />
+                                </Grid>
+                            </Grid>
+                        </RadioButton>
+                        <Button
+                            x:Name="TryEditWindow"
+                            AutomationProperties.AutomationId="FirstRun.PreviewEditTextButton"
+                            Click="TryEditWindow_Click"
+                            Style="{StaticResource TryModeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon
+                                    Margin="0,0,6,0"
+                                    FontSize="14"
+                                    Symbol="Play24" />
+                                <TextBlock Text="Try Edit Text" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!--  Quick Simple Lookup  -->
+                    <Grid Grid.Row="2" Grid.Column="2">
+                        <RadioButton
+                            x:Name="QuickLookupRDBTN"
+                            AutomationProperties.AutomationId="FirstRun.DefaultQuickLookupRadio"
+                            AutomationProperties.HelpText="Use Quick Simple Lookup as the default launch mode"
+                            AutomationProperties.Name="Quick Simple Lookup"
+                            Checked="RadioButton_Checked"
+                            GroupName="DefaultLaunch"
+                            Style="{StaticResource ModeCardRadio}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeHeader" />
+                                    <RowDefinition Height="Auto" SharedSizeGroup="ModeDescription" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid Margin="0,0,96,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}">
+                                        <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="SlideSearch24" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CardTitle}"
+                                        Text="Quick Simple Lookup" />
+                                </Grid>
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Margin="0,12,0,0"
+                                    Style="{StaticResource BodyText}"
+                                    Text="Store your own reusable snippets, search them instantly, and copy the right text without doing a new OCR pass." />
+                                <Border
+                                    Grid.Row="2"
+                                    Margin="0,16,0,0"
+                                    Style="{StaticResource PreviewFrame}">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/Text-Grab;component/Images/QSL.png" Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                                <Grid
+                                    Grid.Row="3"
+                                    MinHeight="32"
+                                    Margin="0,16,0,0"
+                                    VerticalAlignment="Bottom">
+                                    <TextBlock
+                                        Margin="0,0,156,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Best for personal snippets, templates, and quick copying." />
+                                </Grid>
+                            </Grid>
+                        </RadioButton>
+                        <Button
+                            x:Name="TryQuickLookup"
+                            AutomationProperties.AutomationId="FirstRun.PreviewQuickLookupButton"
+                            Click="TryQuickLookup_Click"
+                            Style="{StaticResource TryModeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon
+                                    Margin="0,0,6,0"
+                                    FontSize="14"
+                                    Symbol="Play24" />
+                                <TextBlock Text="Try Quick Lookup" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Grid>
+
+                <!--  Step 2: keep it ready  -->
+                <Grid Style="{StaticResource SectionHeader}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource StepBadge}">
+                        <TextBlock Style="{StaticResource StepBadgeText}" Text="2" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Keep Text Grab ready" />
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            Style="{StaticResource SectionSubtitle}"
+                            Text="These are the settings most people change first. Everything else stays available in Settings." />
+                    </StackPanel>
+                </Grid>
+
+                <Border Style="{StaticResource SurfaceCard}">
+                    <StackPanel>
+                        <Border Style="{StaticResource SettingRow}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource IconTile}" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="Alert24" />
+                                </Border>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Margin="16,0,24,0"
+                                    VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource ItemTitle}" Text="Notifications" />
+                                    <TextBlock
+                                        Margin="0,2,0,0"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Open copied text in an Edit Text Window straight from the toast notification." />
+                                </StackPanel>
+                                <ui:ToggleSwitch
+                                    x:Name="NotificationsCheckBox"
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="FirstRun.NotificationsToggle"
+                                    AutomationProperties.Name="Enable notifications"
+                                    Checked="NotificationsCheckBox_Checked"
+                                    OffContent="Off"
+                                    OnContent="On"
+                                    Unchecked="NotificationsCheckBox_Checked" />
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource RowDivider}" />
+
+                        <Border Style="{StaticResource SettingRow}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource IconTile}" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="Keyboard24" />
+                                </Border>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Margin="16,0,24,0"
+                                    VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource ItemTitle}" Text="Run in the background" />
+                                    <TextBlock
+                                        Margin="0,2,0,0"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Keep Text Grab running so hotkeys and faster relaunch are ready when you need them." />
+                                </StackPanel>
+                                <ui:ToggleSwitch
+                                    x:Name="BackgroundCheckBox"
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="FirstRun.BackgroundToggle"
+                                    AutomationProperties.Name="Run Text Grab in the background"
+                                    OffContent="Off"
+                                    OnContent="On" />
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource RowDivider}" />
+
+                        <Border Style="{StaticResource SettingRow}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Style="{StaticResource IconTile}" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Style="{StaticResource IconTileSymbol}" Symbol="Rocket24" />
+                                </Border>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Margin="16,0,24,0"
+                                    VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource ItemTitle}" Text="Start with Windows" />
+                                    <TextBlock
+                                        x:Name="StartupTextblock"
+                                        Margin="0,2,0,0"
+                                        AutomationProperties.AutomationId="FirstRun.StartupStatus"
+                                        Style="{StaticResource CaptionText}"
+                                        Text="Launch Text Grab when you sign in so your preferred mode is always close at hand." />
+                                </StackPanel>
+                                <ui:ToggleSwitch
+                                    x:Name="StartupCheckbox"
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="FirstRun.StartupToggle"
+                                    AutomationProperties.Name="Start Text Grab with Windows"
+                                    Checked="StartupCheckbox_Checked"
+                                    OffContent="Off"
+                                    OnContent="On"
+                                    Unchecked="StartupCheckbox_Checked" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!--  Learn more  -->
+                <Grid Style="{StaticResource SectionHeader}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource StepBadge}">
+                        <ui:SymbolIcon
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            Symbol="BookOpen24" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Learn more" />
+                        <TextBlock
+                            Margin="0,4,0,0"
+                            Style="{StaticResource SectionSubtitle}"
+                            Text="A deeper look at each mode, plus where to get help." />
+                    </StackPanel>
+                </Grid>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <Expander Header="How Full Screen works">
+                            <TextBlock Style="{StaticResource BodyText}">
+                                Draw around the text you want or click a single word. Text Grab reads the selection with Windows OCR, copies the result to the clipboard, and lets you paste it anywhere. If nothing is recognized, you can immediately try again.
+                            </TextBlock>
+                        </Expander>
+
+                        <Expander Margin="0,4,0,0" Header="How Grab Frame works">
+                            <TextBlock Style="{StaticResource BodyText}">
+                                Grab Frame stays on top, can be moved or resized, and reads text inside its border. You can select word borders, read everything in-frame, drop in images or PDFs, zoom in, and switch to table-oriented workflows.
+                            </TextBlock>
+                        </Expander>
+
+                        <Expander Margin="0,4,0,0" Header="What the Edit Text Window can do">
+                            <TextBlock Style="{StaticResource BodyText}">
+                                Edit Text is a plain-text workspace for fixing OCR output. It includes tools for trimming spaces, changing case, isolating selections, replacing reserved characters, running find and replace, and extracting regex matches.
+                            </TextBlock>
+                        </Expander>
+
+                        <Expander Margin="0,4,0,0" Header="Where Quick Simple Lookup fits in">
+                            <TextBlock Style="{StaticResource BodyText}">
+                                Quick Simple Lookup is the non-OCR companion mode. Store reusable text items, search them instantly, hit Enter to copy, and paste the result wherever you need it.
+                            </TextBlock>
+                        </Expander>
+                    </StackPanel>
+
+                    <Border
+                        Grid.Column="2"
+                        Padding="8"
+                        VerticalAlignment="Top"
+                        Style="{StaticResource SurfaceCard}">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="12,8,12,6"
+                                Style="{StaticResource ItemTitle}"
+                                Text="Help and feedback" />
+
+                            <Button
+                                AutomationProperties.AutomationId="FirstRun.GitHubLink"
+                                Click="ExternalLink_Click"
+                                Style="{StaticResource ResourceLinkButton}"
+                                Tag="https://github.com/TheJoeFin/Text-Grab/">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon
+                                        VerticalAlignment="Center"
+                                        FontSize="18"
+                                        Symbol="Code24" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Text="Visit the GitHub project"
+                                        TextWrapping="Wrap" />
+                                    <ui:SymbolIcon
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Symbol="Open16" />
+                                </Grid>
+                            </Button>
+
+                            <Button
+                                AutomationProperties.AutomationId="FirstRun.SupportEmailLink"
+                                Click="ExternalLink_Click"
+                                Style="{StaticResource ResourceLinkButton}"
+                                Tag="mailto:support@textgrab.net">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon
+                                        VerticalAlignment="Center"
+                                        FontSize="18"
+                                        Symbol="Mail24" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Text="Email support@TextGrab.net"
+                                        TextWrapping="Wrap" />
+                                    <ui:SymbolIcon
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Symbol="Open16" />
+                                </Grid>
+                            </Button>
+
+                            <Button
+                                x:Name="LicensesButton"
+                                AutomationProperties.AutomationId="FirstRun.LicensesButton"
+                                Click="LicensesButton_Click"
+                                Style="{StaticResource ResourceLinkButton}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon
+                                        VerticalAlignment="Center"
+                                        FontSize="18"
+                                        Symbol="DocumentText24" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Text="Third-party licenses"
+                                        TextWrapping="Wrap" />
+                                    <ui:SymbolIcon
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Symbol="ChevronRight16" />
+                                </Grid>
+                            </Button>
+
+                            <Border Margin="12,8,12,0" Style="{StaticResource RowDivider}" />
+
+                            <TextBlock
+                                Margin="12,12,12,8"
+                                Style="{StaticResource CaptionText}"
+                                Text="Reopen this page anytime from Settings or Help, then About." />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
         </ScrollViewer>
+
+        <!--  Footer: always-visible actions  -->
+        <Border
+            Grid.Row="2"
+            Background="{DynamicResource LayerFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0">
+            <Grid MaxWidth="1040" Margin="40,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Margin="0,0,24,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource CaptionText}"
+                    Text="Your choices are saved as you go. You can change them anytime in Settings." />
+
+                <Button
+                    x:Name="SettingsButton"
+                    Grid.Column="1"
+                    AutomationProperties.AutomationId="FirstRun.OpenSettingsButton"
+                    Click="SettingsButton_Click"
+                    Style="{StaticResource WelcomeSecondaryButton}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon
+                            Margin="0,0,8,0"
+                            FontSize="16"
+                            Symbol="Settings24" />
+                        <TextBlock Text="Open Settings" />
+                    </StackPanel>
+                </Button>
+
+                <Button
+                    x:Name="OkayButton"
+                    Grid.Column="2"
+                    Margin="8,0,0,0"
+                    AutomationProperties.AutomationId="FirstRun.StartButton"
+                    Click="OkayButton_Click"
+                    Style="{StaticResource WelcomePrimaryButton}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="StartButtonText" Text="Start Text Grab" />
+                        <ui:SymbolIcon
+                            Margin="8,0,0,0"
+                            FontSize="16"
+                            Foreground="White"
+                            Symbol="ArrowRight20" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
     </Grid>
 </ui:FluentWindow>
