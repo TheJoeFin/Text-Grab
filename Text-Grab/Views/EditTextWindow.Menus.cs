@@ -482,7 +482,7 @@ public partial class EditTextWindow
         SetEditorMode(editorMode);
 
         historyId = history.ID;
-        _ = Dispatcher.BeginInvoke(ShowResumeReadingButtonIfNeeded, DispatcherPriority.ApplicationIdle);
+        _ = Dispatcher.BeginInvoke(ShowResumeReadingBookmarkIfNeeded, DispatcherPriority.ApplicationIdle);
     }
 
     private void ClearRecentTextMenuItems()

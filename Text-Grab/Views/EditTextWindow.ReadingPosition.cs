@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
+using System.Windows.Threading;
 using ICSharpCode.AvalonEdit.Rendering;
 using Text_Grab.Core.Editing;
 using Text_Grab.Models;
@@ -17,8 +19,11 @@ namespace Text_Grab;
 /// </summary>
 public partial class EditTextWindow
 {
-    // Set while the button is showing; null once it was used, hidden, or never needed.
+    private static readonly TimeSpan ResumeReadingTimeout = TimeSpan.FromSeconds(10);
+    private DispatcherTimer? _resumeReadingTimer;
+    // The prompt can expire without consuming the saved position.
     private int? _resumePosition;
+    private int? _resumeStartPosition;
     private EtwEditorMode _resumeMode;
 
     private string? GetReadingPositionKey(bool createHistoryId)
@@ -34,11 +39,11 @@ public partial class EditTextWindow
 
     private void SaveReadingPosition()
     {
-        // A still-pending button means the user never moved on from the saved spot; keep that bookmark
-        // rather than overwriting it with the top of the document.
-        bool bookmarkUntouched = _resumePosition is not null;
-        ResumeReadingButton.Visibility = Visibility.Collapsed;
+        bool bookmarkPending = _resumePosition is not null;
+        int? startPosition = _resumeMode == editorMode ? _resumeStartPosition : null;
+        HideResumeReadingBookmark();
         _resumePosition = null;
+        _resumeStartPosition = null;
 
         if (string.IsNullOrWhiteSpace(Session.Text))
             return;
@@ -51,7 +56,8 @@ public partial class EditTextWindow
             if (GetReadingPositionKey(createHistoryId: isLongDocument && (position > 0 || collapsedRegions.Count > 0)) is not string key)
                 return;
 
-            if (!bookmarkUntouched)
+            // Timing out only hides the prompt. Keep the saved spot if the reader hasn't moved.
+            if (!bookmarkPending || (startPosition is int start && position != start))
                 ReadingPositionStore.SetPosition(key, editorMode.ToString(), position, isLongDocument);
 
             // Collapsed regions are saved even when the scroll bookmark is left alone: they may have changed.
@@ -68,23 +74,114 @@ public partial class EditTextWindow
         }
     }
 
-    private void ShowResumeReadingButtonIfNeeded()
+    private void ShowResumeReadingBookmarkIfNeeded()
     {
+        HideResumeReadingBookmark();
+        _resumePosition = null;
+        _resumeStartPosition = null;
         if (_isClosed || GetReadingPositionKey(createHistoryId: false) is not string key)
             return;
 
-        // Folds come back on their own; only the scroll position waits for the button.
+        // Folds come back on their own; only the scroll position waits for the bookmark.
         if (editorMode == EtwEditorMode.Code)
             CodeEditorControl.RestoreCollapsedRegions(ReadingPositionStore.GetFolds(key));
 
-        _resumePosition = ReadingPositionStore.GetPosition(key, editorMode.ToString());
+        if (ReadingPositionStore.GetPosition(key, editorMode.ToString()) is int position)
+            OfferResumeReadingBookmark(position);
+    }
+
+    private void OfferResumeReadingBookmark(int position)
+    {
+        _resumePosition = position;
         _resumeMode = editorMode;
-        ResumeReadingButton.Visibility = _resumePosition is null ? Visibility.Collapsed : Visibility.Visible;
+        ResumeReadingButton.LayoutUpdated += UpdateResumeReadingBookmark;
+        UpdateResumeReadingBookmark(this, EventArgs.Empty);
+        _resumeReadingTimer ??= new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
+        {
+            Interval = ResumeReadingTimeout,
+        };
+        _resumeReadingTimer.Tick += ResumeReadingTimer_Tick;
+        _resumeReadingTimer.Start();
+    }
+
+    private void HideResumeReadingBookmark()
+    {
+        ResumeReadingButton.LayoutUpdated -= UpdateResumeReadingBookmark;
+        ResumeReadingButton.Visibility = Visibility.Collapsed;
+        if (_resumeReadingTimer is not null)
+        {
+            _resumeReadingTimer.Stop();
+            _resumeReadingTimer.Tick -= ResumeReadingTimer_Tick;
+        }
+    }
+
+    private void ResumeReadingTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!ResumeReadingButton.IsMouseOver && !ResumeReadingButton.IsKeyboardFocused)
+            HideResumeReadingBookmark();
+    }
+
+    private Control GetReadingEditor() => editorMode switch
+    {
+        EtwEditorMode.Code => CodeEditorControl,
+        EtwEditorMode.Markdown => MarkdownEditorControl,
+        EtwEditorMode.Spreadsheet => SpreadsheetDataGrid,
+        _ => PassedTextControl,
+    };
+
+    private void UpdateResumeReadingBookmark(object? sender, EventArgs e)
+    {
+        if (_resumePosition is not int position || _resumeMode != editorMode
+            || WindowUtilities.GetScrollViewer(GetReadingEditor()) is not ScrollViewer { ScrollableHeight: > 0 } viewer
+            || viewer.Template?.FindName("PART_VerticalScrollBar", viewer) is not ScrollBar { Track: Track track } scrollBar
+            || track.ActualHeight <= 0
+            || GetReadingPositionOffset(position, viewer) is not double offset)
+        {
+            ResumeReadingButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        _resumeStartPosition ??= GetTopOfViewport().Position;
+
+        // Align with the center of the scroll thumb at the destination, without covering the track.
+        Point trackTop = track.TranslatePoint(new Point(), ReadingEditorHost);
+        double thumbHeight = track.Thumb?.ActualHeight ?? 0;
+        double fraction = Math.Clamp(offset / viewer.ScrollableHeight, 0, 1);
+        double center = trackTop.Y + thumbHeight / 2 + fraction * (track.ActualHeight - thumbHeight);
+        double top = Math.Clamp(center - ResumeReadingButton.Height / 2, 0, Math.Max(0, ReadingEditorHost.ActualHeight - ResumeReadingButton.Height));
+        double right = ReadingEditorHost.ActualWidth - scrollBar.TranslatePoint(new Point(), ReadingEditorHost).X;
+        ResumeReadingButton.Margin = new Thickness(4, top, right, 0);
+        ResumeReadingButton.Visibility = Visibility.Visible;
+    }
+
+    private double? GetReadingPositionOffset(int position, ScrollViewer viewer)
+    {
+        switch (editorMode)
+        {
+            case EtwEditorMode.Code:
+                return CodeEditorControl.TextArea.TextView.GetVisualTopByDocumentLine(Math.Min(position, CodeEditorControl.Document.LineCount));
+            case EtwEditorMode.Markdown:
+                if (MarkdownEditorControl.Document.ContentStart.GetPositionAtOffset(position) is TextPointer target)
+                    return OffsetFromRect(target.GetCharacterRect(LogicalDirection.Forward));
+                break;
+            case EtwEditorMode.Spreadsheet:
+                if (viewer.CanContentScroll && SpreadsheetDataGrid.Items.Count > 0)
+                    return position;
+                break;
+            default:
+                if (position <= PassedTextControl.Text.Length)
+                    return OffsetFromRect(PassedTextControl.GetRectFromCharacterIndex(position));
+                break;
+        }
+
+        return null;
+
+        double? OffsetFromRect(Rect rect) => rect.IsEmpty ? null : viewer.VerticalOffset + rect.Top;
     }
 
     /// <summary>
     /// The top row of text currently in the viewport, in the unit of the active editor: a character
-    /// index (text, Markdown), a line (code) or a row (spreadsheet).
+    /// index (text, Markdown), a line (code) or a scroll offset (spreadsheet).
     /// </summary>
     private (int Position, bool IsLongDocument) GetTopOfViewport()
     {
@@ -105,9 +202,11 @@ public partial class EditTextWindow
             case EtwEditorMode.Spreadsheet:
                 {
                     int rows = SpreadsheetDataGrid.Items.Count;
-                    bool isScrollingByRow = WindowUtilities.GetScrollViewer(SpreadsheetDataGrid) is ScrollViewer { CanContentScroll: true };
-                    int row = isScrollingByRow ? (int)WindowUtilities.GetScrollViewer(SpreadsheetDataGrid)!.VerticalOffset : 0;
-                    return (row, rows >= ReadingPositionStore.MinimumSpreadsheetRows);
+                    // The grid can virtualize and scroll in pixels; the offset isn't necessarily a row index.
+                    int offset = WindowUtilities.GetScrollViewer(SpreadsheetDataGrid) is ScrollViewer { CanContentScroll: true } viewer
+                        ? (int)viewer.VerticalOffset
+                        : 0;
+                    return (offset, rows >= ReadingPositionStore.MinimumSpreadsheetRows);
                 }
             default:
                 {
@@ -120,79 +219,30 @@ public partial class EditTextWindow
 
     private void ResumeReadingButton_Click(object sender, RoutedEventArgs e)
     {
-        ResumeReadingButton.Visibility = Visibility.Collapsed;
-        int? position = _resumePosition;
-        _resumePosition = null;
-
-        // The bookmark's unit belongs to the mode it was saved in.
-        if (position is not int target || _resumeMode != editorMode)
+        HideResumeReadingBookmark();
+        Control editor = GetReadingEditor();
+        if (_resumePosition is not int position || _resumeMode != editorMode
+            || WindowUtilities.GetScrollViewer(editor) is not ScrollViewer viewer
+            || GetReadingPositionOffset(position, viewer) is not double offset)
             return;
 
+        _resumePosition = null;
+        _resumeStartPosition = null;
+        editor.Focus();
         switch (editorMode)
         {
             case EtwEditorMode.Code:
-                ScrollCodeEditorTo(target);
+                CodeEditorControl.TextArea.Caret.Line = Math.Min(position, CodeEditorControl.Document.LineCount);
                 break;
             case EtwEditorMode.Markdown:
-                ScrollMarkdownTo(target);
+                if (MarkdownEditorControl.Document.ContentStart.GetPositionAtOffset(position) is TextPointer target)
+                    MarkdownEditorControl.CaretPosition = target;
                 break;
-            case EtwEditorMode.Spreadsheet:
-                ScrollSpreadsheetTo(target);
-                break;
-            default:
-                ScrollTextTo(target);
+            case EtwEditorMode.Text:
+                PassedTextControl.CaretIndex = position;
                 break;
         }
-    }
 
-    private void ScrollTextTo(int index)
-    {
-        if (index > PassedTextControl.Text.Length)
-            return;
-
-        PassedTextControl.Focus();
-        PassedTextControl.CaretIndex = index;
-
-        // ScrollToLine only makes the line visible (at the bottom edge when coming from above),
-        // so scroll the line to the top of the view instead.
-        PassedTextControl.UpdateLayout();
-        Rect charRect = PassedTextControl.GetRectFromCharacterIndex(index);
-        if (!charRect.IsEmpty && WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer scrollViewer)
-            scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + charRect.Top);
-        else
-            PassedTextControl.ScrollToLine(PassedTextControl.GetLineIndexFromCharacterIndex(index));
-    }
-
-    private void ScrollCodeEditorTo(int line)
-    {
-        line = Math.Min(line, CodeEditorControl.Document.LineCount);
-        CodeEditorControl.Focus();
-        CodeEditorControl.TextArea.Caret.Line = line;
-        CodeEditorControl.UpdateLayout();
-        CodeEditorControl.ScrollToVerticalOffset(CodeEditorControl.TextArea.TextView.GetVisualTopByDocumentLine(line));
-    }
-
-    private void ScrollMarkdownTo(int offset)
-    {
-        TextPointer? target = MarkdownEditorControl.Document.ContentStart.GetPositionAtOffset(offset);
-        if (target is null)
-            return;
-
-        MarkdownEditorControl.Focus();
-        MarkdownEditorControl.CaretPosition = target;
-        MarkdownEditorControl.UpdateLayout();
-
-        Rect charRect = target.GetCharacterRect(LogicalDirection.Forward);
-        if (!charRect.IsEmpty && WindowUtilities.GetScrollViewer(MarkdownEditorControl) is ScrollViewer scrollViewer)
-            scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + charRect.Top);
-    }
-
-    private void ScrollSpreadsheetTo(int row)
-    {
-        if (SpreadsheetDataGrid.Items.Count == 0 || WindowUtilities.GetScrollViewer(SpreadsheetDataGrid) is not ScrollViewer scrollViewer)
-            return;
-
-        // The grid virtualizes rows, so its vertical offset counts rows rather than pixels.
-        scrollViewer.ScrollToVerticalOffset(Math.Min(row, SpreadsheetDataGrid.Items.Count - 1));
+        viewer.ScrollToVerticalOffset(offset);
     }
 }

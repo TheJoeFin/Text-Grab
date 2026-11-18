@@ -395,6 +395,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
 
+        if (_resumePosition is not null && _resumeMode != mode)
+            HideResumeReadingBookmark();
+
         if (mode == EtwEditorMode.Spreadsheet)
         {
             if (editorMode == EtwEditorMode.Markdown && MarkdownEditorControl.Visibility == Visibility.Visible)
@@ -2149,6 +2152,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private void Window_Closed(object sender, EventArgs e)
     {
         _isClosed = true;
+        HideResumeReadingBookmark();
         ++_liveTranscriptionRequest;
 
         // Stop any in-progress audio-file transcription so it doesn't touch a torn-down window.
@@ -2370,7 +2374,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         // A history item's text is already in place; once the editor has laid out, offer to resume it.
         if (!string.IsNullOrEmpty(historyId))
-            _ = Dispatcher.BeginInvoke(ShowResumeReadingButtonIfNeeded, DispatcherPriority.ApplicationIdle);
+            _ = Dispatcher.BeginInvoke(ShowResumeReadingBookmarkIfNeeded, DispatcherPriority.ApplicationIdle);
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)

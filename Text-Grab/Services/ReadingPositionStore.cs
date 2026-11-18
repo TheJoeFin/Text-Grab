@@ -17,7 +17,7 @@ namespace Text_Grab.Services;
 /// </summary>
 /// <remarks>
 /// A position's unit depends on the editor mode (a character index for text and Markdown, a line for
-/// code, a row for spreadsheets), so an entry is only handed back for the mode it was saved in.
+/// code, a vertical scroll offset for spreadsheets), so an entry is only handed back for the mode it was saved in.
 /// </remarks>
 internal static class ReadingPositionStore
 {

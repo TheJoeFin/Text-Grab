@@ -933,7 +933,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="CalcColumn" Width="200" />
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
+            <Grid x:Name="ReadingEditorHost" Grid.Column="0">
                 <TextBox
                     x:Name="PassedTextControl"
                     x:FieldModifier="private"
@@ -1071,16 +1071,54 @@
                     utils:SmoothScrollBehavior.IsEnabled="True" />
                 <Button
                     x:Name="ResumeReadingButton"
-                    Margin="0,0,24,16"
-                    Padding="12,6"
+                    MinWidth="24"
+                    Height="24"
+                    Padding="3,0"
                     HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
+                    VerticalAlignment="Top"
                     AutomationProperties.AutomationId="EditText.ResumeReadingButton"
                     AutomationProperties.Name="Pick up where you left off"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                    BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                    BorderThickness="1"
                     Click="ResumeReadingButton_Click"
                     Content="Pick up where you left off"
-                    ToolTip="Jump to where you stopped the last time you had this file open"
-                    Visibility="Collapsed" />
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Panel.ZIndex="11"
+                    Visibility="Collapsed">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border
+                                x:Name="BookmarkBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                                <DockPanel Margin="{TemplateBinding Padding}" VerticalAlignment="Center">
+                                    <ui:SymbolIcon
+                                        DockPanel.Dock="Right"
+                                        FontSize="16"
+                                        Symbol="Bookmark16" />
+                                    <ContentPresenter
+                                        x:Name="BookmarkLabel"
+                                        Margin="4,0,6,0"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed" />
+                                </DockPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="BookmarkLabel" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="BookmarkBorder" Property="Background" Value="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="BookmarkLabel" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="BookmarkBorder" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
             </Grid>
             <TextBox
                 x:Name="CalcResultsTextControl"

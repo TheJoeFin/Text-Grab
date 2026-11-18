@@ -332,7 +332,7 @@ public partial class EditTextWindow
                 SetOpenedFileState(shouldTrackOpenedFile ? pathOfFileToOpen : null);
             }
             Singleton<HistoryService>.Instance.RecordRecentFile(pathOfFileToOpen, KindOpened);
-            ShowResumeReadingButtonIfNeeded();
+            ShowResumeReadingBookmarkIfNeeded();
         }
         finally
         {
