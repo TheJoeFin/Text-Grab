@@ -47,6 +47,10 @@ namespace Text_Grab.Utilities;
 /// </summary>
 public static partial class MarkdownFlowDocumentUtilities
 {
+    private const double TaskListCheckBoxWidth = 20;
+    private const double TaskListCheckBoxGap = 8;
+    private const double TaskListMarkerWidth = TaskListCheckBoxWidth + TaskListCheckBoxGap;
+
     private enum MarkdownBlockRole
     {
         None,
@@ -405,6 +409,8 @@ public static partial class MarkdownFlowDocumentUtilities
                 SetQuoteDepth(paragraph, quoteDepth);
                 SetRawSpan(paragraph, paragraphBlock.Span.Start, paragraphBlock.Span.End + 1);
                 AppendInlineContainer(paragraph.Inlines, paragraphBlock.Inline, source, markdownFilePath);
+                if (StartsWithTaskListMarker(paragraph))
+                    ApplyTaskListIndent(paragraph);
                 blocks.Add(paragraph);
                 break;
 
@@ -682,6 +688,14 @@ public static partial class MarkdownFlowDocumentUtilities
         {
             case LiteralInline literalInline:
                 string literalContent = literalInline.Content.ToString();
+                if (literalInline.PreviousSibling is TaskList)
+                {
+                    // The marker supplies the visual gap; the source separator is stored on the marker.
+                    literalContent = literalContent.TrimStart(' ', '\t');
+                    if (literalContent.Length == 0)
+                        break;
+                }
+
                 Run contentRun = new(literalContent);
                 (int literalRawStart, int literalRawEnd) = MarkdownDocumentUtilities.ResolveContentSpan(
                     source, literalContent, literalInline.Span.Start, literalInline.Span.End + 1);
@@ -708,15 +722,15 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case TaskList taskList:
-                CheckBox taskListCheckBox = new() { IsChecked = taskList.Checked, VerticalAlignment = VerticalAlignment.Center };
-                SetInlineRole(taskListCheckBox, MarkdownInlineRole.TaskListMarker);
                 int labelStart = taskList.Span.End + 1;
                 int labelEnd = source.IndexOfAny(['\r', '\n'], labelStart);
                 if (labelEnd < 0)
                     labelEnd = source.Length;
-                AutomationProperties.SetName(taskListCheckBox, source[labelStart..labelEnd].Trim());
-                InlineUIContainer taskListContainer = new(taskListCheckBox) { BaselineAlignment = BaselineAlignment.Center };
-                SetInlineRole(taskListContainer, MarkdownInlineRole.TaskListMarker);
+                InlineUIContainer taskListContainer = CreateTaskListMarker(taskList.Checked, source[labelStart..labelEnd].Trim());
+                int separatorEnd = labelStart;
+                while (separatorEnd < labelEnd && source[separatorEnd] is ' ' or '\t')
+                    separatorEnd++;
+                taskListContainer.SetValue(TaskListSeparatorProperty, source[labelStart..separatorEnd]);
                 SetRawSpan(taskListContainer, taskList.Span.Start, taskList.Span.End + 1);
                 inlines.Add(taskListContainer);
                 break;
@@ -1147,6 +1161,7 @@ public static partial class MarkdownFlowDocumentUtilities
 
             case InlineUIContainer { Child: CheckBox checkBox } when GetInlineRole(inline) == MarkdownInlineRole.TaskListMarker:
                 builder.Append(checkBox.IsChecked == true ? "[x]" : "[ ]");
+                builder.Append((string)inline.GetValue(TaskListSeparatorProperty));
                 break;
 
             case Run run:
@@ -1200,7 +1215,10 @@ public static partial class MarkdownFlowDocumentUtilities
             case Paragraph paragraph:
                 paragraph.Foreground = theme.ForegroundBrush;
                 paragraph.BorderThickness = new Thickness(0);
-                paragraph.Padding = new Thickness(0);
+                if (StartsWithTaskListMarker(paragraph))
+                    ApplyTaskListIndent(paragraph);
+                else
+                    paragraph.Padding = new Thickness(0);
 
                 int headingLevel = GetHeadingLevel(paragraph);
                 if (headingLevel > 0)
@@ -1374,6 +1392,9 @@ public static partial class MarkdownFlowDocumentUtilities
     private static readonly DependencyProperty InlineRoleProperty =
         DependencyProperty.RegisterAttached("InlineRole", typeof(MarkdownInlineRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownInlineRole.None));
 
+    private static readonly DependencyProperty TaskListSeparatorProperty =
+        DependencyProperty.RegisterAttached("TaskListSeparator", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(" "));
+
     private static readonly DependencyProperty CodeFenceInfoProperty =
         DependencyProperty.RegisterAttached("CodeFenceInfo", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(string.Empty));
 
@@ -1433,7 +1454,10 @@ public static partial class MarkdownFlowDocumentUtilities
 
     /// <summary>True when the list item's first paragraph starts with a task-list checkbox.</summary>
     public static bool IsTaskListItem(ListItem item) =>
-        item.Blocks.FirstBlock is Paragraph { Inlines.FirstInline: InlineUIContainer { Child: CheckBox } container }
+        item.Blocks.FirstBlock is Paragraph paragraph && StartsWithTaskListMarker(paragraph);
+
+    private static bool StartsWithTaskListMarker(Paragraph paragraph) =>
+        paragraph.Inlines.FirstInline is InlineUIContainer { Child: CheckBox } container
         && GetInlineRole(container) == MarkdownInlineRole.TaskListMarker;
 
     /// <summary>True for a task-list item that has a checkbox but no label text yet.</summary>
@@ -1442,23 +1466,57 @@ public static partial class MarkdownFlowDocumentUtilities
         && item.Blocks.FirstBlock is Paragraph paragraph
         && paragraph.Inlines.Skip(1).All(inline => inline is Run run && string.IsNullOrWhiteSpace(run.Text));
 
-    /// <summary>Creates an unchecked task-list checkbox followed by the separating space, ready to insert at the start of a paragraph.</summary>
-    public static void InsertTaskListMarker(Paragraph paragraph)
+    private static InlineUIContainer CreateTaskListMarker(bool isChecked, string label)
     {
-        CheckBox checkBox = new() { IsChecked = false, VerticalAlignment = VerticalAlignment.Center };
+        // Use the themed glyph without the padding and minimum size of a standalone checkbox.
+        CheckBox checkBox = new()
+        {
+            IsChecked = isChecked,
+            Width = TaskListCheckBoxWidth,
+            MinWidth = 0,
+            MinHeight = 0,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, TaskListCheckBoxGap, 0),
+            VerticalContentAlignment = VerticalAlignment.Center
+        };
+        AutomationProperties.SetName(checkBox, label);
         SetInlineRole(checkBox, MarkdownInlineRole.TaskListMarker);
         InlineUIContainer container = new(checkBox) { BaselineAlignment = BaselineAlignment.Center };
         SetInlineRole(container, MarkdownInlineRole.TaskListMarker);
-        paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, new Run(" "));
-        paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, container);
+        return container;
     }
 
-    /// <summary>Removes the checkbox and spacing from a task-list item, leaving an empty item.</summary>
+    private static void ApplyTaskListIndent(Paragraph paragraph)
+    {
+        // The negative first-line indent places only the checkbox in the gutter.
+        paragraph.Padding = new Thickness(TaskListMarkerWidth, 0, 0, 0);
+        paragraph.TextIndent = -TaskListMarkerWidth;
+    }
+
+    /// <summary>Inserts an unchecked checkbox and returns the position for its label text.</summary>
+    public static TextPointer InsertTaskListMarker(Paragraph paragraph)
+    {
+        InlineUIContainer marker = CreateTaskListMarker(isChecked: false, label: string.Empty);
+        if (paragraph.Inlines.FirstInline is WpfInline firstInline)
+            paragraph.Inlines.InsertBefore(firstInline, marker);
+        else
+            paragraph.Inlines.Add(marker);
+
+        ApplyTaskListIndent(paragraph);
+        return marker.ElementEnd.GetInsertionPosition(LogicalDirection.Forward);
+    }
+
+    /// <summary>Removes the checkbox and its indent, leaving an empty item.</summary>
     public static void RemoveTaskListMarker(ListItem item)
     {
         if (item.Blocks.FirstBlock is Paragraph paragraph)
+        {
             paragraph.Inlines.Clear();
+            paragraph.ClearValue(Paragraph.PaddingProperty);
+            paragraph.ClearValue(Paragraph.TextIndentProperty);
+        }
     }
+
     private static void SetCodeFenceInfo(DependencyObject element, string value) => element.SetValue(CodeFenceInfoProperty, value);
     private static string GetCodeFenceInfo(DependencyObject element) => (string)element.GetValue(CodeFenceInfoProperty);
     private static void SetIsTableHeader(DependencyObject element, bool value) => element.SetValue(IsTableHeaderProperty, value);

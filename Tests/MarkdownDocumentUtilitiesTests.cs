@@ -1,4 +1,5 @@
 using System.IO;
+using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
@@ -6,7 +7,11 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Text_Grab;
+using Text_Grab.Models;
 using Text_Grab.Utilities;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Markup;
 
 namespace Tests;
 
@@ -511,6 +516,90 @@ Console.WriteLine("hi");
         Assert.Contains("- [x] done item", serialized);
     }
 
+    [WpfTheory]
+    [InlineData(16d, false)]
+    [InlineData(24d, true)]
+    public void Markdown_TaskListCheckBox_AlignsWithFirstLineAndHangsOutsideWrappedText(double fontSize, bool insertMarker)
+    {
+        const string label = "Open item with a long label that wraps onto several lines";
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(
+            insertMarker ? $"- {label}" : $"- [ ]   {label}", new FontFamily("Segoe UI"), fontSize);
+        System.Windows.Documents.List list = Assert.IsType<System.Windows.Documents.List>(Assert.Single(document.Blocks));
+        Paragraph paragraph = Assert.IsType<Paragraph>(Assert.Single(Assert.Single(list.ListItems).Blocks));
+        if (insertMarker)
+            MarkdownFlowDocumentUtilities.InsertTaskListMarker(paragraph);
+
+        CheckBox box = Assert.IsType<CheckBox>(Assert.IsType<InlineUIContainer>(paragraph.Inlines.FirstInline).Child);
+        Run labelRun = paragraph.Inlines.OfType<Run>().First(run => run.Text.Contains(label));
+        TextPointer labelStart = labelRun.ContentStart.GetPositionAtOffset(labelRun.Text.IndexOf(label, StringComparison.Ordinal))!;
+        RichTextBox editor = new(document)
+        {
+            IsDocumentEnabled = true,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
+        editor.Resources.MergedDictionaries.Add(new ThemesDictionary { Theme = ApplicationTheme.Light });
+        editor.Resources.MergedDictionaries.Add(new ControlsDictionary());
+        editor.Measure(new Size(200, 300));
+        editor.Arrange(new Rect(0, 0, 200, 300));
+        editor.UpdateLayout();
+
+        Rect firstLine = labelStart.GetCharacterRect(LogicalDirection.Forward);
+        TextPointer secondLineStart = Assert.IsType<TextPointer>(labelStart.GetLineStartPosition(1));
+        Rect secondLine = secondLineStart.GetCharacterRect(LogicalDirection.Forward);
+        Assert.True(secondLine.Top > firstLine.Top);
+        Assert.InRange(Math.Abs(firstLine.Left - secondLine.Left), 0, 1);
+        Assert.InRange(Math.Abs(firstLine.Bottom - secondLine.Top), 0, 1);
+
+        Rect glyph = VisualTreeHelper.GetDescendantBounds(box);
+        Point glyphCenter = box.TranslatePoint(new Point(glyph.Left + glyph.Width / 2, glyph.Top + glyph.Height / 2), editor);
+        Assert.True(glyphCenter.X + glyph.Width / 2 < firstLine.Left);
+        Assert.InRange(Math.Abs(glyphCenter.Y - (firstLine.Top + firstLine.Height / 2)), 0, 1);
+        Assert.Equal(insertMarker ? $"- [ ] {label}" : $"- [ ]   {label}",
+            MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true));
+    }
+
+    [WpfFact]
+    public void Markdown_TaskListCheckBoxes_AreVisibleInEditTextWindow()
+    {
+        const string markdown = "## Heading\n\n- [x]'Checked item'\n- [ ] Unchecked item";
+        EditTextWindow window = EditTextWindowTestHost.CreateWindow(markdown);
+        window.Resources.MergedDictionaries.Add(new ThemesDictionary { Theme = ApplicationTheme.Dark });
+        window.Resources.MergedDictionaries.Add(new ControlsDictionary());
+        ((MenuItem)window.FindName("MarginsMenuItem")).IsChecked = true;
+        EditTextWindowTestHost.SwitchMode(window, EtwEditorMode.Markdown);
+        RichTextBox editor = EditTextWindowTestHost.MarkdownEditor(window);
+        System.Windows.Documents.List list = Assert.IsType<System.Windows.Documents.List>(editor.Document.Blocks.LastBlock);
+        CheckBox[] boxes = list.ListItems.Select(item =>
+        {
+            Paragraph paragraph = Assert.IsType<Paragraph>(item.Blocks.FirstBlock);
+            return Assert.IsType<CheckBox>(Assert.IsType<InlineUIContainer>(paragraph.Inlines.FirstInline).Child);
+        }).ToArray();
+
+        foreach (CheckBox box in boxes)
+        {
+            // Hiding a visible checkbox must change pixels without moving the label.
+            byte[] before = RenderPixels(editor);
+            box.Opacity = 0;
+            bool missing = before.AsSpan().SequenceEqual(RenderPixels(editor));
+            box.ClearValue(UIElement.OpacityProperty);
+            Assert.False(missing, "The checkbox was not painted in the Markdown editor.");
+        }
+    }
+
+    private static byte[] RenderPixels(FrameworkElement element)
+    {
+        int width = (int)Math.Ceiling(element.ActualWidth);
+        int height = (int)Math.Ceiling(element.ActualHeight);
+        RenderTargetBitmap bitmap = new(width, height, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(element);
+        byte[] pixels = new byte[width * height * 4];
+        bitmap.CopyPixels(pixels, width * 4, 0);
+        return pixels;
+    }
+
     [WpfFact]
     public void Markdown_TaskListCheckBoxes_ToggleAndSynchronizeThroughEditor()
     {
@@ -575,11 +664,15 @@ Console.WriteLine("hi");
         Assert.True(MarkdownFlowDocumentUtilities.IsTaskListItem(list.ListItems.First()));
         Assert.False(MarkdownFlowDocumentUtilities.IsEmptyTaskListItem(list.ListItems.First()));
 
-        System.Windows.Documents.ListItem next = new(new Paragraph(new Run("next")));
+        Paragraph nextParagraph = new();
+        ListItem next = new(nextParagraph);
         list.ListItems.Add(next);
-        MarkdownFlowDocumentUtilities.InsertTaskListMarker((Paragraph)next.Blocks.FirstBlock);
+        TextPointer labelPosition = MarkdownFlowDocumentUtilities.InsertTaskListMarker(nextParagraph);
 
         Assert.True(MarkdownFlowDocumentUtilities.IsTaskListItem(next));
+        Assert.True(MarkdownFlowDocumentUtilities.IsEmptyTaskListItem(next));
+        Assert.Same(nextParagraph, labelPosition.Paragraph);
+        labelPosition.InsertTextInRun("next");
         Assert.Equal($"- [x] done{Environment.NewLine}- [ ] next",
             MarkdownFlowDocumentUtilities.SerializeToMarkdown(document, preserveLiteralMarkdown: true));
     }

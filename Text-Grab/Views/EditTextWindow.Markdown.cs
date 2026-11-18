@@ -360,9 +360,7 @@ public partial class EditTextWindow
             && !MarkdownFlowDocumentUtilities.IsTaskListItem(newItem)
             && newItem.Blocks.FirstBlock is Paragraph newParagraph)
         {
-            MarkdownFlowDocumentUtilities.InsertTaskListMarker(newParagraph);
-            MarkdownEditorControl.CaretPosition = newParagraph.Inlines.FirstInline.NextInline
-                .ContentEnd.GetInsertionPosition(LogicalDirection.Forward);
+            MarkdownEditorControl.CaretPosition = MarkdownFlowDocumentUtilities.InsertTaskListMarker(newParagraph);
         }
     }
 
