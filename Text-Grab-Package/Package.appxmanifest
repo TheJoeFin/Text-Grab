@@ -8,8 +8,9 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop7="http://schemas.microsoft.com/appx/manifest/desktop/windows10/7"
   xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap uap2 uap3 rescap com systemai desktop">
+  IgnorableNamespaces="uap uap2 uap3 rescap com systemai desktop desktop7">
 
   <Identity
     Name="40087JoeFinApps.TextGrab"
@@ -80,15 +81,159 @@
 		</uap3:FileTypeAssociation>
 	  </uap3:Extension>
 
+	  <!-- Keep in sync with the standalone text types in FileAssociationUtilities. -->
 	  <uap3:Extension Category="windows.fileTypeAssociation">
 		<uap3:FileTypeAssociation Name="textgrab.documents">
+		  <desktop7:Logo>Images\Text.ico</desktop7:Logo>
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.asc</uap:FileType>
+			<uap:FileType>.log</uap:FileType>
+			<uap:FileType>.nfo</uap:FileType>
+			<uap:FileType>.srt</uap:FileType>
+			<uap:FileType>.text</uap:FileType>
+			<uap:FileType>.txt</uap:FileType>
+			<uap:FileType>.vtt</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.markdown">
+		  <desktop7:Logo>Images\Markdown.ico</desktop7:Logo>
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.markdown</uap:FileType>
+			<uap:FileType>.md</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.formatteddocuments">
+		  <desktop7:Logo>Images\Header.ico</desktop7:Logo>
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.adoc</uap:FileType>
+			<uap:FileType>.asciidoc</uap:FileType>
+			<uap:FileType>.org</uap:FileType>
+			<uap:FileType>.rst</uap:FileType>
+			<uap:FileType>.tex</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.tables">
+		  <desktop7:Logo>Images\Table.ico</desktop7:Logo>
 		  <uap:SupportedFileTypes>
 			<uap:FileType>.csv</uap:FileType>
-			<uap:FileType>.tsv</uap:FileType>
 			<uap:FileType>.tab</uap:FileType>
-			<uap:FileType>.md</uap:FileType>
-			<uap:FileType>.markdown</uap:FileType>
-			<uap:FileType>.txt</uap:FileType>
+			<uap:FileType>.tsv</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.markup">
+		  <desktop7:Logo>Images\Markup.ico</desktop7:Logo>
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.htm</uap:FileType>
+			<uap:FileType>.html</uap:FileType>
+			<uap:FileType>.resx</uap:FileType>
+			<uap:FileType>.svg</uap:FileType>
+			<uap:FileType>.xaml</uap:FileType>
+			<uap:FileType>.xml</uap:FileType>
+			<uap:FileType>.xsd</uap:FileType>
+			<uap:FileType>.xsl</uap:FileType>
+			<uap:FileType>.xslt</uap:FileType>
+		  </uap:SupportedFileTypes>
+		  <uap2:SupportedVerbs>
+			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>
+		  </uap2:SupportedVerbs>
+		</uap3:FileTypeAssociation>
+	  </uap3:Extension>
+
+	  <uap3:Extension Category="windows.fileTypeAssociation">
+		<uap3:FileTypeAssociation Name="textgrab.code">
+		  <desktop7:Logo>Images\Code.ico</desktop7:Logo>
+		  <uap:SupportedFileTypes>
+			<uap:FileType>.bash</uap:FileType>
+			<uap:FileType>.c</uap:FileType>
+			<uap:FileType>.cc</uap:FileType>
+			<uap:FileType>.cfg</uap:FileType>
+			<uap:FileType>.cjs</uap:FileType>
+			<uap:FileType>.cnf</uap:FileType>
+			<uap:FileType>.conf</uap:FileType>
+			<uap:FileType>.config</uap:FileType>
+			<uap:FileType>.cpp</uap:FileType>
+			<uap:FileType>.cs</uap:FileType>
+			<uap:FileType>.csproj</uap:FileType>
+			<uap:FileType>.css</uap:FileType>
+			<uap:FileType>.csx</uap:FileType>
+			<uap:FileType>.cxx</uap:FileType>
+			<uap:FileType>.diff</uap:FileType>
+			<uap:FileType>.dockerignore</uap:FileType>
+			<uap:FileType>.editorconfig</uap:FileType>
+			<uap:FileType>.env</uap:FileType>
+			<uap:FileType>.fs</uap:FileType>
+			<uap:FileType>.fsx</uap:FileType>
+			<uap:FileType>.gitattributes</uap:FileType>
+			<uap:FileType>.gitconfig</uap:FileType>
+			<uap:FileType>.gitignore</uap:FileType>
+			<uap:FileType>.go</uap:FileType>
+			<uap:FileType>.h</uap:FileType>
+			<uap:FileType>.hpp</uap:FileType>
+			<uap:FileType>.http</uap:FileType>
+			<uap:FileType>.hxx</uap:FileType>
+			<uap:FileType>.ini</uap:FileType>
+			<uap:FileType>.java</uap:FileType>
+			<uap:FileType>.js</uap:FileType>
+			<uap:FileType>.json</uap:FileType>
+			<uap:FileType>.jsonc</uap:FileType>
+			<uap:FileType>.jsonl</uap:FileType>
+			<uap:FileType>.jsx</uap:FileType>
+			<uap:FileType>.kt</uap:FileType>
+			<uap:FileType>.less</uap:FileType>
+			<uap:FileType>.lua</uap:FileType>
+			<uap:FileType>.manifest</uap:FileType>
+			<uap:FileType>.mjs</uap:FileType>
+			<uap:FileType>.ndjson</uap:FileType>
+			<uap:FileType>.nuspec</uap:FileType>
+			<uap:FileType>.patch</uap:FileType>
+			<uap:FileType>.php</uap:FileType>
+			<uap:FileType>.props</uap:FileType>
+			<uap:FileType>.ps1</uap:FileType>
+			<uap:FileType>.psd1</uap:FileType>
+			<uap:FileType>.psm1</uap:FileType>
+			<uap:FileType>.py</uap:FileType>
+			<uap:FileType>.pyw</uap:FileType>
+			<uap:FileType>.rb</uap:FileType>
+			<uap:FileType>.rs</uap:FileType>
+			<uap:FileType>.scss</uap:FileType>
+			<uap:FileType>.sh</uap:FileType>
+			<uap:FileType>.sln</uap:FileType>
+			<uap:FileType>.slnx</uap:FileType>
+			<uap:FileType>.sql</uap:FileType>
+			<uap:FileType>.swift</uap:FileType>
+			<uap:FileType>.targets</uap:FileType>
+			<uap:FileType>.toml</uap:FileType>
+			<uap:FileType>.ts</uap:FileType>
+			<uap:FileType>.tsx</uap:FileType>
+			<uap:FileType>.vb</uap:FileType>
+			<uap:FileType>.vbproj</uap:FileType>
+			<uap:FileType>.yaml</uap:FileType>
+			<uap:FileType>.yml</uap:FileType>
+			<uap:FileType>.zsh</uap:FileType>
 		  </uap:SupportedFileTypes>
 		  <uap2:SupportedVerbs>
 			<uap3:Verb Id="OpenInTextGrab" Parameters="&quot;%1&quot;">Open with Text Grab</uap3:Verb>

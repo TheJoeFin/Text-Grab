@@ -76,6 +76,9 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\Text-Grab\Images\Code.ico;..\Text-Grab\Images\Header.ico;..\Text-Grab\Images\Markdown.ico;..\Text-Grab\Images\Markup.ico;..\Text-Grab\Images\Table.ico;..\Text-Grab\Images\Text.ico">
+      <Link>Images\%(Filename)%(Extension)</Link>
+    </Content>
     <Content Include="Images\LargeTile.scale-100.png" />
     <Content Include="Images\LargeTile.scale-125.png" />
     <Content Include="Images\LargeTile.scale-150.png" />
