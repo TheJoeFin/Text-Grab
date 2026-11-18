@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Text-Grab.Core\Text-Grab.Core.csproj" />
+    <EmbeddedResource Include="..\Text-Grab\Images\Code.ico;..\Text-Grab\Images\Header.ico;..\Text-Grab\Images\Markdown.ico;..\Text-Grab\Images\Markup.ico;..\Text-Grab\Images\Table.ico;..\Text-Grab\Images\Text.ico"
+                      LogicalName="Text_Grab.FileIcons.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!--

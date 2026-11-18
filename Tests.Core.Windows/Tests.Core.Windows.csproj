@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\Text-Grab-Package\Package.appxmanifest" Link="TextGrabPackage.appxmanifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
     <!-- Exclusively used by OcrTests.OcrComplexTableTestImage (batch 7a), so it moved here
          wholesale instead of being linked back to Tests. -->
     <None Update="TextFiles\Table-Complex-WordBorders.json">

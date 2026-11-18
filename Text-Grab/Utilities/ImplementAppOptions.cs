@@ -10,6 +10,8 @@ namespace Text_Grab.Utilities;
 
 internal class ImplementAppOptions
 {
+    private const string OpenWithApplicationKeyPath = @"SOFTWARE\Classes\Applications\Text-Grab.exe";
+
     private static readonly string[] SupportedOpenWithExtensions =
     [
         .. IoUtilities.ImageExtensions,
@@ -84,8 +86,7 @@ internal class ImplementAppOptions
             }
 
             // Register in the Applications key so Windows recognizes it
-            string appRegKey = @"SOFTWARE\Classes\Applications\Text-Grab.exe";
-            using (RegistryKey? key = Registry.CurrentUser.CreateSubKey(appRegKey))
+            using (RegistryKey? key = Registry.CurrentUser.CreateSubKey(OpenWithApplicationKeyPath))
             {
                 if (key is null)
                     return;
@@ -137,8 +138,12 @@ internal class ImplementAppOptions
                 }
             }
 
-            // Remove the Applications key
-            Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\Classes\Applications\Text-Grab.exe", false);
+            // Text files may still use the executable as their selected default.
+            using (RegistryKey? supportedTypes = Registry.CurrentUser.OpenSubKey($@"{OpenWithApplicationKeyPath}\SupportedTypes", true))
+            {
+                foreach (string ext in SupportedOpenWithExtensions)
+                    supportedTypes?.DeleteValue(ext, throwOnMissingValue: false);
+            }
 
             NativeMethods.SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
         }

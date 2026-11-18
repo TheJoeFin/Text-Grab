@@ -649,12 +649,13 @@ public partial class App : System.Windows.Application
         NumberOfRunningInstances = Process.GetProcessesByName("Text-Grab").Length;
         Current.DispatcherUnhandledException += CurrentDispatcherUnhandledException;
 
-        // Per-user text-grab:// and .tggf registration for unpackaged installs
+        // Per-user protocol and file association registration for unpackaged installs
         // (packaged installs register these via the MSIX manifest).
         if (_automationProfile is null || _automationProfile.AllowsPersistentRegistration)
         {
             ProtocolHandlerUtilities.EnsureProtocolRegistration();
             FileAssociationUtilities.EnsureGrabFrameFileAssociation();
+            FileAssociationUtilities.EnsureTextFileAssociations();
         }
 
         // Register COM server and activator type
