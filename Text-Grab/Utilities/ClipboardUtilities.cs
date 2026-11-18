@@ -15,6 +15,22 @@ namespace Text_Grab.Utilities;
 
 public class ClipboardUtilities
 {
+    internal static string? GetExistingFilePathFromText(string text)
+    {
+        string path = text.Trim();
+        if (path.Length >= 2 && path[0] == '"' && path[^1] == '"')
+            path = path[1..^1];
+
+        // Only probe drive-qualified paths, not UNC shares or device namespaces.
+        if (path.Length < 4 || !char.IsAsciiLetter(path[0]) || path[1] != ':'
+            || path[2] is not ('\\' or '/') || path.AsSpan().ContainsAny(Path.GetInvalidPathChars()))
+        {
+            return null;
+        }
+
+        return File.Exists(path) ? path : null;
+    }
+
     public static async Task<(bool, string)> TryGetClipboardText()
     {
         DataPackageView? dataPackageView = null;

@@ -405,6 +405,15 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'clipboard-text-image-and-file-
         Wait-UiTestElement -Target $clipboardEditor -AutomationId 'EditText.Editor' -TimeoutSeconds $Context.TimeoutSeconds
         Close-SystemWindows -Context $Context -AutomationId 'EditTextWindow'
 
+        $file = Join-Path $Context.ProfileDirectory 'clipboard hotkey.txt'
+        $expected = "file opened from clipboard $($Context.RunId)"
+        [IO.File]::WriteAllText($file, $expected)
+        [System.Windows.Clipboard]::SetText(('"{0}"' -f $file))
+        Send-SystemHotkey -Context $Context -Keys '#+^v'
+        $fileEditor = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'EditTextWindow' -TimeoutSeconds $Context.TimeoutSeconds
+        Wait-UiTestElement -Target $fileEditor -AutomationId 'EditText.Editor' -Value $expected -TimeoutSeconds $Context.TimeoutSeconds
+        Close-SystemWindows -Context $Context -AutomationId 'EditTextWindow'
+
         Invoke-SystemIntegrationHelper -Arguments @('--set-image') | Out-Null
         Send-SystemHotkey -Context $Context -Keys '#+^v'
         $frame = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'GrabFrameWindow' -TimeoutSeconds $Context.TimeoutSeconds

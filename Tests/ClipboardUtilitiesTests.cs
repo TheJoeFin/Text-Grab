@@ -1,9 +1,32 @@
+using System.IO;
 using Text_Grab.Utilities;
 
 namespace Tests;
 
 public class ClipboardUtilitiesTests
 {
+    [Theory]
+    [InlineData("{0}", true)]
+    [InlineData("\"{0}\"", true)]
+    [InlineData("  \"{0}\"\r\n", true)]
+    [InlineData("\"{0}", false)]
+    [InlineData("\"{0}\"\r\n\"{0}\"", false)]
+    [InlineData("See \"{0}\" for details", false)]
+    [InlineData("\"{0}.missing\"", false)]
+    public void GetExistingFilePathFromText_RecognizesOnlyASingleExistingFile(string format, bool isPath)
+    {
+        string path = Path.Combine(AppContext.BaseDirectory, "TextFiles", "Text-Grab-Test-PDF.pdf");
+        Assert.True(File.Exists(path));
+        Assert.Equal(isPath ? path : null, ClipboardUtilities.GetExistingFilePathFromText(string.Format(format, path)));
+    }
+
+    [Fact]
+    public void GetExistingFilePathFromText_DoesNotMatchDirectoryOrRelativePath()
+    {
+        Assert.Null(ClipboardUtilities.GetExistingFilePathFromText($"\"{AppContext.BaseDirectory}\""));
+        Assert.Null(ClipboardUtilities.GetExistingFilePathFromText("global.json"));
+    }
+
     private const string SampleCfHtml = """
         Version:1.0
         StartHTML:00000097

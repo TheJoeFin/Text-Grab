@@ -448,9 +448,30 @@
                     x:Name="ClipboardButton"
                     AutomationProperties.AutomationId="TrayFlyout.Clipboard"
                     AutomationProperties.Name="Open clipboard content"
+                    ContextMenuService.IsEnabled="False"
                     Style="{StaticResource FlyoutNeutralButton}"
                     Tag="Clipboard"
                     ToolTip="Open clipboard content">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="ClipboardPathMenu" Placement="Top">
+                            <MenuItem
+                                AutomationProperties.AutomationId="TrayFlyout.Clipboard.OpenFile"
+                                Click="ClipboardMenuOpenFile_Click"
+                                Header="Open file">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="Open24" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem
+                                AutomationProperties.AutomationId="TrayFlyout.Clipboard.OpenPathAsText"
+                                Click="ClipboardMenuOpenPathAsText_Click"
+                                Header="Open path as text">
+                                <MenuItem.Icon>
+                                    <ui:SymbolIcon Symbol="WindowEdit20" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Button.ContextMenu>
                     <StackPanel>
                         <ui:SymbolIcon FontSize="20" Symbol="ClipboardPaste24" />
                         <TextBlock

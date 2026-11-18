@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -21,6 +22,7 @@ public partial class TrayFlyoutWindow : Window
     private readonly Button[] buttons;
     private List<TrayFlyoutItem> allItems = [];
     private int maxCount = TrayFlyoutItemProvider.DefaultItemCount;
+    private (string Path, string Text)? clipboardPathChoice;
 
     public TrayFlyoutWindow()
     {
@@ -80,6 +82,9 @@ public partial class TrayFlyoutWindow : Window
     {
         if (IsVisible)
             return;
+
+        ClipboardPathMenu.IsOpen = false;
+        clipboardPathChoice = null;
 
         // Don't hold history rows (and their images) while the flyout is idle.
         allItems = [];
@@ -176,17 +181,63 @@ public partial class TrayFlyoutWindow : Window
             TrayFlyoutController.CloseThenRun(() => TrayFlyoutController.OpenItemDirectory(item));
     }
 
+    private void OpenClipboardFromFlyout()
+    {
+        string? text;
+        try
+        {
+            text = TrayActions.ReadClipboardText();
+        }
+        catch (ExternalException ex)
+        {
+            Debug.WriteLine($"Tray flyout failed to read clipboard text: {ex}");
+            return;
+        }
+
+        if (text is null)
+        {
+            TrayFlyoutController.CloseThenRun(() => TrayActions.TryOpenClipboardImageInGrabFrame());
+        }
+        else if (ClipboardUtilities.GetExistingFilePathFromText(text) is string path)
+        {
+            clipboardPathChoice = (path, text);
+            ClipboardPathMenu.PlacementTarget = ClipboardButton;
+            ClipboardPathMenu.IsOpen = true;
+        }
+        else
+        {
+            TrayFlyoutController.CloseThenRun(() => TrayActions.OpenClipboardText(text));
+        }
+    }
+
+    private void ClipboardMenuOpenPathAsText_Click(object sender, RoutedEventArgs e)
+    {
+        if (clipboardPathChoice is { } choice)
+            TrayFlyoutController.CloseThenRun(() => TrayActions.OpenClipboardText(choice.Text));
+    }
+
+    private void ClipboardMenuOpenFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (clipboardPathChoice is { } choice)
+            TrayFlyoutController.CloseThenRun(() => TrayActions.OpenClipboardFile(choice.Path));
+    }
+
     private void ActionButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string action })
             return;
+
+        if (action == "Clipboard")
+        {
+            OpenClipboardFromFlyout();
+            return;
+        }
 
         Action? launch = action switch
         {
             "PreviousRegion" => TrayActions.CopyPreviousRegion,
             "LastGrabFrame" => TrayActions.OpenLastGrabFrame,
             "LastEditText" => TrayActions.OpenLastEditTextWindow,
-            "Clipboard" => TrayActions.OpenClipboardContent,
             "Fullscreen" => TrayActions.OpenFullscreenGrab,
             "GrabFrame" => TrayActions.OpenGrabFrame,
             "EditText" => TrayActions.OpenEditTextWindow,
@@ -218,7 +269,8 @@ public partial class TrayFlyoutWindow : Window
     private void Window_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         // Type-to-search: typing anywhere in the flyout goes to the search box.
-        if (CurrentZone() == FocusZone.Search || string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0]))
+        if (ClipboardPathMenu.IsOpen || CurrentZone() == FocusZone.Search
+            || string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0]))
             return;
 
         SearchBox.Focus();
@@ -229,6 +281,9 @@ public partial class TrayFlyoutWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (ClipboardPathMenu.IsOpen)
+            return;
+
         if (e.Key == Key.Escape)
         {
             if (!string.IsNullOrEmpty(SearchBox.Text))

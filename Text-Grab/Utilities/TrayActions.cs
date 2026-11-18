@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -67,20 +69,42 @@ public static class TrayActions
     }
 
     /// <summary>
-    /// Opens clipboard text in an Edit Text window, otherwise an image (file or bitmap) in a Grab Frame.
+    /// Opens an existing file named by clipboard text, otherwise opens the text or image itself.
     /// </summary>
     public static void OpenClipboardContent()
     {
-        if (Clipboard.ContainsText())
+        if (ReadClipboardText() is not string text)
+            TryOpenClipboardImageInGrabFrame();
+        else if (ClipboardUtilities.GetExistingFilePathFromText(text) is string path)
+            OpenClipboardFile(path);
+        else
+            OpenClipboardText(text);
+    }
+
+    internal static string? ReadClipboardText()
+        => Clipboard.ContainsText() ? Clipboard.GetText() : null;
+
+    internal static void OpenClipboardText(string text)
+    {
+        EditTextWindow etw = new(text, false);
+        etw.Show();
+        etw.Activate();
+    }
+
+    internal static async void OpenClipboardFile(string path)
+    {
+        try
         {
-            string text = Clipboard.GetText();
-            EditTextWindow etw = new(text, false);
-            etw.Show();
-            etw.Activate();
-            return;
+            if (await App.TryToOpenFilePathAsync(path))
+                return;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ExternalException)
+        {
+            Debug.WriteLine($"Failed to open clipboard file: {ex}");
         }
 
-        TryOpenClipboardImageInGrabFrame();
+        MessageBox.Show($"Text Grab could not open this file:\n{path}", "Unable to open file",
+            MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     public static bool ClipboardHasImage()
