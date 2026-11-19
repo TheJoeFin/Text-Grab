@@ -286,6 +286,19 @@ public partial class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void ReduceMotion_RoundTripsThroughTheRegularSettingsSidecar()
+    {
+        Settings settings = new() { FirstRun = false, EnableFileBackedManagedSettings = true, ReduceMotion = false };
+        using (SettingsService service = CreateService(settings))
+            settings.ReduceMotion = true;
+
+        Settings reloaded = new() { FirstRun = false, EnableFileBackedManagedSettings = true, ReduceMotion = false };
+        using SettingsService reloadedService = CreateService(reloaded);
+
+        Assert.True(reloaded.ReduceMotion);
+    }
+
+    [Fact]
     public void LoadStoredRegexes_SidecarSurvivesSimulatedPackageUpgrade()
     {
         // Simulate a package upgrade: sidecar file already exists (from the previous

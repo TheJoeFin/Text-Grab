@@ -46,6 +46,7 @@ function New-UiTestRunContext {
             StartupOnLogin = $false
             GlobalHotkeysEnabled = $false
             ShowToast = $false
+            ReduceMotion = $false
             DefaultLaunch = 'EditText'
             LastUsedLang = 'en-US'
             UseTesseract = $false

@@ -495,6 +495,19 @@
             </StackPanel>
         </controls:SettingsExpander>
 
+        <!--  Expose this once animations consume the motion preference (#713).  -->
+        <controls:SettingsCard
+            Description="Reduce motion even when animation effects are enabled in Windows."
+            HeaderText="Reduce motion"
+            Icon="{ui:SymbolIcon Accessibility24}"
+            Visibility="Collapsed">
+            <ui:ToggleSwitch
+                x:Name="ReduceMotionToggle"
+                AutomationProperties.AutomationId="Settings.General.ReduceMotionToggle"
+                Checked="ReduceMotionToggle_Changed"
+                Unchecked="ReduceMotionToggle_Changed" />
+        </controls:SettingsCard>
+
         <!--  ===== Advanced =====  -->
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Advanced" />
 

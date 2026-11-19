@@ -1,5 +1,7 @@
 using System;
 using System.Net.Http;
+using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
 using Text_Grab.Core.Actions;
@@ -58,6 +60,9 @@ internal static class AppServices
         }));
 
         services.AddSingleton<AppRuntimeState>();
+        services.AddSingleton(static provider => new MotionPreferences(
+            provider.GetRequiredService<SettingsService>().ClassicSettings,
+            Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher));
 
         // Headless OCR (v5 F3). Stateless, so one instance serves every caller.
         services.AddSingleton<IOcrService, OcrService>();

@@ -147,6 +147,7 @@ public static class DiagnosticsUtilities
             // Core behavior
             FirstRun = s.FirstRun,
             ShowToast = s.ShowToast,
+            ReduceMotion = s.ReduceMotion,
             StartupOnLogin = s.StartupOnLogin,
             RunInBackground = s.RunInTheBackground,
             NeverAutoUseClipboard = s.NeverAutoUseClipboard,
@@ -515,6 +516,7 @@ public class SettingsInfoModel
     // Core behavior
     public bool FirstRun { get; set; }
     public bool ShowToast { get; set; }
+    public bool ReduceMotion { get; set; }
     public bool StartupOnLogin { get; set; }
     public bool RunInBackground { get; set; }
     public bool NeverAutoUseClipboard { get; set; }

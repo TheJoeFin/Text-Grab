@@ -46,6 +46,18 @@ namespace Text_Grab.Properties {
                 this["ShowToast"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ReduceMotion {
+            get {
+                return ((bool)(this["ReduceMotion"]));
+            }
+            set {
+                this["ReduceMotion"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

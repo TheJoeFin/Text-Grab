@@ -76,24 +76,9 @@ public class SettingsImportExportTests
         // Step 4: Modify one value in the JSON to simulate a change
         Dictionary<string, JsonElement> modifiedSettings = new(originalSettings);
 
-        // Find a boolean setting to flip (e.g., ShowToast or FirstRun)
-        string keyToModify = originalSettings.Keys.FirstOrDefault(k =>
-            k.Equals("ShowToast", StringComparison.OrdinalIgnoreCase) ||
-            k.Equals("FirstRun", StringComparison.OrdinalIgnoreCase)) ?? originalSettings.Keys.First();
-
-        // If it's a boolean, flip it; otherwise just ensure it has a different value
-        if (originalSettings[keyToModify].ValueKind == JsonValueKind.True)
-        {
-            modifiedSettings[keyToModify] = JsonSerializer.SerializeToElement(false);
-        }
-        else if (originalSettings[keyToModify].ValueKind == JsonValueKind.False)
-        {
-            modifiedSettings[keyToModify] = JsonSerializer.SerializeToElement(true);
-        }
-        else if (originalSettings[keyToModify].ValueKind == JsonValueKind.String)
-        {
-            modifiedSettings[keyToModify] = JsonSerializer.SerializeToElement("TestModifiedValue");
-        }
+        const string keyToModify = nameof(Settings.ReduceMotion);
+        Assert.True(originalSettings.TryGetValue(keyToModify, out JsonElement originalReduceMotion));
+        modifiedSettings[keyToModify] = JsonSerializer.SerializeToElement(!originalReduceMotion.GetBoolean());
 
         // Step 5: Serialize modified settings and save to a new zip
         string modifiedJson = JsonSerializer.Serialize(modifiedSettings, new JsonSerializerOptions { WriteIndented = true });

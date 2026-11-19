@@ -71,6 +71,8 @@ public partial class GeneralSettings : Page
                 break;
         }
 
+        ReduceMotionToggle.IsChecked = DefaultSettings.ReduceMotion;
+
         TrayIconStyle trayIconStyle = Enum.TryParse(DefaultSettings.TrayIconStyle, true, out TrayIconStyle parsedTrayIconStyle)
             ? parsedTrayIconStyle
             : TrayIconStyle.Color;
@@ -333,6 +335,15 @@ public partial class GeneralSettings : Page
 
         DefaultSettings.AppTheme = AppTheme.Dark.ToString();
         App.SetTheme();
+    }
+
+    private void ReduceMotionToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!settingsSet)
+            return;
+
+        DefaultSettings.ReduceMotion = ReduceMotionToggle.IsChecked is true;
+        DefaultSettings.Save();
     }
 
     private void ColorTrayIconRdBtn_Checked(object sender, RoutedEventArgs e)

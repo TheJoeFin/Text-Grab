@@ -178,6 +178,7 @@ internal sealed class AutomationProfile
         settings["StartupOnLogin"] = false;
         settings["GlobalHotkeysEnabled"] = false;
         settings["ShowToast"] = false;
+        settings["ReduceMotion"] = false;
         settings["DefaultLaunch"] = TextGrabMode.EditText.ToString();
         settings["LastUsedLang"] = "en-US";
         settings["UseTesseract"] = false;
