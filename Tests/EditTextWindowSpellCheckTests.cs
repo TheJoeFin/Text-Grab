@@ -1,9 +1,97 @@
+using System.Reflection;
+using System.Windows;
+using System.Windows.Controls;
 using Text_Grab;
+using Text_Grab.Models;
+using Text_Grab.Properties;
+using Text_Grab.Utilities;
+using static Tests.EditTextWindowTestHost;
 
 namespace Tests;
 
+[Collection("Settings isolation")]
 public class EditTextWindowSpellCheckTests
 {
+    [WpfTheory]
+    [InlineData(SpellCheckMode.Auto)]
+    [InlineData(SpellCheckMode.Off)]
+    public void EnableSpellCheckMenuItem_OverridesDefaultOnlyInThisWindow(SpellCheckMode mode)
+    {
+        Settings settings = AppUtilities.TextGrabSettings;
+        string originalMode = settings.EtwSpellCheckMode;
+        try
+        {
+            settings.EtwSpellCheckMode = mode.ToString();
+            string text = new('a', 10_001);
+            EditTextWindow window = CreateWindow(text);
+            Reactivate(window);
+
+            MenuItem enableItem = GetEnableSpellCheckMenuItem(window);
+            Assert.Equal(Visibility.Visible, enableItem.Visibility);
+            Assert.False(SpellCheck.GetIsEnabled(RawTextBox(window)));
+
+            enableItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, enableItem));
+            RawTextBox(window).AppendText(" more text");
+            Reactivate(window);
+            SwitchMode(window, EtwEditorMode.Markdown);
+
+            Assert.True(SpellCheck.GetIsEnabled(RawTextBox(window)));
+            Assert.True(SpellCheck.GetIsEnabled(MarkdownEditor(window)));
+            Assert.Equal(Visibility.Collapsed, enableItem.Visibility);
+            Assert.Equal(mode.ToString(), settings.EtwSpellCheckMode);
+
+            EditTextWindow otherWindow = CreateWindow(text);
+            Reactivate(otherWindow);
+            Assert.False(SpellCheck.GetIsEnabled(RawTextBox(otherWindow)));
+            Assert.Equal(Visibility.Visible, GetEnableSpellCheckMenuItem(otherWindow).Visibility);
+        }
+        finally
+        {
+            settings.EtwSpellCheckMode = originalMode;
+        }
+    }
+
+    [WpfFact]
+    public void EnableSpellCheckMenuItem_AppearsOnlyWhenSpellCheckIsOffInTextOrMarkdown()
+    {
+        EditTextWindow window = CreateWindow("A short sentence.");
+        MenuItem enableItem = GetEnableSpellCheckMenuItem(window);
+        Assert.Equal(Visibility.Collapsed, enableItem.Visibility);
+
+        window.Session.Text = new string('a', 10_001);
+        Assert.Equal(Visibility.Visible, enableItem.Visibility);
+
+        SwitchMode(window, EtwEditorMode.Code);
+        Assert.Equal(Visibility.Collapsed, enableItem.Visibility);
+
+        SwitchMode(window, EtwEditorMode.Spreadsheet);
+        Assert.Equal(Visibility.Collapsed, enableItem.Visibility);
+
+        SwitchMode(window, EtwEditorMode.Markdown);
+        Assert.Equal(Visibility.Visible, enableItem.Visibility);
+
+        window.Session.Text = "A short sentence again.";
+        Assert.Equal(Visibility.Collapsed, enableItem.Visibility);
+    }
+
+    [WpfFact]
+    public void EnableSpellCheckMenuItem_IsDirectlyBelowSpellCheckInFormatMenu()
+    {
+        EditTextWindow window = CreateWindow(new string('a', 10_001));
+        MenuItem formatMenu = Assert.IsType<MenuItem>(window.FindName("FormatMenuItem"));
+        MenuItem spellCheckMenu = Assert.IsType<MenuItem>(window.FindName("SpellCheckMenuItem"));
+        int spellCheckIndex = formatMenu.Items.IndexOf(spellCheckMenu);
+        Assert.True(spellCheckIndex >= 0);
+        Assert.Same(GetEnableSpellCheckMenuItem(window), formatMenu.Items[spellCheckIndex + 1]);
+    }
+
+    private static MenuItem GetEnableSpellCheckMenuItem(EditTextWindow window)
+        => Assert.IsType<MenuItem>(window.FindName("EnableSpellCheckMenuItem"));
+
+    private static void Reactivate(EditTextWindow window)
+        => typeof(EditTextWindow).GetMethod("Window_Activated", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .Invoke(window, [window, EventArgs.Empty]);
+
     [Fact]
     public void NormalSentence_SpellCheckEnabled()
     {

@@ -129,6 +129,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     private string lastSpreadsheetCellEditorSelectedText = string.Empty;
     private EtwEditorMode editorMode = EtwEditorMode.Text;
     private SpellCheckMode spellCheckMode = SpellCheckMode.Auto;
+    private bool forceSpellCheckForWindow;
     private bool isApplyingSpreadsheetLayout = false;
     private bool isApplyingMarkdownDocument = false;
     private MarkdownFlowDocumentUtilities.MarkdownOffsetMap markdownOffsetMap = new([], []);
@@ -459,6 +460,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         UpdateSpreadsheetModeUi();
+        UpdateEnableSpellCheckMenuItemVisibility();
         UpdateLineAndColumnText();
         EditorModeChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -1460,24 +1462,41 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     };
 
     /// <summary>
-    /// Applies the current <see cref="spellCheckMode"/> to the editors. In Auto mode the
+    /// Applies the current <see cref="spellCheckMode"/> or window override to the editors. In Auto mode the
     /// content is re-evaluated (the scan is O(n) but short-circuits early, so it stays fast
     /// even for large pastes); Always On / Off force the state regardless of content.
     /// </summary>
     private void ApplySpellCheckMode()
     {
-        bool shouldSpellCheck = ShouldEnableSpellCheck(spellCheckMode, Session.Text);
+        bool shouldSpellCheck = forceSpellCheckForWindow || ShouldEnableSpellCheck(spellCheckMode, Session.Text);
 
         if (SpellCheck.GetIsEnabled(PassedTextControl) != shouldSpellCheck)
             SpellCheck.SetIsEnabled(PassedTextControl, shouldSpellCheck);
 
         if (SpellCheck.GetIsEnabled(MarkdownEditorControl) != shouldSpellCheck)
             SpellCheck.SetIsEnabled(MarkdownEditorControl, shouldSpellCheck);
+
+        UpdateEnableSpellCheckMenuItemVisibility();
+    }
+
+    private void UpdateEnableSpellCheckMenuItemVisibility()
+    {
+        EnableSpellCheckMenuItem.Visibility =
+            (editorMode is EtwEditorMode.Text or EtwEditorMode.Markdown) && !SpellCheck.GetIsEnabled(PassedTextControl)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+    }
+
+    private void EnableSpellCheckMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        forceSpellCheckForWindow = true;
+        ApplySpellCheckMode();
     }
 
     private void SetSpellCheckMode(SpellCheckMode mode)
     {
         spellCheckMode = mode;
+        forceSpellCheckForWindow = false;
         SetSpellCheckMenuItems();
         ApplySpellCheckMode();
     }

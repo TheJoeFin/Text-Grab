@@ -577,7 +577,10 @@
                         Click="LearnAiMenuItem_Click"
                         Header="_Learn About Local AI Features..." />
                 </MenuItem>
-                <MenuItem AutomationProperties.AutomationId="EditText.Menu.Format" Header="F_ormat">
+                <MenuItem
+                    x:Name="FormatMenuItem"
+                    AutomationProperties.AutomationId="EditText.Menu.Format"
+                    Header="F_ormat">
                     <MenuItem
                         x:Name="RawTextModeMenuItem"
                         AutomationProperties.AutomationId="EditText.Menu.RawTextMode"
@@ -658,6 +661,13 @@
                             IsCheckable="True"
                             Tag="Off" />
                     </MenuItem>
+                    <MenuItem
+                        x:Name="EnableSpellCheckMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.EnableSpellCheck"
+                        Click="EnableSpellCheckMenuItem_Click"
+                        Header="_Enable Spell Check"
+                        ToolTip="Enable spell check for this window without changing the default"
+                        Visibility="Collapsed" />
                 </MenuItem>
                 <MenuItem
                     x:Name="CaptureMenuItem"
