@@ -628,7 +628,8 @@ public static partial class MarkdownFlowDocumentUtilities
         WpfTable flowTable = new()
         {
             CellSpacing = 0,
-            Margin = new Thickness(0, 6, 0, 6)
+            Margin = new Thickness(0, 6, 0, 6),
+            TextAlignment = TextAlignment.Left
         };
 
         SetQuoteDepth(flowTable, quoteDepth);

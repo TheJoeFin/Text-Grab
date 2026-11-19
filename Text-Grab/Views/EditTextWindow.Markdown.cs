@@ -39,6 +39,8 @@ namespace Text_Grab;
 
 public partial class EditTextWindow
 {
+    private bool markdownTableLayoutPending;
+
     /// <summary>
     /// <see cref="Editing.MarkdownSurface"/>'s half of syncing the Markdown editor from the text. The session
     /// skips it while the text is being written from the Markdown editor.
@@ -79,6 +81,7 @@ public partial class EditTextWindow
             this,
             isLightTheme);
         markdownAppliedLightTheme = isLightTheme;
+        ScheduleMarkdownTableLayout();
     }
 
     /// <summary>
@@ -108,6 +111,35 @@ public partial class EditTextWindow
             MarkdownEditorControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             MarkdownEditorControl.Document.PageWidth = 4000;
         }
+
+        ScheduleMarkdownTableLayout();
+    }
+
+    private void ScheduleMarkdownTableLayout()
+    {
+        if (markdownTableLayoutPending)
+            return;
+
+        markdownTableLayoutPending = true;
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            markdownTableLayoutPending = false;
+            if (_isClosed || editorMode != EtwEditorMode.Markdown || isApplyingMarkdownDocument
+                || MarkdownEditorControl.ViewportWidth <= 0)
+                return;
+
+            // WPF raises TextChanged for TableColumn.Width writes, even though no text changed.
+            isApplyingMarkdownDocument = true;
+            try
+            {
+                MarkdownFlowDocumentUtilities.FitTableColumns(MarkdownEditorControl.Document,
+                    MarkdownEditorControl.ViewportWidth, VisualTreeHelper.GetDpi(MarkdownEditorControl).PixelsPerDip);
+            }
+            finally
+            {
+                isApplyingMarkdownDocument = false;
+            }
+        }, DispatcherPriority.Background);
     }
 
     private void ReloadMarkdownDocumentAndRestoreCaret(int targetPlainTextOffset)
@@ -211,6 +243,7 @@ public partial class EditTextWindow
 
         SyncMarkdownTextFromDocument();
         UpdateLineAndColumnText();
+        ScheduleMarkdownTableLayout();
 
         if (!shouldPromoteMarkdown)
             return;
@@ -310,6 +343,9 @@ public partial class EditTextWindow
     {
         if (e.VerticalChange != 0 || e.ExtentHeightChange != 0)
             HideCodeBlockActions();
+
+        if (e.ViewportWidthChange != 0)
+            ScheduleMarkdownTableLayout();
     }
 
     private void CopyCodeBlockButton_Click(object sender, RoutedEventArgs e)

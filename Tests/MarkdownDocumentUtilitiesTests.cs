@@ -360,6 +360,75 @@ Console.WriteLine("hi");
         Assert.Contains("| Beta | 99 |", serialized);
     }
 
+    [WpfFact]
+    public void Markdown_TablesFitContentAndReflowWhenEditorNarrows()
+    {
+        const string markdown = """
+            | Area | Implementation | Notes |
+            | --- | --- | --- |
+            | Mail sync | `Services/MailSyncEngine.cs` reads the inbox and resumes incremental sync. It handles expired cursors and retries transient failures. | The sync cache is reused on startup so the first view can display messages before the next background fetch completes. |
+            """;
+        EditTextWindow window = EditTextWindowTestHost.CreateWindow(markdown);
+        window.Resources.MergedDictionaries.Add(new ThemesDictionary { Theme = ApplicationTheme.Dark });
+        window.Resources.MergedDictionaries.Add(new ControlsDictionary());
+        ((MenuItem)window.FindName("WrapTextMenuItem")).IsChecked = true;
+        ((MenuItem)window.FindName("MarginsMenuItem")).IsChecked = false;
+        ((ColumnDefinition)window.FindName("CalcColumn")).Width = new GridLength(0);
+        EditTextWindowTestHost.SwitchMode(window, EtwEditorMode.Markdown);
+        EditTextWindowTestHost.DoEvents();
+
+        RichTextBox editor = EditTextWindowTestHost.MarkdownEditor(window);
+        Table table = Assert.IsType<Table>(editor.Document.Blocks.FirstBlock);
+        double labelWidth = table.Columns[0].Width.Value;
+        double wideImplementation = table.Columns[1].Width.Value;
+        Assert.True(wideImplementation > labelWidth * 2);
+        Assert.True(table.Columns[2].Width.Value > labelWidth * 2);
+
+        FrameworkElement root = (FrameworkElement)window.Content;
+        root.Measure(new Size(450, 700));
+        root.Arrange(new Rect(0, 0, 450, 700));
+        root.UpdateLayout();
+        EditTextWindowTestHost.DoEvents();
+        root.UpdateLayout();
+
+        Assert.Equal(labelWidth, table.Columns[0].Width.Value);
+        Assert.True(table.Columns[1].Width.Value < wideImplementation);
+        Assert.True(table.Columns.Sum(column => column.Width.Value) <= editor.ViewportWidth + 0.01);
+        TableRow row = table.RowGroups[0].Rows[1];
+        Paragraph label = Assert.IsType<Paragraph>(row.Cells[0].Blocks.FirstBlock);
+        Paragraph implementation = Assert.IsType<Paragraph>(row.Cells[1].Blocks.FirstBlock);
+        Assert.Equal(label.ContentStart.GetCharacterRect(LogicalDirection.Forward).Top,
+            label.ContentEnd.GetCharacterRect(LogicalDirection.Backward).Top);
+        Assert.True(implementation.ContentEnd.GetCharacterRect(LogicalDirection.Backward).Top
+            > implementation.ContentStart.GetCharacterRect(LogicalDirection.Forward).Top);
+        Assert.Equal(markdown, EditTextWindowTestHost.RawText(window));
+
+        root.Measure(new Size(280, 700));
+        root.Arrange(new Rect(0, 0, 280, 700));
+        root.UpdateLayout();
+        EditTextWindowTestHost.DoEvents();
+
+        Assert.True(table.Columns[0].Width.Value < table.Columns[1].Width.Value);
+        Assert.True(table.Columns.Sum(column => column.Width.Value) <= editor.ViewportWidth + 0.01);
+    }
+
+    [WpfFact]
+    public void Markdown_ShortTablesUseOnlyTheWidthTheyNeed()
+    {
+        const string markdown = """
+            | A | B |
+            | --- | --- |
+            | **Label**<br/>**Label** | `LongerValue` |
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(markdown, new FontFamily("Segoe UI"), 16);
+        MarkdownFlowDocumentUtilities.ApplyTheme(document, new Border(), isLightTheme: false);
+        MarkdownFlowDocumentUtilities.FitTableColumns(document, viewportWidth: 800, pixelsPerDip: 1);
+
+        Table table = Assert.IsType<Table>(document.Blocks.FirstBlock);
+        Assert.True(table.Columns[0].Width.Value < table.Columns[1].Width.Value);
+        Assert.True(table.Columns.Sum(column => column.Width.Value) < 200);
+    }
+
     [WpfTheory]
     [InlineData(0)]
     [InlineData(1)]
