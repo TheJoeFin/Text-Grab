@@ -18,6 +18,7 @@
     Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
     Closed="Window_Closed"
     Closing="Window_Closing"
+    Deactivated="EditTextWindow_Deactivated"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     Initialized="Window_Initialized"
     Loaded="Window_Loaded"
@@ -241,6 +242,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Menu
+                x:Name="EditorMenu"
                 Grid.Column="0"
                 ClipToBounds="True"
                 IsMainMenu="True">
@@ -315,7 +317,8 @@
                         x:Name="SingleLineMenuItem"
                         AutomationProperties.AutomationId="EditText.Menu.SingleLine"
                         Command="{x:Static local:EditTextWindow.SingleLineCmd}"
-                        Header="Make _Single Line" />
+                        Header="Make _Single Line"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.makeSingleLine" />
                     <MenuItem
                         x:Name="JoinLinesMenuItem"
                         AutomationProperties.AutomationId="EditText.Menu.JoinLines"
@@ -324,24 +327,29 @@
                     <MenuItem
                         x:Name="_TrimEachLineMenuItem"
                         Click="TrimEachLineMenuItem_Click"
-                        Header="_Trim Each Line" />
+                        Header="_Trim Each Line"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.trimLines" />
                     <MenuItem
                         x:Name="CleanUpTextMenuItem"
                         AutomationProperties.AutomationId="EditText.Menu.CleanUpText"
                         Click="CleanUpText_Click"
-                        Header="Clean _Up Text" />
+                        Header="Clean _Up Text"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.cleanUp" />
                     <MenuItem
                         x:Name="TryToNumberMenuItem"
                         Click="TryToNumberMenuItem_Click"
-                        Header="Try To Make _Numbers" />
+                        Header="Try To Make _Numbers"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.tryMakeNumbers" />
                     <MenuItem
                         x:Name="TryToAlphaMenuItem"
                         Click="TryToAlphaMenuItem_Click"
-                        Header="Try To Make _Letters" />
+                        Header="Try To Make _Letters"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.tryMakeLetters" />
                     <MenuItem
                         x:Name="CorrectGuid"
                         Click="CorrectGuid_Click"
-                        Header="Correct Common _GUID/UUID Errors" />
+                        Header="Correct Common _GUID/UUID Errors"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.correctGuidErrors" />
                     <MenuItem
                         x:Name="ToggleCaseMenuItem"
                         Command="{x:Static local:EditTextWindow.ToggleCaseCmd}"
@@ -350,25 +358,30 @@
                     <MenuItem
                         x:Name="RemoveDuplicateLines"
                         Click="RemoveDuplicateLines_Click"
-                        Header="Remove Duplicate Lines" />
+                        Header="Remove Duplicate Lines"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.removeDuplicateLines" />
                     <MenuItem
                         x:Name="ShuffleLinesMenuItem"
                         Click="ShuffleLinesMenuItem_Click"
-                        Header="_Shuffle Lines" />
+                        Header="_Shuffle Lines"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.shuffleLines" />
                     <MenuItem
                         x:Name="ReplaceReservedCharsMenuItem"
                         Command="{x:Static local:EditTextWindow.ReplaceReservedCmd}"
                         Header="_Replace Reserved Characters"
-                        InputGestureText="Ctrl + R" />
+                        InputGestureText="Ctrl + R"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.replaceReservedCharacters" />
                     <MenuItem
                         x:Name="UnStackMenuItem"
                         Command="{x:Static local:EditTextWindow.UnstackCmd}"
                         Header="_Unstack Text (Select Top Row)"
-                        InputGestureText="Ctrl + U" />
+                        InputGestureText="Ctrl + U"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.unstack" />
                     <MenuItem
                         x:Name="UnStackGroupMenuItem"
                         Command="{x:Static local:EditTextWindow.UnstackGroupCmd}"
-                        Header="_Unstack Text (Select First Column)" />
+                        Header="_Unstack Text (Select First Column)"
+                        local:EditTextWindow.PaletteActionId="textgrab.text.unstackGroups" />
                     <MenuItem
                         x:Name="AddRemoveAtMenuItem"
                         AutomationProperties.AutomationId="EditText.Menu.AddRemoveLimit"
@@ -380,16 +393,28 @@
                             x:Name="ApplyGrabTemplateMenuItem"
                             Header="Grab Templates"
                             Visibility="Collapsed" />
-                        <MenuItem x:Name="ApplyPatternMenuItem" Header="Patterns" />
-                        <MenuItem x:Name="ApplySmartPatternMenuItem" Header="Smart Patterns" />
+                        <MenuItem
+                            x:Name="ApplyPatternMenuItem"
+                            Header="Patterns"
+                            local:EditTextWindow.PaletteActionId="textgrab.text.applyPattern" />
+                        <MenuItem
+                            x:Name="ApplySmartPatternMenuItem"
+                            Header="Smart Patterns"
+                            local:EditTextWindow.PaletteActionId="textgrab.text.applyRecognizer" />
                     </MenuItem>
                     <MenuItem x:Name="ApplyPerLineMenuItem" Header="Apply Per Line (Template or Pattern)">
                         <MenuItem
                             x:Name="ApplyGrabTemplatePerLineMenuItem"
                             Header="Grab Templates"
                             Visibility="Collapsed" />
-                        <MenuItem x:Name="ApplyPatternPerLineMenuItem" Header="Patterns" />
-                        <MenuItem x:Name="ApplySmartPatternPerLineMenuItem" Header="Smart Patterns" />
+                        <MenuItem
+                            x:Name="ApplyPatternPerLineMenuItem"
+                            Header="Patterns"
+                            local:EditTextWindow.PaletteActionId="textgrab.text.applyPattern" />
+                        <MenuItem
+                            x:Name="ApplySmartPatternPerLineMenuItem"
+                            Header="Smart Patterns"
+                            local:EditTextWindow.PaletteActionId="textgrab.text.applyRecognizer" />
                     </MenuItem>
                     <Separator />
                     <MenuItem
@@ -484,24 +509,32 @@
                     <MenuItem
                         x:Name="SummarizeMenuItem"
                         Click="SummarizeMenuItem_Click"
-                        Header="_Summarize Paragraph" />
+                        Header="_Summarize Paragraph"
+                        local:EditTextWindow.PaletteActionId="textgrab.ai.summarize" />
                     <MenuItem
                         x:Name="MeetingNotesMenuItem"
                         Click="MeetingNotesMenuItem_Click"
-                        Header="Summarize as _Meeting Notes" />
+                        Header="Summarize as _Meeting Notes"
+                        local:EditTextWindow.PaletteActionId="textgrab.ai.meetingNotes" />
                     <MenuItem
                         x:Name="RewriteMenuItem"
                         Click="RewriteMenuItem_Click"
-                        Header="_Rewrite" />
+                        Header="_Rewrite"
+                        local:EditTextWindow.PaletteActionId="textgrab.ai.rewrite" />
                     <MenuItem
                         x:Name="ConvertTableMenuItem"
                         Click="ConvertTableMenuItem_Click"
-                        Header="_Convert to Table" />
+                        Header="_Convert to Table"
+                        local:EditTextWindow.PaletteActionId="textgrab.ai.convertToTable" />
                     <MenuItem
                         x:Name="TranslateToSystemLanguageMenuItem"
                         Click="TranslateToSystemLanguageMenuItem_Click"
-                        Header="Translate to System Language" />
-                    <MenuItem x:Name="TranslateMenuItem" Header="_Translate to...">
+                        Header="Translate to System Language"
+                        local:EditTextWindow.PaletteActionId="textgrab.ai.translateToSystemLanguage" />
+                    <MenuItem
+                        x:Name="TranslateMenuItem"
+                        Header="_Translate to..."
+                        local:EditTextWindow.PaletteActionId="textgrab.ai.translate">
                         <MenuItem
                             Click="TranslateMenuItem_Click"
                             Header="English"
@@ -821,6 +854,13 @@
                     Header="_Window"
                     SubmenuOpened="WindowMenuItem_SubmenuOpened">
                     <MenuItem
+                        x:Name="CommandPaletteMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.CommandPalette"
+                        Click="CommandPaletteMenuItem_Click"
+                        Header="Command _Palette..."
+                        InputGestureText="Ctrl + Shift + P" />
+                    <Separator />
+                    <MenuItem
                         x:Name="AlwaysOnTop"
                         Click="AlwaysOnTop_Checked"
                         Header="_Always On Top"
@@ -852,6 +892,7 @@
                         x:Name="ShowCalcPaneMenuItem"
                         Click="ShowCalcPaneMenuItem_Click"
                         Header="Show calculations pane"
+                        InputGestureText="Ctrl + P"
                         IsCheckable="True" />
                     <Separator />
                     <MenuItem
@@ -1674,6 +1715,90 @@
                 </Grid.ContextMenu>
             </Grid>
         </ScrollViewer>
+        <Grid
+            x:Name="CommandPaletteOverlay"
+            Grid.Row="1"
+            Grid.RowSpan="4"
+            Panel.ZIndex="800"
+            Background="Transparent"
+            KeyDown="CommandPaletteOverlay_KeyDown"
+            KeyboardNavigation.TabNavigation="Cycle"
+            PreviewMouseDown="CommandPaletteOverlay_PreviewMouseDown"
+            Visibility="Collapsed">
+            <Border
+                MaxWidth="580"
+                MaxHeight="420"
+                Margin="12,8"
+                Padding="8"
+                VerticalAlignment="Top"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <ui:TextBox
+                        x:Name="CommandPaletteSearch"
+                        Margin="0,0,0,6"
+                        AutomationProperties.AutomationId="EditText.CommandPalette.Search"
+                        AutomationProperties.Name="Search commands"
+                        PlaceholderText="Search commands..."
+                        TextChanged="CommandPaletteSearch_TextChanged" />
+                    <ListBox
+                        x:Name="CommandPaletteResults"
+                        Grid.Row="1"
+                        AutomationProperties.AutomationId="EditText.CommandPalette.Results"
+                        AutomationProperties.Name="Available commands"
+                        IsSynchronizedWithCurrentItem="False"
+                        PreviewMouseLeftButtonUp="CommandPaletteResults_PreviewMouseLeftButtonUp"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                                <Setter Property="AutomationProperties.HelpText" Value="{Binding Group}" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="4,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            FontSize="11"
+                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                            Text="{Binding Group}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="11"
+                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                        Text="{Binding Gesture}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock
+                        x:Name="CommandPaletteNoResults"
+                        Grid.Row="1"
+                        Margin="8"
+                        AutomationProperties.AutomationId="EditText.CommandPalette.NoResults"
+                        IsHitTestVisible="False"
+                        Text="No matching commands."
+                        Visibility="Collapsed" />
+                </Grid>
+            </Border>
+        </Grid>
         <Grid
             x:Name="LoadingStack"
             Grid.RowSpan="5"

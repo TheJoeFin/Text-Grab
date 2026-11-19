@@ -12,6 +12,68 @@ Register-UiTest -Suite 'EditText' -Name 'editor-value-and-single-line-transform-
     Assert-DeterministicAutomationHealthy -Context $Context
 }
 
+Register-UiTest -Suite 'EditText' -Name 'command-palette-runs-legacy-and-registered-editor-actions' -Script {
+    param($Context)
+
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text'
+    $search = 'EditText.CommandPalette.Search'
+    $text = "first`r`nsecond"
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value $text
+    Send-UiTestKeys -Target $editText -AutomationId 'EditText.Editor' -Keys 'ctrl+home ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'selection isolate'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CommandPalette.NoResults' -TimeoutSeconds $Context.TimeoutSeconds
+    Send-UiTestKeys -Target $editText -Keys 'esc' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Expected $text
+
+    Send-UiTestKeys -Target $editText -Keys 'shift+right shift+right ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'selection isolate'
+    Send-UiTestKeys -Target $editText -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'fi' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value $text
+    Send-UiTestKeys -Target $editText -Keys 'ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'lines make single'
+    Send-UiTestKeys -Target $editText -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'first second' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicAutomationHealthy -Context $Context
+}
+
+Register-UiTest -Suite 'EditText' -Name 'command-palette-opens-in-code-mode-and-runs-click-handlers' -Script {
+    param($Context)
+
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text'
+    $search = 'EditText.CommandPalette.Search'
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value "  alpha  "
+    Send-UiTestKeys -Target $editText -AutomationId 'EditText.Editor' -Keys 'ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'code'
+    Send-UiTestKeys -Target $editText -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Send-UiTestKeys -Target $editText -Keys 'ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'code language java'
+    Send-UiTestKeys -Target $editText -Keys 'down enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'JavaScript' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+
+    Send-UiTestKeys -Target $editText -Keys 'ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'trim each line'
+    Send-UiTestKeys -Target $editText -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    Send-UiTestKeys -Target $editText -Keys 'ctrl+shift+p' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'raw text'
+    Send-UiTestKeys -Target $editText -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value "alpha`r`n" -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicAutomationHealthy -Context $Context
+}
+
 Register-UiTest -Suite 'EditText' -Name 'find-replace-dialog-replaces-editor-content' -Script {
     param($Context)
 

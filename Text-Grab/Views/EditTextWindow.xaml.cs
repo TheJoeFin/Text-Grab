@@ -795,6 +795,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void EditTextWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
+        if (HandleCommandPaletteKeyDown(e))
+            return;
+
         if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             ProcessBottomBarKeyPress(e);
 
@@ -1221,7 +1224,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         return GetSelectedTextOrAllText();
     }
 
-    private void AddedLineAboveCommand(object sender, ExecutedRoutedEventArgs e)
+    private void AddedLineAboveCommand(object sender, RoutedEventArgs e)
     {
         int replaceCaret = Session.Selection.Start + Environment.NewLine.Length;
         int selectionLength = Session.Selection.Length;
@@ -1232,7 +1235,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         Session.Selection = new TextSpan(replaceCaret, selectionLength);
     }
 
-    private void DuplicateSelectedLine(object sender, ExecutedRoutedEventArgs e)
+    private void DuplicateSelectedLine(object sender, RoutedEventArgs e)
     {
         int replaceCaret = Session.Selection.Start;
         int selectionLength = Session.Selection.Length;
