@@ -752,16 +752,12 @@ public partial class EditTextWindow
 
     private void PatternContextOpening(object sender, ContextMenuEventArgs e)
     {
-        // sender should be a button if not return
-        if (sender is not System.Windows.Controls.Button button)
-            return;
+        if (sender is System.Windows.Controls.Button { ContextMenu: ContextMenu contextMenu })
+            PopulatePatternContextMenu(contextMenu);
+    }
 
-        // get the context menu
-        if (button.ContextMenu is null)
-            return;
-
-        ContextMenu contextMenu = button.ContextMenu;
-
+    private void PopulatePatternContextMenu(ContextMenu contextMenu)
+    {
         // Clear existing dynamic items (keep original static items)
         // Find if "Use Pattern" menu item already exists, remove it to rebuild
         MenuItem? existingUsePatternItem = null;

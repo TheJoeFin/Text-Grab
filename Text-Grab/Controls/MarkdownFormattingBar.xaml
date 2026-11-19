@@ -76,7 +76,7 @@
         Padding="6,3"
         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
         BorderThickness="0,1,0,0">
-        <WrapPanel HorizontalAlignment="Center">
+        <WrapPanel x:Name="FormattingButtons" HorizontalAlignment="Center">
             <Button
                 x:Name="HeadingButton"
                 Padding="8,0"

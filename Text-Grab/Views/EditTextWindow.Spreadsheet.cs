@@ -1974,9 +1974,12 @@ public partial class EditTextWindow
 
     private void SpreadsheetContextMenu_Opened(object sender, RoutedEventArgs e)
     {
-        if (sender is not ContextMenu contextMenu)
-            return;
+        if (sender is ContextMenu contextMenu)
+            UpdateSpreadsheetWrapMenuItem(contextMenu);
+    }
 
+    private void UpdateSpreadsheetWrapMenuItem(ContextMenu contextMenu)
+    {
         MenuItem? wrapTextMenuItem = GetContextMenuItem(contextMenu, "SpreadsheetWrapTextToggle");
         if (wrapTextMenuItem is null)
             return;

@@ -458,9 +458,12 @@ public partial class EditTextWindow
     /// </summary>
     private void TranscriptionModelSubmenu_Opened(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem submenu)
-            return;
+        if (sender is MenuItem submenu)
+            PopulateTranscriptionModelMenu(submenu);
+    }
 
+    private void PopulateTranscriptionModelMenu(MenuItem submenu)
+    {
         submenu.Items.Clear();
 
         WhisperModelChoice current = AudioTranscriptionUtilities.CurrentLiveModelChoice;

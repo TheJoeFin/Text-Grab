@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -16,6 +18,8 @@ public partial class MarkdownFormattingBar : UserControl
 
     internal event Action<MarkdownFormattingAction, int>? FormatRequested;
     internal event Action<int, int>? TableRequested;
+
+    internal IEnumerable<Button> FormattingCommandButtons => FormattingButtons.Children.OfType<Button>();
 
     public MarkdownFormattingBar()
     {

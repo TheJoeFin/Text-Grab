@@ -116,9 +116,9 @@ public partial class EditTextWindow
         }
     }
 
-    private void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    private async void CaptureMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
-        LoadLanguageMenuItems(LanguageMenuItem);
+        await LoadLanguageMenuItemsAsync(LanguageMenuItem);
     }
 
     private void GrabTemplateMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
@@ -129,7 +129,11 @@ public partial class EditTextWindow
     private void EditMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         ToggleCaseMenuItem.InputGestureText = ToggleCaseGestureText;
+        RefreshApplyMenus();
+    }
 
+    private void RefreshApplyMenus()
+    {
         // Load text-only templates fresh each time the Edit menu opens and use them to
         // populate the Grab Templates group in both apply flyouts.
         List<GrabTemplate> textOnlyTemplates = [.. GrabTemplateManager.GetAllTemplates().Where(template => template.IsTextOnly && template.IsValid)];
@@ -272,7 +276,7 @@ public partial class EditTextWindow
         return string.Join(Environment.NewLine, lines);
     }
 
-    private void OpenRecentEditWindowExecuted(object sender, ExecutedRoutedEventArgs e)
+    private void OpenRecentEditWindowExecuted(object sender, RoutedEventArgs e)
     {
         string currentText = Session.Text;
 
@@ -380,13 +384,16 @@ public partial class EditTextWindow
         clickedItem.IsChecked = true;
     }
 
-    private async void LoadLanguageMenuItems(MenuItem captureMenuItem)
+    private async Task LoadLanguageMenuItemsAsync(MenuItem captureMenuItem)
     {
         if (captureMenuItem.Items.Count > 0)
             return;
 
         bool usingTesseract = DefaultSettings.UseTesseract && TesseractHelper.IsAvailable();
         List<ILanguage> availableLanguages = await CaptureLanguageUtilities.GetCaptureLanguagesAsync(usingTesseract);
+        if (_isClosed || captureMenuItem.Items.Count > 0)
+            return;
+
         availableLanguages = [.. availableLanguages.Where(CaptureLanguageUtilities.IsStaticImageCompatible)];
         int selectedIndex = CaptureLanguageUtilities.FindPreferredLanguageIndex(
             availableLanguages,
@@ -508,12 +515,23 @@ public partial class EditTextWindow
     private async void MenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         LoadRecentTextHistory();
-        await Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
+        await RefreshRecentGrabsMenuAsync();
         Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentFiles(OpenRecentPdfsMenuItem, this);
     }
 
-    private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+    private Task? recentGrabMenuRefresh;
+
+    private Task RefreshRecentGrabsMenuAsync()
     {
-        OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
+        if (recentGrabMenuRefresh is null || recentGrabMenuRefresh.IsCompleted)
+            recentGrabMenuRefresh = Singleton<HistoryService>.Instance.PopulateMenuItemWithRecentGrabs(OpenRecentGrabsMenuItem);
+
+        return recentGrabMenuRefresh;
     }
+
+    private void WindowMenuItem_SubmenuOpened(object sender, RoutedEventArgs e)
+        => RefreshEditLastGrabAvailability();
+
+    private void RefreshEditLastGrabAvailability()
+        => OpenLastAsGrabFrameMenuItem.IsEnabled = Singleton<HistoryService>.Instance.HasAnyRecentGrabs();
 }
