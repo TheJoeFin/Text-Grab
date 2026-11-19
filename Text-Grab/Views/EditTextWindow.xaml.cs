@@ -2183,6 +2183,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     {
         _isClosed = true;
         HideResumeReadingBookmark();
+        UnsubscribeFromSpeechMenu();
         ++_liveTranscriptionRequest;
 
         // Stop any in-progress audio-file transcription so it doesn't touch a torn-down window.

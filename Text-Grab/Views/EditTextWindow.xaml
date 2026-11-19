@@ -219,6 +219,14 @@
             CanExecute="CanSearchSelectionExecute"
             Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
             Executed="DefaultWebSearchExecuted" />
+        <CommandBinding
+            CanExecute="ReadAloudCanExecute"
+            Command="{x:Static local:EditTextWindow.ReadAloudCmd}"
+            Executed="ReadAloudExecuted" />
+        <CommandBinding
+            CanExecute="StopSpeakingCanExecute"
+            Command="{x:Static local:EditTextWindow.StopSpeakingCmd}"
+            Executed="StopSpeakingExecuted" />
     </Window.CommandBindings>
     <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
         <Grid.RowDefinitions>
@@ -440,6 +448,22 @@
                         Command="{x:Static local:EditTextWindow.DefaultWebSearchCmd}"
                         Header="Default Web Search" />
                     <MenuItem x:Name="WebSearchCollection" Header="Search web with..." />
+                    <MenuItem
+                        AutomationProperties.AutomationId="EditText.Menu.Speech"
+                        Header="_Speech"
+                        SubmenuClosed="SpeechMenu_SubmenuClosed"
+                        SubmenuOpened="SpeechMenu_SubmenuOpened">
+                        <MenuItem
+                            x:Name="ReadAloudMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.ReadAloud"
+                            Command="{x:Static local:EditTextWindow.ReadAloudCmd}"
+                            Header="_Read Aloud" />
+                        <MenuItem
+                            x:Name="StopSpeakingMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.StopSpeaking"
+                            Command="{x:Static local:EditTextWindow.StopSpeakingCmd}"
+                            Header="_Stop Speaking" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem
                         x:Name="SelectWordMenuItem"
