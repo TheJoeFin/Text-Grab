@@ -485,16 +485,21 @@ public partial class HistoryService : IDisposable
         HistoryInfo historyInfo = etwToSave.AsHistoryItem();
         HistoryFileUtilities.NormalizeHistoryCompatibilityData(historyInfo);
 
-        foreach (HistoryInfo inHistoryItem in HistoryTextOnly)
-        {
-            if (inHistoryItem.SourceMode != TextGrabMode.EditText)
-                continue;
+        bool updatedExistingItem = !string.IsNullOrWhiteSpace(historyInfo.ID)
+            && HistoryTextOnly.RemoveAll(history =>
+                history.SourceMode == TextGrabMode.EditText
+                && history.ID == historyInfo.ID) > 0;
 
-            if (inHistoryItem.TextContent == historyInfo.TextContent)
+        if (!updatedExistingItem)
+        {
+            HistoryInfo? sameTextItem = HistoryTextOnly.FirstOrDefault(history =>
+                history.SourceMode == TextGrabMode.EditText
+                && history.TextContent == historyInfo.TextContent);
+
+            if (sameTextItem is not null)
             {
-                inHistoryItem.CaptureDateTime = DateTimeOffset.Now;
-                MarkHistoryDirty();
-                return;
+                historyInfo.ID = sameTextItem.ID;
+                HistoryTextOnly.Remove(sameTextItem);
             }
         }
 

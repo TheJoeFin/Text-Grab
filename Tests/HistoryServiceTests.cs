@@ -413,6 +413,47 @@ public class HistoryServiceTests
     }
 
     [WpfFact]
+    public void TextHistory_UpdatesOpenedEditWindowInsteadOfAddingANewItem()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-history-update-{Guid.NewGuid():N}");
+        AutomationProfile profile = AutomationProfile.TryCreate(
+            ["Text-Grab.exe"],
+            name => name == AutomationProfile.ProfileEnvironmentVariable ? root : null)
+            ?? throw new InvalidOperationException("Failed to create automation profile.");
+        bool originalUseHistory = AppUtilities.TextGrabSettings.UseHistory;
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(profile);
+        AppUtilities.TextGrabSettings.UseHistory = true;
+
+        try
+        {
+            HistoryInfo original = new()
+            {
+                ID = "edit-history-item",
+                CaptureDateTime = new DateTimeOffset(2024, 1, 5, 12, 0, 0, TimeSpan.Zero),
+                TextContent = "original text",
+                SourceMode = TextGrabMode.EditText,
+            };
+            using HistoryService historyService = new();
+            SetPrivateField(historyService, "HistoryTextOnly", new List<HistoryInfo> { original });
+            SetPrivateField(historyService, "_textHistoryLoaded", true);
+
+            EditTextWindow reopenedWindow = new(original);
+            reopenedWindow.Session.Text = "edited text";
+            historyService.SaveToHistory(reopenedWindow);
+
+            HistoryInfo updated = Assert.Single(historyService.GetEditWindows());
+            Assert.Equal(original.ID, updated.ID);
+            Assert.Equal("edited text", updated.TextContent);
+        }
+        finally
+        {
+            AppUtilities.TextGrabSettings.UseHistory = originalUseHistory;
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [WpfFact]
     public async Task TextHistory_LoadsUnknownLanguageKindsUsingGlobalFallback()
     {
         const string rawHistoryJson =

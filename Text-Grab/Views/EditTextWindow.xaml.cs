@@ -561,8 +561,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             EditTextTableDocumentJson = tableDocument?.SerializeToJson()
         };
 
-        if (string.IsNullOrWhiteSpace(historyInfo.ID))
-            historyInfo.ID = Guid.NewGuid().ToString();
+        if (string.IsNullOrWhiteSpace(historyId))
+            historyId = Guid.NewGuid().ToString();
+
+        historyInfo.ID = historyId;
 
         return historyInfo;
     }
