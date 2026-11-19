@@ -1,14 +1,32 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using Text_Grab.Models;
 
 namespace Text_Grab.Utilities;
 
 public static partial class MarkdownFlowDocumentUtilities
 {
+    private const double TableActionGutterWidth = 36;
+
+    internal static EditTextTableDocument CreateSpreadsheetDocument(Table table)
+    {
+        List<List<string>> rows = [.. table.RowGroups.SelectMany(group => group.Rows).Select(row =>
+            row.Cells.Select(cell => MarkdownDocumentUtilities.NormalizeNewlines(
+                new TextRange(cell.ContentStart, cell.ContentEnd).Text)).ToList())];
+        return new EditTextTableDocument
+        {
+            Format = EtwStructuredTextFormat.Tsv,
+            Rows = rows,
+            RowCount = rows.Count,
+            ColumnCount = table.Columns.Count
+        };
+    }
+
     internal static void FitTableColumns(FlowDocument document, double viewportWidth, double pixelsPerDip)
     {
         double pageWidth = double.IsNaN(document.PageWidth) ? viewportWidth : document.PageWidth;

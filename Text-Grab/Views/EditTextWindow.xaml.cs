@@ -353,6 +353,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             current = current switch
             {
                 TextElement textElement => textElement.Parent,
+                FrameworkContentElement contentElement => contentElement.Parent,
                 _ => VisualTreeHelper.GetParent(current)
             };
         }
@@ -398,6 +399,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         if (_resumePosition is not null && _resumeMode != mode)
             HideResumeReadingBookmark();
+
+        if (editorMode == EtwEditorMode.Markdown && mode != EtwEditorMode.Markdown)
+            HideMarkdownBlockActions();
 
         if (mode == EtwEditorMode.Spreadsheet)
         {

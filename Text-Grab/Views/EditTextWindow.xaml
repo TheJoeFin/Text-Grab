@@ -1007,7 +1007,7 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
                     Orientation="Vertical"
-                    MouseLeave="CodeBlockActionsPanel_MouseLeave"
+                    MouseLeave="MarkdownBlockActions_MouseLeave"
                     Panel.ZIndex="10"
                     Visibility="Collapsed">
                     <Button
@@ -1028,6 +1028,20 @@
                         <ui:SymbolIcon FontSize="14" Symbol="WindowNew24" />
                     </Button>
                 </StackPanel>
+                <Button
+                    x:Name="OpenMarkdownTableButton"
+                    Width="28"
+                    Padding="6,4"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    AutomationProperties.Name="Open table in a new spreadsheet window"
+                    Click="OpenMarkdownTableButton_Click"
+                    MouseLeave="MarkdownBlockActions_MouseLeave"
+                    Panel.ZIndex="10"
+                    ToolTip="Open table in a new spreadsheet window"
+                    Visibility="Collapsed">
+                    <ui:SymbolIcon FontSize="14" Symbol="Table24" />
+                </Button>
                 <DataGrid
                     x:Name="SpreadsheetDataGrid"
                     x:FieldModifier="private"

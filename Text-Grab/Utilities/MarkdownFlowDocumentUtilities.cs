@@ -628,7 +628,7 @@ public static partial class MarkdownFlowDocumentUtilities
         WpfTable flowTable = new()
         {
             CellSpacing = 0,
-            Margin = new Thickness(0, 6, 0, 6),
+            Margin = new Thickness(0, 6, TableActionGutterWidth, 6),
             TextAlignment = TextAlignment.Left
         };
 
@@ -1283,7 +1283,7 @@ public static partial class MarkdownFlowDocumentUtilities
             case WpfTable table:
                 table.Foreground = theme.ForegroundBrush;
                 table.Margin = GetQuoteDepth(table) > 0
-                    ? new Thickness(18 * GetQuoteDepth(table), 6, 0, 6)
+                    ? new Thickness(18 * GetQuoteDepth(table), 6, TableActionGutterWidth, 6)
                     : table.Margin;
 
                 foreach (TableRowGroup rowGroup in table.RowGroups)

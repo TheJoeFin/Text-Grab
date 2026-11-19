@@ -231,7 +231,7 @@ public partial class EditTextWindow
 
     private void MarkdownEditorControl_TextChanged(object sender, TextChangedEventArgs e)
     {
-        HideCodeBlockActions();
+        HideMarkdownBlockActions();
         if (isApplyingMarkdownDocument)
             return;
 
@@ -271,13 +271,15 @@ public partial class EditTextWindow
     }
 
     private Paragraph? hoveredCodeParagraph;
+    private Table? hoveredMarkdownTable;
 
-    private void MarkdownEditorControl_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    private void MarkdownEditorControl_MouseMove(object sender, System.Windows.Input.MouseEventArgs e) =>
+        UpdateMarkdownBlockActions(e.GetPosition(MarkdownEditorControl));
+
+    internal void UpdateMarkdownBlockActions(Point mouse, TextPointer? tapCaret = null)
     {
         if (editorMode != EtwEditorMode.Markdown)
             return;
-
-        Point mouse = e.GetPosition(MarkdownEditorControl);
 
         // Blank space to the right of short code lines doesn't hit-test as text, so while the
         // buttons are showing, stay put anywhere within the block's vertical extent. That lets
@@ -290,15 +292,46 @@ public partial class EditTextWindow
                 return;
         }
 
-        TextPointer? pointer = MarkdownEditorControl.GetPositionFromPoint(mouse, false);
+        if (hoveredMarkdownTable is not null && IsWithinMarkdownTableHeight(hoveredMarkdownTable, mouse.Y, out _))
+            return;
+
+        TextPointer? pointer = tapCaret ?? MarkdownEditorControl.GetPositionFromPoint(mouse, false);
+        TextPointer? tablePointer = pointer ?? MarkdownEditorControl.GetPositionFromPoint(mouse, true);
+        if (FindParent<Table>(tablePointer?.Parent) is Table table && IsWithinMarkdownTableHeight(table, mouse.Y, out Rect start))
+        {
+            HideCodeBlockActions();
+            ShowMarkdownTableAction(table, start.TopLeft);
+            return;
+        }
+
+        HideMarkdownTableAction();
         ShowCodeBlockActionsFor(pointer is null ? null : FindParent<Paragraph>(pointer.Parent));
     }
 
-    // Touch has no hover, so a tap in a code block (which has just placed the caret there) brings up its buttons.
-    private void MarkdownEditorControl_TouchTapped(object sender, TouchTappedEventArgs e)
+    private void MarkdownEditorControl_TouchTapped(object sender, TouchTappedEventArgs e) =>
+        UpdateMarkdownBlockActions(e.Position, MarkdownEditorControl.CaretPosition);
+
+    private static bool IsWithinMarkdownTableHeight(Table table, double y, out Rect start)
     {
-        if (editorMode == EtwEditorMode.Markdown)
-            ShowCodeBlockActionsFor(FindParent<Paragraph>(MarkdownEditorControl.CaretPosition.Parent));
+        start = table.ContentStart.GetCharacterRect(LogicalDirection.Forward);
+        Rect end = table.ContentEnd.GetCharacterRect(LogicalDirection.Backward);
+        return !start.IsEmpty && !end.IsEmpty && y >= start.Top - 6 && y <= end.Bottom;
+    }
+
+    private void ShowMarkdownTableAction(Table table, Point blockStart)
+    {
+        hoveredMarkdownTable = table;
+        Point inGrid = MarkdownEditorControl.TranslatePoint(blockStart, (UIElement)OpenMarkdownTableButton.Parent);
+        bool hasScrollBar = WindowUtilities.GetScrollViewer(MarkdownEditorControl)?.ComputedVerticalScrollBarVisibility == Visibility.Visible;
+        double right = 4 + (hasScrollBar ? SystemParameters.VerticalScrollBarWidth : 0);
+        OpenMarkdownTableButton.Margin = new Thickness(0, Math.Max(0, inGrid.Y + 2), right, 0);
+        OpenMarkdownTableButton.Visibility = Visibility.Visible;
+    }
+
+    private void HideMarkdownTableAction()
+    {
+        hoveredMarkdownTable = null;
+        OpenMarkdownTableButton.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>Shows the copy and open buttons when <paramref name="paragraph"/> is a code block, or hides them.</summary>
@@ -329,23 +362,46 @@ public partial class EditTextWindow
 
     private void MarkdownEditorControl_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (!CodeBlockActionsPanel.IsMouseOver)
-            HideCodeBlockActions();
+        if (!CodeBlockActionsPanel.IsMouseOver && !OpenMarkdownTableButton.IsMouseOver)
+            HideMarkdownBlockActions();
     }
 
-    private void CodeBlockActionsPanel_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    private void MarkdownBlockActions_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (!MarkdownEditorControl.IsMouseOver)
-            HideCodeBlockActions();
+            HideMarkdownBlockActions();
+    }
+
+    private void HideMarkdownBlockActions()
+    {
+        HideCodeBlockActions();
+        HideMarkdownTableAction();
     }
 
     private void MarkdownEditorControl_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         if (e.VerticalChange != 0 || e.ExtentHeightChange != 0)
-            HideCodeBlockActions();
+            HideMarkdownBlockActions();
 
         if (e.ViewportWidthChange != 0)
+        {
+            HideMarkdownTableAction();
             ScheduleMarkdownTableLayout();
+        }
+    }
+
+    private void OpenMarkdownTableButton_Click(object sender, RoutedEventArgs e) =>
+        CreateSpreadsheetWindowForHoveredMarkdownTable()?.Show();
+
+    internal EditTextWindow? CreateSpreadsheetWindowForHoveredMarkdownTable()
+    {
+        if (hoveredMarkdownTable is not Table table)
+            return null;
+
+        EditTextTableDocument document = MarkdownFlowDocumentUtilities.CreateSpreadsheetDocument(table);
+        EditTextWindow window = new(document.SerializeToText(), false) { tableDocument = document };
+        window.EnterSpreadsheetMode();
+        return window;
     }
 
     private void CopyCodeBlockButton_Click(object sender, RoutedEventArgs e)

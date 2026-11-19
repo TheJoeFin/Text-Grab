@@ -429,6 +429,62 @@ Console.WriteLine("hi");
         Assert.True(table.Columns.Sum(column => column.Width.Value) < 200);
     }
 
+    [WpfFact]
+    public void Markdown_TableGutterOpensOnlyTheHoveredTableInSpreadsheetMode()
+    {
+        const string markdown = """
+            | Other |
+            | --- |
+            | Do not copy |
+
+            Between tables
+
+            | Name | Notes | Blank |
+            | --- | --- | --- |
+            | **Label** | first<br/>`a|b` | |
+            """;
+        EditTextWindow window = EditTextWindowTestHost.CreateWindow(markdown);
+        window.Resources.MergedDictionaries.Add(new ThemesDictionary { Theme = ApplicationTheme.Dark });
+        window.Resources.MergedDictionaries.Add(new ControlsDictionary());
+        EditTextWindowTestHost.SwitchMode(window, EtwEditorMode.Markdown);
+        EditTextWindowTestHost.DoEvents();
+
+        RichTextBox editor = EditTextWindowTestHost.MarkdownEditor(window);
+        Button action = Assert.IsType<Button>(window.FindName("OpenMarkdownTableButton"));
+        Assert.Equal(Visibility.Collapsed, action.Visibility);
+        Table table = Assert.IsType<Table>(editor.Document.Blocks.LastBlock);
+        TableCell dataCell = table.RowGroups[0].Rows[1].Cells[0];
+        Run label = ((Bold)((Paragraph)dataCell.Blocks.FirstBlock!).Inlines.FirstInline!).Inlines.OfType<Run>().Single();
+        label.Text = "Updated";
+        EditTextWindowTestHost.DoEvents();
+        EditTextWindowTestHost.LayOut(window);
+        string sourceAfterEdit = EditTextWindowTestHost.RawText(window);
+
+        Rect cellStart = dataCell.ContentStart.GetCharacterRect(LogicalDirection.Forward);
+        window.UpdateMarkdownBlockActions(new Point(cellStart.Left + 2, cellStart.Top + 2));
+        Assert.Equal(Visibility.Visible, action.Visibility);
+        // Moving through the gutter to the button must not lose the table target.
+        window.UpdateMarkdownBlockActions(new Point(editor.ActualWidth - 8, cellStart.Top + 2));
+        Assert.Equal(Visibility.Visible, action.Visibility);
+
+        EditTextWindow spreadsheet = Assert.IsType<EditTextWindow>(window.CreateSpreadsheetWindowForHoveredMarkdownTable());
+        Assert.True(spreadsheet.IsSpreadsheetMode);
+        System.Data.DataView rows = Assert.IsType<System.Data.DataView>(EditTextWindowTestHost.Grid(spreadsheet).ItemsSource);
+        Assert.Equal(new object[] { "Name", "Notes", "Blank" }, rows[0].Row.ItemArray[..3]);
+        Assert.Equal(new object[] { "Updated", "first\na|b", "" }, rows[1].Row.ItemArray[..3]);
+        Assert.Equal(sourceAfterEdit, EditTextWindowTestHost.RawText(window));
+
+        Paragraph between = Assert.IsType<Paragraph>(table.PreviousBlock);
+        Rect prose = between.ContentStart.GetCharacterRect(LogicalDirection.Forward);
+        window.UpdateMarkdownBlockActions(new Point(prose.Left + 2, prose.Top + 2));
+        Assert.Equal(Visibility.Collapsed, action.Visibility);
+
+        window.UpdateMarkdownBlockActions(new Point(cellStart.Left + 2, cellStart.Top + 2));
+        Assert.Equal(Visibility.Visible, action.Visibility);
+        EditTextWindowTestHost.SwitchMode(window, EtwEditorMode.Text);
+        Assert.Equal(Visibility.Collapsed, action.Visibility);
+    }
+
     [WpfTheory]
     [InlineData(0)]
     [InlineData(1)]
