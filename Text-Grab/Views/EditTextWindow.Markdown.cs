@@ -22,6 +22,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Core.Editing;
+using Text_Grab.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -48,6 +49,7 @@ public partial class EditTextWindow
     private void RefreshMarkdownFromText(string text)
     {
         LoadMarkdownDocumentFromText(text);
+        UpdateMarkdownFormattingBar();
         UpdateLineAndColumnText();
     }
 
@@ -101,17 +103,8 @@ public partial class EditTextWindow
         if (MarkdownEditorControl.Document is null)
             return;
 
-        if (WrapTextMenuItem.IsChecked)
-        {
-            MarkdownEditorControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-            MarkdownEditorControl.Document.PageWidth = double.NaN;
-        }
-        else
-        {
-            MarkdownEditorControl.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-            MarkdownEditorControl.Document.PageWidth = 4000;
-        }
-
+        // Keep horizontal scrolling available even when wrapping if a table needs a minimum page width.
+        MarkdownEditorControl.Document.PageWidth = WrapTextMenuItem.IsChecked ? double.NaN : 4000;
         ScheduleMarkdownTableLayout();
     }
 
@@ -214,10 +207,53 @@ public partial class EditTextWindow
 
     private void MarkdownEditorControl_SelectionChanged(object sender, RoutedEventArgs e)
     {
-        if (editorMode != EtwEditorMode.Markdown)
+        if (editorMode != EtwEditorMode.Markdown || isApplyingMarkdownDocument)
             return;
 
+        UpdateMarkdownFormattingBar();
         UpdateLineAndColumnText();
+    }
+
+    private void UpdateMarkdownFormattingBar()
+    {
+        bool isMarkdown = editorMode == EtwEditorMode.Markdown;
+        bool canEdit = isMarkdown && !MarkdownEditorControl.IsReadOnly;
+        MarkdownToolbar.Visibility = isMarkdown ? Visibility.Visible : Visibility.Collapsed;
+        MarkdownToolbar.UpdateAvailableActions(canEdit
+            ? MarkdownFlowDocumentUtilities.GetAvailableFormatting(MarkdownEditorControl)
+            : MarkdownFormattingAction.None, canEdit);
+    }
+
+    private void ApplyMarkdownFormat(MarkdownFormattingAction action, int headingLevel) =>
+        EditMarkdownDocument(() => MarkdownFlowDocumentUtilities.ApplyFormatting(
+            MarkdownEditorControl, action, headingLevel, this, SystemThemeUtility.IsLightTheme()));
+
+    private void InsertMarkdownTable(int columns, int rows) =>
+        EditMarkdownDocument(() => MarkdownFlowDocumentUtilities.InsertTable(
+            MarkdownEditorControl, columns, rows, this, SystemThemeUtility.IsLightTheme()));
+
+    private void EditMarkdownDocument(Action edit)
+    {
+        if (editorMode != EtwEditorMode.Markdown || MarkdownEditorControl.IsReadOnly)
+            return;
+
+        MarkdownEditorControl.Focus();
+        // The toolbar changes the rendered document directly. Don't live-promote it as typed Markdown.
+        isApplyingMarkdownDocument = true;
+        try
+        {
+            using (MarkdownEditorControl.DeclareChangeBlock())
+                edit();
+        }
+        finally
+        {
+            isApplyingMarkdownDocument = false;
+        }
+
+        SyncMarkdownTextFromDocument();
+        UpdateMarkdownFormattingBar();
+        UpdateLineAndColumnText();
+        ScheduleMarkdownTableLayout();
     }
 
     private void MarkdownEditorControl_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -235,19 +271,19 @@ public partial class EditTextWindow
         if (isApplyingMarkdownDocument)
             return;
 
-        int caretOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.CaretPosition);
-        string currentParagraphText = FindParent<Paragraph>(MarkdownEditorControl.CaretPosition.Parent) is Paragraph currentParagraph
-            ? new TextRange(currentParagraph.ContentStart, currentParagraph.ContentEnd).Text
-            : string.Empty;
-        bool shouldPromoteMarkdown = MarkdownDocumentUtilities.ShouldPromoteLiveMarkdown(currentParagraphText);
-
         SyncMarkdownTextFromDocument();
+        if (editorMode == EtwEditorMode.Markdown)
+            UpdateMarkdownFormattingBar();
         UpdateLineAndColumnText();
         ScheduleMarkdownTableLayout();
 
-        if (!shouldPromoteMarkdown)
+        TextPointer caret = MarkdownEditorControl.CaretPosition;
+        if (caret.Paragraph is not Paragraph currentParagraph
+            || MarkdownFlowDocumentUtilities.IsCodeBlock(currentParagraph)
+            || !MarkdownDocumentUtilities.ShouldPromoteLiveMarkdown(new TextRange(currentParagraph.ContentStart, currentParagraph.ContentEnd).Text))
             return;
 
+        int caretOffset = GetMarkdownPlainTextOffset(caret);
         Dispatcher.BeginInvoke(
             () =>
             {
@@ -426,11 +462,23 @@ public partial class EditTextWindow
     private void MarkdownEditorControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (editorMode != EtwEditorMode.Markdown || e.Key != Key.Enter
-            || Keyboard.Modifiers != ModifierKeys.None
-            || !MarkdownEditorControl.Selection.IsEmpty)
+            || Keyboard.Modifiers != ModifierKeys.None)
             return;
 
-        if (FindParent<ListItem>(MarkdownEditorControl.CaretPosition.Parent) is not ListItem item
+        TextSelection selection = MarkdownEditorControl.Selection;
+        if (IsSelectionInMarkdownCodeBlock(selection))
+        {
+            using (MarkdownEditorControl.DeclareChangeBlock())
+            {
+                if (!selection.IsEmpty)
+                    selection.Text = string.Empty;
+                MarkdownEditorControl.CaretPosition = selection.Start.InsertLineBreak().GetInsertionPosition(LogicalDirection.Forward);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        if (!selection.IsEmpty || FindParent<ListItem>(MarkdownEditorControl.CaretPosition.Parent) is not ListItem item
             || !MarkdownFlowDocumentUtilities.IsTaskListItem(item))
             return;
 
@@ -462,7 +510,7 @@ public partial class EditTextWindow
             return;
 
         Paragraph? paragraph = FindParent<Paragraph>(MarkdownEditorControl.CaretPosition.Parent);
-        if (paragraph is null)
+        if (paragraph is null || MarkdownFlowDocumentUtilities.IsCodeBlock(paragraph))
             return;
 
         string lineTextBeforeSpace = new TextRange(paragraph.ContentStart, MarkdownEditorControl.CaretPosition).Text;
@@ -493,6 +541,20 @@ public partial class EditTextWindow
             return;
 
         e.CancelCommand();
+
+        TextSelection selection = MarkdownEditorControl.Selection;
+        if (IsSelectionInMarkdownCodeBlock(selection))
+        {
+            using (MarkdownEditorControl.DeclareChangeBlock())
+            {
+                if (!selection.IsEmpty)
+                    selection.Text = string.Empty;
+                TextPointer insertion = selection.Start.GetPositionAtOffset(0, LogicalDirection.Forward)!;
+                insertion.InsertTextInRun(MarkdownDocumentUtilities.NormalizeNewlines(pastedText));
+                MarkdownEditorControl.CaretPosition = insertion;
+            }
+            return;
+        }
 
         bool shouldParseAsMarkdown = MarkdownDocumentUtilities.LooksLikeMarkdown(pastedText);
         int selectionStartOffset = GetMarkdownPlainTextOffset(MarkdownEditorControl.Selection.Start);
@@ -527,4 +589,8 @@ public partial class EditTextWindow
         e.Handled = true;
         await ExternalLinkLauncher.OpenAsync(e.Uri.OriginalString);
     }
+
+    private static bool IsSelectionInMarkdownCodeBlock(TextSelection selection) =>
+        selection.Start.Paragraph is Paragraph paragraph && selection.End.Paragraph == paragraph
+        && MarkdownFlowDocumentUtilities.IsCodeBlock(paragraph);
 }

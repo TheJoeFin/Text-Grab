@@ -429,6 +429,77 @@ Console.WriteLine("hi");
         Assert.True(table.Columns.Sum(column => column.Width.Value) < 200);
     }
 
+    [WpfTheory]
+    [InlineData(16, true)]
+    [InlineData(16, false)]
+    [InlineData(24, false)]
+    public void Markdown_EmptyColumnsAreAsWideAsOneLineRows(double fontSize, bool insert)
+    {
+        const string markdown = """
+            | | | |
+            | --- | --- | --- |
+            | | | |
+            """;
+        FlowDocument document = MarkdownFlowDocumentUtilities.CreateFlowDocument(insert ? string.Empty : markdown, new FontFamily("Segoe UI"), fontSize);
+        RichTextBox editor = new(document);
+        if (insert)
+            MarkdownFlowDocumentUtilities.InsertTable(editor, 3, 2, editor, isLightTheme: false);
+
+        MarkdownFlowDocumentUtilities.ApplyTheme(document, new Border(), isLightTheme: false);
+        MarkdownFlowDocumentUtilities.FitTableColumns(document, viewportWidth: 800, pixelsPerDip: 1);
+        editor.Measure(new Size(800, 400));
+        editor.Arrange(new Rect(0, 0, 800, 400));
+        editor.UpdateLayout();
+
+        Table table = Assert.IsType<Table>(document.Blocks.FirstBlock);
+        TableRowGroup group = Assert.Single(table.RowGroups);
+        double rowHeight = CellTop(group.Rows[1].Cells[0]) - CellTop(group.Rows[0].Cells[0]);
+        Assert.All(table.Columns, column => Assert.Equal(rowHeight, column.Width.Value, precision: 1));
+
+        static double CellTop(TableCell cell) =>
+            cell.ContentStart.GetInsertionPosition(LogicalDirection.Forward).GetCharacterRect(LogicalDirection.Forward).Top;
+    }
+
+    [WpfFact]
+    public void Markdown_WrappedEditorScrollsRatherThanSqueezingColumnsBelowTheirMinimum()
+    {
+        const string markdown = """
+            | | | | | | | | |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | First column has longer text | | | | | | | |
+            """;
+        EditTextWindow window = EditTextWindowTestHost.CreateWindow(markdown);
+        ((MenuItem)window.FindName("WrapTextMenuItem")).IsChecked = true;
+        ((MenuItem)window.FindName("MarginsMenuItem")).IsChecked = false;
+        ((ColumnDefinition)window.FindName("CalcColumn")).Width = new GridLength(0);
+        EditTextWindowTestHost.SwitchMode(window, EtwEditorMode.Markdown);
+        EditTextWindowTestHost.DoEvents();
+
+        RichTextBox editor = EditTextWindowTestHost.MarkdownEditor(window);
+        Table table = Assert.IsType<Table>(editor.Document.Blocks.FirstBlock);
+        double minimumWidth = table.Columns[1].Width.Value;
+        Assert.True(table.Columns[0].Width.Value > minimumWidth);
+
+        FrameworkElement root = (FrameworkElement)window.Content;
+        root.Measure(new Size(200, 700));
+        root.Arrange(new Rect(0, 0, 200, 700));
+        root.UpdateLayout();
+        EditTextWindowTestHost.DoEvents();
+        root.UpdateLayout();
+
+        Assert.All(table.Columns, column => Assert.Equal(minimumWidth, column.Width.Value));
+        Assert.True(editor.ExtentWidth > editor.ViewportWidth);
+        editor.ScrollToHorizontalOffset(editor.ExtentWidth);
+        root.UpdateLayout();
+        Assert.True(editor.HorizontalOffset > 0);
+
+        EditTextWindowTestHost.LayOut(window);
+        EditTextWindowTestHost.DoEvents();
+        root.UpdateLayout();
+        Assert.Equal(0, editor.HorizontalOffset);
+        Assert.True(table.Columns[0].Width.Value > minimumWidth);
+    }
+
     [WpfFact]
     public void Markdown_TableGutterOpensOnlyTheHoveredTableInSpreadsheetMode()
     {

@@ -625,18 +625,9 @@ public static partial class MarkdownFlowDocumentUtilities
 
     private static WpfTable CreateTable(MarkdigTable table, string source, int quoteDepth, string? markdownFilePath)
     {
-        WpfTable flowTable = new()
-        {
-            CellSpacing = 0,
-            Margin = new Thickness(0, 6, TableActionGutterWidth, 6),
-            TextAlignment = TextAlignment.Left
-        };
-
-        SetQuoteDepth(flowTable, quoteDepth);
-
         int maxColumnCount = table.OfType<MarkdigTableRow>().Select(row => row.Count).DefaultIfEmpty(0).Max();
-        for (int columnIndex = 0; columnIndex < maxColumnCount; columnIndex++)
-            flowTable.Columns.Add(new TableColumn());
+        WpfTable flowTable = CreateTableElement(maxColumnCount);
+        SetQuoteDepth(flowTable, quoteDepth);
 
         TableRowGroup rowGroup = new();
         flowTable.RowGroups.Add(rowGroup);
@@ -648,11 +639,7 @@ public static partial class MarkdownFlowDocumentUtilities
 
             foreach (MarkdigTableCell cell in row.OfType<MarkdigTableCell>())
             {
-                WpfTableCell flowCell = new()
-                {
-                    Padding = new Thickness(6, 4, 6, 4)
-                };
-                SetIsTableHeader(flowCell, row.IsHeader);
+                WpfTableCell flowCell = CreateTableCell(row.IsHeader);
 
                 foreach (MarkdigBlock child in cell)
                     AppendBlock(flowCell.Blocks, child, source, quoteDepth: 0, markdownFilePath);
@@ -1025,9 +1012,16 @@ public static partial class MarkdownFlowDocumentUtilities
             string codeInfo = GetCodeFenceInfo(paragraph);
             string codeText = MarkdownDocumentUtilities.NormalizeDocumentText(
                 string.Concat(paragraph.Inlines.Select(GetCodeInlineText)));
-            string fencedBlock = string.IsNullOrWhiteSpace(codeInfo)
-                ? $"```{Environment.NewLine}{codeText}{Environment.NewLine}```"
-                : $"```{codeInfo}{Environment.NewLine}{codeText}{Environment.NewLine}```";
+            char fenceCharacter = codeInfo.Contains('`') ? '~' : '`';
+            int fenceLength = 3;
+            int runLength = 0;
+            foreach (char character in codeText)
+            {
+                runLength = character == fenceCharacter ? runLength + 1 : 0;
+                fenceLength = Math.Max(fenceLength, runLength + 1);
+            }
+            string fence = new(fenceCharacter, fenceLength);
+            string fencedBlock = $"{fence}{codeInfo}{Environment.NewLine}{codeText}{Environment.NewLine}{fence}";
             builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix(fencedBlock, quotePrefix));
             return;
         }
@@ -1103,7 +1097,7 @@ public static partial class MarkdownFlowDocumentUtilities
         builder.AppendLine();
         builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"| {string.Join(" | ", Enumerable.Repeat("---", Math.Max(1, headerCells.Count)))} |", quotePrefix));
 
-        IEnumerable<WpfTableRow> dataRows = rows.Count > 1 && rows[0].Cells.Cast<WpfTableCell>().Any(GetIsTableHeader)
+        IEnumerable<WpfTableRow> dataRows = rows[0].Cells.Cast<WpfTableCell>().Any(GetIsTableHeader)
             ? rows.Skip(1)
             : rows;
 
@@ -1128,8 +1122,18 @@ public static partial class MarkdownFlowDocumentUtilities
     private static string SerializeInlines(InlineCollection inlines, bool preserveLiteralMarkdown, bool isTableCell = false)
     {
         StringBuilder builder = new();
-        foreach (WpfInline inline in inlines)
-            WriteInline(builder, inline, preserveLiteralMarkdown, isTableCell);
+        for (WpfInline? inline = inlines.FirstInline; inline is not null;)
+        {
+            if (inline is Span span && (string)span.GetValue(EmphasisDelimiterProperty) is { Length: > 0 } delimiter)
+                WriteExtendedEmphasis(builder, ref inline, delimiter, preserveLiteralMarkdown, isTableCell);
+            else if (GetRunEmphasis(inline) != RunEmphasis.None)
+                WriteFormattedRuns(builder, ref inline, RunEmphasis.None, preserveLiteralMarkdown, isTableCell);
+            else
+            {
+                WriteInline(builder, inline, preserveLiteralMarkdown, isTableCell);
+                inline = inline.NextInline;
+            }
+        }
 
         return builder.ToString();
     }
@@ -1381,14 +1385,15 @@ public static partial class MarkdownFlowDocumentUtilities
     private static readonly DependencyProperty ImageMarkdownProperty =
         DependencyProperty.RegisterAttached("ImageMarkdown", typeof(string), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(string.Empty));
 
+    // WPF's text undo stack records property changes that affect text layout.
     private static readonly DependencyProperty QuoteDepthProperty =
-        DependencyProperty.RegisterAttached("QuoteDepth", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(0));
+        DependencyProperty.RegisterAttached("QuoteDepth", typeof(int), typeof(MarkdownFlowDocumentUtilities), new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
     private static readonly DependencyProperty HeadingLevelProperty =
-        DependencyProperty.RegisterAttached("HeadingLevel", typeof(int), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(0));
+        DependencyProperty.RegisterAttached("HeadingLevel", typeof(int), typeof(MarkdownFlowDocumentUtilities), new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
     private static readonly DependencyProperty BlockRoleProperty =
-        DependencyProperty.RegisterAttached("BlockRole", typeof(MarkdownBlockRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownBlockRole.None));
+        DependencyProperty.RegisterAttached("BlockRole", typeof(MarkdownBlockRole), typeof(MarkdownFlowDocumentUtilities), new FrameworkPropertyMetadata(MarkdownBlockRole.None, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
     private static readonly DependencyProperty InlineRoleProperty =
         DependencyProperty.RegisterAttached("InlineRole", typeof(MarkdownInlineRole), typeof(MarkdownFlowDocumentUtilities), new PropertyMetadata(MarkdownInlineRole.None));
@@ -1436,6 +1441,8 @@ public static partial class MarkdownFlowDocumentUtilities
     public static bool IsTaskListCheckBox(DependencyObject element) =>
         element is CheckBox && GetInlineRole(element) == MarkdownInlineRole.TaskListMarker;
 
+    internal static bool IsCodeBlock(Paragraph paragraph) => GetBlockRole(paragraph) == MarkdownBlockRole.CodeBlock;
+
     /// <summary>
     /// For a rendered code block paragraph, returns its code text and fence info string
     /// (the language after the opening backticks, empty when none).
@@ -1444,7 +1451,7 @@ public static partial class MarkdownFlowDocumentUtilities
     {
         code = string.Empty;
         fenceInfo = string.Empty;
-        if (paragraph is null || GetBlockRole(paragraph) != MarkdownBlockRole.CodeBlock)
+        if (paragraph is null || !IsCodeBlock(paragraph))
             return false;
 
         code = MarkdownDocumentUtilities.NormalizeDocumentText(

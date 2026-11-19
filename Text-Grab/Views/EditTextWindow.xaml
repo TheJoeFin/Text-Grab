@@ -223,6 +223,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
@@ -938,7 +939,15 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="2">
+        <controls:MarkdownFormattingBar
+            x:Name="MarkdownToolbar"
+            x:FieldModifier="private"
+            Grid.Row="2"
+            AutomationProperties.AutomationId="EditText.MarkdownToolbar"
+            FormatRequested="ApplyMarkdownFormat"
+            TableRequested="InsertMarkdownTable"
+            Visibility="Collapsed" />
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="CalcColumn" Width="200" />
@@ -1429,7 +1438,7 @@
 
         <ScrollViewer
             x:Name="BottomBarScrollViewer"
-            Grid.Row="3"
+            Grid.Row="4"
             CanContentScroll="True"
             HorizontalScrollBarVisibility="Auto"
             PanningMode="HorizontalOnly"
@@ -1667,7 +1676,7 @@
         </ScrollViewer>
         <Grid
             x:Name="LoadingStack"
-            Grid.RowSpan="4"
+            Grid.RowSpan="5"
             Panel.ZIndex="900"
             AutomationProperties.AutomationId="EditText.LoadingStatus"
             Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
@@ -1691,7 +1700,7 @@
         <!--  Non-blocking, cancellable status shown while transcribing audio; text streams into the editor beneath it.  -->
         <Border
             x:Name="TranscriptionStatusBar"
-            Grid.Row="2"
+            Grid.Row="3"
             Grid.ColumnSpan="2"
             Margin="0,10,0,0"
             Padding="12,6"
@@ -1735,7 +1744,7 @@
         </Border>
         <ui:ContentDialogHost
             x:Name="PendingFileCloseDialogHost"
-            Grid.RowSpan="4"
+            Grid.RowSpan="5"
             Panel.ZIndex="999"
             AutomationProperties.AutomationId="EditText.PendingFileCloseDialog"
             IsDisableSiblingsEnabled="True" />

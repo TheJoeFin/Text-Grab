@@ -392,6 +392,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (mode == EtwEditorMode.Markdown && !deferMarkdownLoad)
                 ApplyMarkdownTheme();
 
+            UpdateMarkdownFormattingBar();
             UpdateSpreadsheetModeUi();
             UpdateLineAndColumnText();
             return;
@@ -463,6 +464,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.Focus();
         }
 
+        UpdateMarkdownFormattingBar();
         UpdateSpreadsheetModeUi();
         UpdateEnableSpellCheckMenuItemVisibility();
         UpdateLineAndColumnText();
