@@ -76,4 +76,7 @@ public static class PaneIds
 
     /// <summary>The recent items pane (v5 E5).</summary>
     public const string Recent = "textgrab.pane.recent";
+
+    /// <summary>The Mermaid diagram pane (v5 E5).</summary>
+    public const string Mermaid = "textgrab.pane.mermaid";
 }

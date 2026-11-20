@@ -18,6 +18,9 @@ public static class LayoutIds
     /// <summary>The editor with the recent items pane to its left (v5 E5 <c>recent</c>).</summary>
     public const string Explorer = "explorer";
 
+    /// <summary>The source in the code editor with its diagram beside it (v5 E5 <c>mermaid</c>).</summary>
+    public const string Mermaid = "mermaid";
+
     public const int MaxLength = 64;
 
     private static readonly string[] ReservedDeviceNames =

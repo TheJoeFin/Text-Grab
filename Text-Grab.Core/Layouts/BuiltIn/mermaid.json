@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "id": "mermaid",
+  "name": "Mermaid",
+  "root": {
+    "type": "split",
+    "orientation": "horizontal",
+    "children": [
+      {
+        "node": { "type": "pane", "paneId": "textgrab.pane.editor" },
+        "size": 1,
+        "unit": "star"
+      },
+      {
+        "node": { "type": "pane", "paneId": "textgrab.pane.mermaid" },
+        "size": 1,
+        "unit": "star"
+      }
+    ]
+  },
+  "defaultMode": "code"
+}

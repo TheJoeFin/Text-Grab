@@ -404,6 +404,35 @@ public class EtwLayoutModelTests
         => Assert.DoesNotContain(PaneIds.Recent, EtwLayoutValidator.PaneIdsIn(BuiltInLayouts.Classic.Root));
 
     [Fact]
+    public void Mermaid_IsBuiltInWithTheEditorAndTheDiagramSideBySideAndOpensInCodeMode()
+    {
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.Mermaid, out EtwLayoutDefinition mermaid));
+        Assert.True(LayoutIds.IsValid(mermaid.Id));
+        Assert.Null(EtwLayoutValidator.FindProblem(mermaid, id => id is PaneIds.Mermaid));
+        Assert.Equal([PaneIds.Editor, PaneIds.Mermaid], EtwLayoutValidator.PaneIdsIn(mermaid.Root));
+
+        // An unknown member survives silently, so a misspelled "defaultMode" would leave this null.
+        Assert.Equal(EtwEditorMode.Code, mermaid.DefaultMode);
+        Assert.Null(mermaid.DefaultCodeLanguage);
+
+        SplitNode root = Assert.IsType<SplitNode>(mermaid.Root);
+        Assert.Equal(DockOrientation.Horizontal, root.Orientation);
+        Assert.All(root.Children, child => Assert.Equal((1d, DockSizeUnit.Star, false), (child.Size, child.Unit, child.Collapsed)));
+    }
+
+    [Fact]
+    public void Mermaid_HasNoCalcPaneSoAnMmdFileNeverMakesOne()
+        => Assert.DoesNotContain(PaneIds.Calc, EtwLayoutValidator.PaneIdsIn(BuiltInLayouts.TryGet(LayoutIds.Mermaid, out EtwLayoutDefinition mermaid) ? mermaid.Root : BuiltInLayouts.Classic.Root));
+
+    [Fact]
+    public void ClassicAndExplorer_HaveNoDefaultMode()
+    {
+        Assert.Null(BuiltInLayouts.Classic.DefaultMode);
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.Explorer, out EtwLayoutDefinition explorer));
+        Assert.Null(explorer.DefaultMode);
+    }
+
+    [Fact]
     public void LayoutIds_RefusesOverlongIds() => Assert.False(LayoutIds.IsValid(new string('a', LayoutIds.MaxLength + 1)));
 
     private static void AssertSameJson(string expected, string actual)
