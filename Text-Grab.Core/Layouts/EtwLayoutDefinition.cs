@@ -79,4 +79,7 @@ public static class PaneIds
 
     /// <summary>The Mermaid diagram pane (v5 E5).</summary>
     public const string Mermaid = "textgrab.pane.mermaid";
+
+    /// <summary>The rendered Markdown preview pane (v5 E5).</summary>
+    public const string MarkdownPreview = "textgrab.pane.markdownPreview";
 }

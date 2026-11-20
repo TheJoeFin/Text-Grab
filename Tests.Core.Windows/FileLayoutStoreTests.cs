@@ -143,7 +143,7 @@ public sealed class FileLayoutStoreTests : IDisposable
         IReadOnlyList<LayoutSummary> layouts = await store.ListAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(
-            [("classic", "Classic", true), ("explorer", "Explorer", true), ("mermaid", "Mermaid", true), ("alpha", "Alpha", false), ("broken", "broken", false), ("zeta", "Zeta", false)],
+            [("classic", "Classic", true), ("explorer", "Explorer", true), ("markdown-preview", "Markdown preview", true), ("mermaid", "Mermaid", true), ("alpha", "Alpha", false), ("broken", "broken", false), ("zeta", "Zeta", false)],
             layouts.Select(layout => (layout.Id, layout.Name, layout.IsBuiltIn)));
     }
 

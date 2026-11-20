@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Text_Grab.Core.Editing;
 using Text_Grab.Core.Layouts;
 using Text_Grab.Models;
 
@@ -423,6 +424,30 @@ public class EtwLayoutModelTests
     [Fact]
     public void Mermaid_HasNoCalcPaneSoAnMmdFileNeverMakesOne()
         => Assert.DoesNotContain(PaneIds.Calc, EtwLayoutValidator.PaneIdsIn(BuiltInLayouts.TryGet(LayoutIds.Mermaid, out EtwLayoutDefinition mermaid) ? mermaid.Root : BuiltInLayouts.Classic.Root));
+
+    [Fact]
+    public void MarkdownPreview_IsBuiltInWithTheEditorAndThePreviewSideBySideAndOpensInCodeModeWithMarkdownHighlighting()
+    {
+        Assert.Equal("markdown-preview", LayoutIds.MarkdownPreview);
+        Assert.Equal("textgrab.pane.markdownPreview", PaneIds.MarkdownPreview);
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.MarkdownPreview, out EtwLayoutDefinition preview));
+        Assert.True(LayoutIds.IsValid(preview.Id));
+        Assert.Null(EtwLayoutValidator.FindProblem(preview, id => id is PaneIds.MarkdownPreview));
+        Assert.Equal([PaneIds.Editor, PaneIds.MarkdownPreview], EtwLayoutValidator.PaneIdsIn(preview.Root));
+
+        // An unknown member survives silently, so a misspelled "defaultMode" or language would leave these null.
+        Assert.Equal(EtwEditorMode.Code, preview.DefaultMode);
+        Assert.Equal(CodeLanguages.Markdown, preview.DefaultCodeLanguage);
+        Assert.NotNull(CodeLanguages.Find(preview.DefaultCodeLanguage!));
+
+        SplitNode root = Assert.IsType<SplitNode>(preview.Root);
+        Assert.Equal(DockOrientation.Horizontal, root.Orientation);
+        Assert.All(root.Children, child => Assert.Equal((1d, DockSizeUnit.Star, false), (child.Size, child.Unit, child.Collapsed)));
+    }
+
+    [Fact]
+    public void MarkdownPreview_HasNoCalcPaneSoAMarkdownFileNeverMakesOne()
+        => Assert.DoesNotContain(PaneIds.Calc, EtwLayoutValidator.PaneIdsIn(BuiltInLayouts.TryGet(LayoutIds.MarkdownPreview, out EtwLayoutDefinition preview) ? preview.Root : BuiltInLayouts.Classic.Root));
 
     [Fact]
     public void ClassicAndExplorer_HaveNoDefaultMode()

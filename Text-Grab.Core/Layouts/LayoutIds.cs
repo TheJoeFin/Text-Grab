@@ -21,6 +21,9 @@ public static class LayoutIds
     /// <summary>The source in the code editor with its diagram beside it (v5 E5 <c>mermaid</c>).</summary>
     public const string Mermaid = "mermaid";
 
+    /// <summary>The Markdown source in the code editor with its rendered preview beside it (v5 E5 <c>markdown-preview</c>).</summary>
+    public const string MarkdownPreview = "markdown-preview";
+
     public const int MaxLength = 64;
 
     private static readonly string[] ReservedDeviceNames =
