@@ -150,7 +150,7 @@ Decisions due before 5.0-beta1: **D2** (ribbon), **D3** (range highlighting — 
 |---|---|---|
 | F1–F5, A1, E1, Code mode | Done, on `dev` | 4.17.0-beta1 |
 | F6 | Shelved | When a consumer needs it; `recent` works without it |
-| E3 `calc` | Not started | 4.17.0-beta2 |
+| E3 `calc` | Done (0fb4420) | 4.17.0-beta2 |
 | E4a | Not started | 4.17.0-beta2 |
 | E5 `recent`, `mermaid`, `markdown-preview` | Not started | 4.17.0-beta2 |
 | E6 `picker` | Not started | 4.17.0-beta2 |
