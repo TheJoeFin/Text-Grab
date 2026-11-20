@@ -918,6 +918,41 @@
                         Header="Show calculations pane"
                         InputGestureText="Ctrl + P"
                         IsCheckable="True" />
+                    <MenuItem
+                        x:Name="LayoutsMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.Layouts"
+                        Header="Lay_outs"
+                        SubmenuOpened="LayoutsMenuItem_SubmenuOpened"
+                        Visibility="Collapsed">
+                        <Separator x:Name="LayoutsListEndSeparator" />
+                        <MenuItem
+                            x:Name="SaveLayoutAsMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.SaveAs"
+                            Click="SaveLayoutAsMenuItem_Click"
+                            Header="_Save current layout as..." />
+                        <MenuItem
+                            x:Name="ResetLayoutMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.Reset"
+                            Click="ResetLayoutMenuItem_Click"
+                            Header="_Reset to built-in" />
+                        <MenuItem
+                            x:Name="DeleteLayoutMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.Delete"
+                            Click="DeleteLayoutMenuItem_Click"
+                            Header="_Delete this layout" />
+                        <MenuItem
+                            x:Name="SetDefaultLayoutMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.SetDefault"
+                            Click="SetDefaultLayoutMenuItem_Click"
+                            Header="Set as _default layout"
+                            IsCheckable="True" />
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="PanesMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.Panes"
+                        Header="Pane_s"
+                        SubmenuOpened="PanesMenuItem_SubmenuOpened"
+                        Visibility="Collapsed" />
                     <Separator />
                     <MenuItem
                         x:Name="NewWindowMenuItem"

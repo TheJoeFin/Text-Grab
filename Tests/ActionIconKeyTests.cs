@@ -1,4 +1,5 @@
 using Text_Grab.Core.Actions;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Wpf.Ui.Controls;
 
@@ -19,6 +20,7 @@ public class ActionIconKeyTests
         RecentPaneActions.RegisterAll(registry);
         MermaidPaneActions.RegisterAll(registry);
         MarkdownPreviewPaneActions.RegisterAll(registry);
+        LayoutPickerActions.RegisterAll(registry);
 
         foreach (ActionDescriptor descriptor in registry.All)
             Assert.True(

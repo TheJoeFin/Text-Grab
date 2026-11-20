@@ -2,6 +2,7 @@ using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
 using Text_Grab.Core.Actions;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -222,6 +223,7 @@ public class AppServicesTests
         RecentPaneActions.RegisterAll(expected);
         MermaidPaneActions.RegisterAll(expected);
         MarkdownPreviewPaneActions.RegisterAll(expected);
+        LayoutPickerActions.RegisterAll(expected);
         Assert.Equal(expected.All.Select(d => d.Id), registry.All.Select(d => d.Id));
 
         Assert.NotNull(registry.GetTransform("textgrab.text.trimLines"));

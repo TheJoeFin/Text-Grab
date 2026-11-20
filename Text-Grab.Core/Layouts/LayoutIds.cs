@@ -33,6 +33,41 @@ public static class LayoutIds
         "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
     ];
 
+    /// <summary>
+    /// An ID for a layout a person named: the name in lower case with each run of other characters as one
+    /// '-', numbered ("-2", "-3"...) until <paramref name="isTaken"/> says no. A name with nothing usable
+    /// in it gives "layout".
+    /// </summary>
+    /// <param name="name">What the person typed.</param>
+    /// <param name="isTaken">Whether an ID is already a layout's (built in or saved) or a name Windows reserves.</param>
+    public static string FromName(string? name, Func<string, bool> isTaken)
+    {
+        ArgumentNullException.ThrowIfNull(isTaken);
+
+        System.Text.StringBuilder slug = new();
+        foreach (char c in name ?? string.Empty)
+        {
+            char lower = char.ToLowerInvariant(c);
+            if (char.IsAsciiLetterLower(lower) || char.IsAsciiDigit(lower))
+                slug.Append(lower);
+            else if (slug.Length > 0 && slug[^1] != '-')
+                slug.Append('-');
+
+            if (slug.Length >= 48)
+                break;
+        }
+
+        string stem = slug.ToString().Trim('-');
+        if (stem.Length == 0)
+            stem = "layout";
+
+        string id = stem;
+        for (int number = 2; !IsValid(id) || isTaken(id); number++)
+            id = $"{stem}-{number}";
+
+        return id;
+    }
+
     public static bool IsValid(string? id)
     {
         if (string.IsNullOrEmpty(id) || id.Length > MaxLength)

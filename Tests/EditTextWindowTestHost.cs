@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -30,6 +31,13 @@ internal static class EditTextWindowTestHost
 {
     [ModuleInitializer]
     internal static void UseTheHandWrittenGridByDefault() => EditTextWindow.PaneLayoutOverride = false;
+
+    // No test reads or writes the person's layouts or default layout: windows use a store in a temporary folder
+    // (nothing is created in it until something is saved) unless a test supplies its own.
+    [ModuleInitializer]
+    internal static void UseATemporaryLayoutStore()
+        => EditTextWindow.LayoutStoreOverride = new Text_Grab.Core.Layouts.FileLayoutStore(
+            Path.Combine(Path.GetTempPath(), "TextGrabTestLayouts", Guid.NewGuid().ToString("N")));
 
     /// <summary>Windows made until the result is disposed render their editor area from a layout (v5 E4a).</summary>
     public static IDisposable UsePaneLayout(bool on = true)

@@ -69,8 +69,9 @@ public partial class EditTextWindow
 
         Task loadLanguages = LoadLanguageMenuItemsAsync(LanguageMenuItem);
         Task loadGrabs = RefreshRecentGrabsMenuAsync();
+        Task loadLayouts = RefreshPickerMenusAsync();
         RefreshCommandPaletteEntries();
-        await Task.WhenAll(loadLanguages, loadGrabs);
+        await Task.WhenAll(loadLanguages, loadGrabs, loadLayouts);
         if (!_isClosed && IsCommandPaletteOpen && opening == paletteOpening)
             RefreshCommandPaletteEntries(preserveSelection: true);
     }

@@ -52,6 +52,23 @@ public partial class EditTextWindow
     /// <summary>Counts layout resolutions, so that only the latest one applies.</summary>
     private int layoutResolution;
 
+    /// <summary>
+    /// The layout as it was last shown by a switch or a load, before the Panes menu changed anything. A
+    /// pane in it is collapsed when unchecked; a pane the Panes menu added is removed.
+    /// </summary>
+    private EtwLayoutDefinition? appliedLayout;
+
+    /// <summary>The layout the person set as the default, as this window last read it; null for Classic.</summary>
+    private string? knownGlobalDefault;
+
+    /// <summary>
+    /// The layout store, for tests to replace so that they never read or write the person's layouts. Null
+    /// means the app's own (<see cref="ILayoutStore"/> in the service provider).
+    /// </summary>
+    internal static ILayoutStore? LayoutStoreOverride { get; set; }
+
+    private static ILayoutStore LayoutStore => LayoutStoreOverride ?? AppServices.Provider.GetRequiredService<ILayoutStore>();
+
     /// <summary>Why a layout could not be used, waiting for the window to be shown.</summary>
     private string? pendingLayoutNotice;
 
@@ -107,6 +124,8 @@ public partial class EditTextWindow
         (EtwLayoutDefinition? firstLayout, bool resolveAfter) = TakeInitialLayoutRequest();
         EtwLayoutDefinition first = firstLayout ?? BuiltInLayouts.Classic;
         paneLayout.Render(first);
+        appliedLayout = first;
+        ShowPickerMenus();
         UpdateCalcToggles();
         if (first.Id != LayoutIds.Classic)
             ApplyLayoutDefaultMode(first);
@@ -121,21 +140,39 @@ public partial class EditTextWindow
     /// shown, still renders Classic first and is then resolved the usual way (<c>ResolveAfter</c>), which
     /// loads it or says why it cannot.
     /// </summary>
-    private (EtwLayoutDefinition? First, bool ResolveAfter) TakeInitialLayoutRequest()
+    /// <param name="readStore">
+    /// Whether to read the layout store (the person's default layout, and a saved layout the window is
+    /// to open in), which is one small file each and is done here, synchronously, so that the layout the
+    /// window ends in is the first one it renders. False with the pane layout off, which has no layouts.
+    /// </param>
+    private (EtwLayoutDefinition? First, bool ResolveAfter) TakeInitialLayoutRequest(bool readStore = true)
     {
-        if (initialLayout is null)
-            return (null, false);
+        LayoutRequest request = initialLayout ?? new LayoutRequest();
+        requestedLayoutId = string.IsNullOrWhiteSpace(request.RequestedId) ? null : request.RequestedId.Trim();
+        historyLayoutId = string.IsNullOrWhiteSpace(request.HistoryId) ? null : request.HistoryId;
+        initialFilePath = request.FilePath;
 
-        requestedLayoutId = string.IsNullOrWhiteSpace(initialLayout.RequestedId) ? null : initialLayout.RequestedId.Trim();
-        historyLayoutId = string.IsNullOrWhiteSpace(initialLayout.HistoryId) ? null : initialLayout.HistoryId;
-        initialFilePath = initialLayout.FilePath;
+        LayoutStoreDefaults defaults = readStore ? LayoutStore.ReadDefaults() : new LayoutStoreDefaults(null);
+        knownGlobalDefault = defaults.GlobalDefaultId;
 
-        string? id = LayoutResolver.ChooseId(new LayoutRequest(requestedLayoutId, historyLayoutId, initialFilePath), layoutForFile: null);
-        if (id is null || id == LayoutIds.Classic)
+        string? id = LayoutResolver.ChooseId(new LayoutRequest(requestedLayoutId, historyLayoutId, initialFilePath, defaults.GlobalDefaultId), layoutForFile: null);
+        if (id is null && defaults.Error is not null)
+            ShowLayoutNotice($"{defaults.Error} Text Grab opened the Classic layout instead.");
+
+        if (id is null || id == LayoutIds.Classic || !readStore)
             return (null, false);
 
         if (BuiltInLayouts.TryGet(id, out EtwLayoutDefinition layout) && EtwLayoutValidator.FindProblem(layout, IsKnownPane) is null)
             return (layout, false);
+
+        // A layout from the store: loaded now, so that no other layout's panes are made on the way.
+        // One that does not load or cannot be shown renders Classic and is then resolved, which says why.
+        if (!BuiltInLayouts.IsBuiltIn(id))
+        {
+            LayoutReadResult read = LayoutStore.Load(id);
+            if (read.Layout is not null && EtwLayoutValidator.FindProblem(read.Layout, IsKnownPane) is null)
+                return (read.Layout, false);
+        }
 
         return (null, true);
     }
@@ -146,7 +183,7 @@ public partial class EditTextWindow
     /// </summary>
     private void TakeInitialLayoutRequestWithPaneLayoutOff()
     {
-        _ = TakeInitialLayoutRequest();
+        _ = TakeInitialLayoutRequest(readStore: false);
         if (requestedLayoutId is not null)
             _ = ResolveLayoutAsync();
     }
@@ -190,6 +227,19 @@ public partial class EditTextWindow
     /// shows it if the window does.
     /// </remarks>
     internal string? ApplyLayout(EtwLayoutDefinition layout)
+    {
+        string? problem = ShowLayout(layout);
+        if (problem is null)
+            appliedLayout = layout;
+
+        return problem;
+    }
+
+    /// <summary>
+    /// <see cref="ApplyLayout"/>, except that the layout shown is not the new "applied" one: what the
+    /// Panes menu does to the live layout.
+    /// </summary>
+    private string? ShowLayout(EtwLayoutDefinition layout)
     {
         if (paneLayout is null)
             return "The pane layout is off.";
@@ -259,7 +309,12 @@ public partial class EditTextWindow
         if (paneLayout is null)
             return historyLayoutId;
 
-        return LayoutId == LayoutIds.Classic ? null : LayoutId;
+        // Classic is null so that history files do not change, unless the person made another layout the
+        // default: then a Classic item must say so, or it would reopen in the default.
+        if (LayoutId == LayoutIds.Classic)
+            return knownGlobalDefault is null ? null : LayoutIds.Classic;
+
+        return LayoutId;
     }
 
     /// <summary>
@@ -281,7 +336,7 @@ public partial class EditTextWindow
         ResolvedLayout resolved;
         try
         {
-            resolved = await new LayoutResolver(AppServices.Provider.GetRequiredService<ILayoutStore>(), IsKnownPane).ResolveAsync(request);
+            resolved = await new LayoutResolver(LayoutStore, IsKnownPane).ResolveAsync(request);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {

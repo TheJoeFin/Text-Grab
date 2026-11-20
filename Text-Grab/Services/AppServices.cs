@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
 using Text_Grab.Core.Actions;
 using Text_Grab.Core.Layouts;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -97,6 +98,7 @@ internal static class AppServices
             RecentPaneActions.RegisterAll(registry);
             MermaidPaneActions.RegisterAll(registry);
             MarkdownPreviewPaneActions.RegisterAll(registry);
+            LayoutPickerActions.RegisterAll(registry);
             return registry;
         });
 
