@@ -18,9 +18,26 @@ namespace Tests;
 /// <see cref="CalcPane"/> as a pane: what changed or is new since it left the window. What it kept is in
 /// <see cref="CalcPaneCharacterizationTests"/>.
 /// </summary>
-public class CalcPaneTests
+/// <remarks>
+/// From E4a these run twice: here against the hand-written grid, and in
+/// <see cref="PaneLayoutCalcPaneTests"/> against the pane layout.
+/// </remarks>
+public class CalcPaneTests : IDisposable
 {
     private static readonly string TwoHundredLines = string.Join("\r\n", Enumerable.Range(1, 200));
+
+    private readonly IDisposable paneLayoutScope;
+
+    public CalcPaneTests() => paneLayoutScope = UsePaneLayout(UsesPaneLayout);
+
+    /// <summary>Whether these tests' windows render their editor area from a layout (E4a).</summary>
+    protected virtual bool UsesPaneLayout => false;
+
+    public void Dispose()
+    {
+        paneLayoutScope.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     // ---- Code mode (new: the results used to stay put while the code editor scrolled) ----
 
@@ -136,6 +153,14 @@ public class CalcPaneTests
         int before = CalcPane.AttachedCount;
 
         EditTextWindow window = CreateWindow("1 + 1");
+        Assert.Equal(before + 1, CalcPane.AttachedCount);
+
+        // Open, so the pane is on screen in both editor areas: the pane layout takes a hidden pane out
+        // of the visual tree, where the hand-written grid leaves it in a column 0 wide.
+        InitializeCalcPane(window);
+        window.SetCalcPaneOpen(true);
+        DoEvents();
+        LayOut(window);
 
         Assert.Equal(before + 1, CalcPane.AttachedCount);
         CalcPane shown = Assert.Single(VisualDescendants<CalcPane>(WindowContent(window)));

@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Layouts;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Services;
 using MenuItem = System.Windows.Controls.MenuItem;
@@ -26,8 +28,8 @@ public partial class EditTextWindow
     /// <summary>The window's calc pane, made by its factory when the window is initialized.</summary>
     private CalcPane? calcPane;
 
-    /// <summary>The panes in this window. Only the calc pane until layouts (E4a) place others.</summary>
-    private IEnumerable<IEditorPane> Panes => calcPane is null ? [] : [calcPane];
+    /// <summary>The panes in this window: the layout's, or with the pane layout off, the calc pane.</summary>
+    private IEnumerable<IEditorPane> Panes => paneLayout?.Panes ?? (calcPane is null ? [] : [calcPane]);
 
     /// <summary>A new pane of the kind <paramref name="paneId"/> names, from its factory, or null if no factory makes it.</summary>
     private static IEditorPane? CreatePane(string paneId)
@@ -51,12 +53,12 @@ public partial class EditTextWindow
     }
 
     /// <summary>The bindings, name and events every calc pane has in this window, wherever it is placed.</summary>
-    private void ConnectCalcPane(CalcPane pane)
+    private void ConnectCalcPane(CalcPane pane, JsonElement? config = null)
     {
         RegisterName(CalcPaneName, pane);
         pane.SetBinding(CalcPane.ResultsFontSizeProperty, new Binding(nameof(PassedTextControl.FontSize)) { Source = PassedTextControl, Mode = BindingMode.OneWay });
         pane.SetBinding(CalcPane.ShowErrorsProperty, new Binding(nameof(MenuItem.IsChecked)) { Source = ShowErrorsMenuItem, Mode = BindingMode.OneWay });
-        pane.Attach(Session, config: null);
+        pane.Attach(Session, config);
         pane.HideRequested += CalcPane_HideRequested;
         pane.ShowErrorsToggleRequested += CalcPane_ShowErrorsToggleRequested;
     }
@@ -77,8 +79,11 @@ public partial class EditTextWindow
     /// </summary>
     private void InitializeCalcPane()
     {
-        // Restore calc pane width from settings if not loading from history
-        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
+        // Restore calc pane width from settings if not loading from history.
+        // The hand-written grid reads the saved width here but then opens at the column's XAML width
+        // anyway (CalcPaneCharacterizationTests.NewWindow_OpensThePaneAtTheXamlColumnWidthNotTheSavedWidth).
+        // The pane layout keeps that: a new window opens the pane at Classic's width, the same 200 px.
+        if (paneLayout is null && ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
         {
             _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
         }
@@ -103,6 +108,43 @@ public partial class EditTextWindow
 
     /// <summary>Evaluates the calc pane now, rather than after the typing delay.</summary>
     internal Task EvaluateCalcPaneAsync() => calcPane?.RecalculateAsync() ?? Task.CompletedTask;
+
+    /// <summary>Gives the calc pane the width a history item saved, for when it is shown.</summary>
+    private void RestoreCalcPaneWidth(int width)
+    {
+        GridLength length = new(width, GridUnitType.Pixel);
+        if (paneLayout is not null)
+        {
+            paneLayout.SetPaneSize(PaneIds.Calc, length);
+            return;
+        }
+
+        CalcColumn.Width = length;
+        _lastCalcColumnWidth = length;
+    }
+
+    /// <summary>
+    /// The width to save for the calc pane (in history and in <c>CalcPaneWidth</c>): its width while it
+    /// is shown, or 0 while it is hidden. A star width saves the pane's laid-out width.
+    /// </summary>
+    private int CalcPaneWidthToSave()
+    {
+        if (ShowCalcPaneMenuItem.IsChecked is not true)
+            return 0;
+
+        if (paneLayout is not null)
+        {
+            if (paneLayout.GetPaneSize(PaneIds.Calc) is not GridLength size || size.Value <= 0)
+                return 0;
+
+            return size.IsStar ? (int)paneLayout.GetPaneActualSize(PaneIds.Calc) : (int)size.Value;
+        }
+
+        if (CalcColumn.Width.Value <= 0)
+            return 0;
+
+        return CalcColumn.Width.IsStar ? (int)CalcColumn.ActualWidth : (int)CalcColumn.Width.Value;
+    }
 
     private void CalcPane_HideRequested(object? sender, EventArgs e)
     {
@@ -148,6 +190,10 @@ public partial class EditTextWindow
 
     private void ToggleCalcPaneExecuted(object sender, ExecutedRoutedEventArgs e)
     {
+        // Ctrl+P does nothing in a layout without the calc pane, as its menu item and button are off there.
+        if (calcPane is null)
+            return;
+
         ShowCalcPaneMenuItem.IsChecked = !ShowCalcPaneMenuItem.IsChecked;
         DefaultSettings.CalcShowPane = ShowCalcPaneMenuItem.IsChecked;
         SetCalcPaneVisibility();
@@ -169,6 +215,12 @@ public partial class EditTextWindow
 
         if (calcPane is null)
             return;
+
+        if (paneLayout is not null)
+        {
+            SetCalcPaneVisibilityInLayout(paneLayout, calcPane, ShowCalcPaneMenuItem.IsChecked);
+            return;
+        }
 
         if (ShowCalcPaneMenuItem.IsChecked)
         {
@@ -207,6 +259,38 @@ public partial class EditTextWindow
                 PassedTextControl.TextWrapping = _previousTextWrapping.Value;
                 _previousTextWrapping = null;
             }
+        }
+    }
+
+    /// <summary>
+    /// <see cref="SetCalcPaneVisibility"/> with the pane layout: the calc pane is hidden or shown in the
+    /// layout, which keeps its width, and wrapping and <see cref="CalcPane.IsOpen"/> change as they do in
+    /// the hand-written grid.
+    /// </summary>
+    private void SetCalcPaneVisibilityInLayout(IPaneHost layout, CalcPane pane, bool open)
+    {
+        if (open)
+        {
+            layout.SetPaneVisible(PaneIds.Calc, true);
+
+            // Disable text wrapping when calc pane is visible to maintain vertical alignment
+            if (PassedTextControl.TextWrapping != TextWrapping.NoWrap)
+            {
+                _previousTextWrapping = PassedTextControl.TextWrapping;
+                PassedTextControl.TextWrapping = TextWrapping.NoWrap;
+            }
+
+            pane.IsOpen = true;
+            return;
+        }
+
+        pane.IsOpen = false;
+        layout.SetPaneVisible(PaneIds.Calc, false);
+
+        if (_previousTextWrapping.HasValue)
+        {
+            PassedTextControl.TextWrapping = _previousTextWrapping.Value;
+            _previousTextWrapping = null;
         }
     }
 

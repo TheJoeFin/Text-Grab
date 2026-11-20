@@ -204,8 +204,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (widthToRestore <= 0)
                 widthToRestore = 400; // Fallback to default
 
-            CalcColumn.Width = new GridLength(widthToRestore, GridUnitType.Pixel);
-            _lastCalcColumnWidth = new GridLength(widthToRestore, GridUnitType.Pixel);
+            RestoreCalcPaneWidth(widthToRestore);
         }
     }
 
@@ -539,14 +538,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else if (editorMode == EtwEditorMode.Markdown)
             SyncMarkdownTextFromDocument();
 
-        int calcPaneWidth = 0;
-        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
-        {
-            if (CalcColumn.Width.IsStar)
-                calcPaneWidth = (int)CalcColumn.ActualWidth;
-            else
-                calcPaneWidth = (int)CalcColumn.Width.Value;
-        }
+        int calcPaneWidth = CalcPaneWidthToSave();
 
         HistoryInfo historyInfo = new()
         {
@@ -1575,7 +1567,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     protected override void OnClosed(EventArgs e)
     {
-        DetachCalcPane();
+        if (paneLayout is not null)
+            paneLayout.Close();
+        else
+            DetachCalcPane();
+
         base.OnClosed(e);
     }
 
@@ -2180,13 +2176,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ClearDynamicMenuItems();
 
         // Save calc pane width to settings when closing with pane open
-        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
-        {
-            if (CalcColumn.Width.IsStar)
-                DefaultSettings.CalcPaneWidth = (int)CalcColumn.ActualWidth;
-            else
-                DefaultSettings.CalcPaneWidth = (int)CalcColumn.Width.Value;
-        }
+        if (CalcPaneWidthToSave() is int calcPaneWidth and > 0)
+            DefaultSettings.CalcPaneWidth = calcPaneWidth;
 
         DefaultSettings.Save();
 
@@ -2264,7 +2255,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         MarkdownEditorControl.PreviewTextInput += MarkdownEditorControl_PreviewTextInput;
         System.Windows.DataObject.AddPastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
         InitializeCodeEditor();
-        AttachCalcPane();
+        if (usesPaneLayout)
+            InitializePaneLayout();
+        else
+            AttachCalcPane();
         SetFontFromSettings();
         UpdateSpreadsheetModeUi();
         UpdateWindowTitle();

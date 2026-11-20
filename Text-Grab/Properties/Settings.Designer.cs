@@ -1510,5 +1510,17 @@ namespace Text_Grab.Properties {
                 this["GrabFrameIgnoreRepeatedHeadersFooters"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EtwPaneLayout {
+            get {
+                return ((string)(this["EtwPaneLayout"]));
+            }
+            set {
+                this["EtwPaneLayout"] = value;
+            }
+        }
     }
 }

@@ -25,6 +25,8 @@ param(
     [Parameter(Mandatory)][string]$TextGrabPath,
     [Parameter(Mandatory)][string]$OutputDirectory,
     [hashtable]$Settings = @{},
+    # Seeds the EtwPaneLayout setting (v5 E4a); usable from -File, where a hashtable is not.
+    [ValidateSet('', 'On', 'Off')][string]$PaneLayout = '',
     [int]$Depth = 12,
     [ValidateRange(5, 300)][int]$TimeoutSeconds = 30
 )
@@ -35,6 +37,8 @@ $ErrorActionPreference = 'Stop'
 $uiTestsRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $uiTestsRoot 'TextGrab.UiTestHarness.psm1') -Force -DisableNameChecking
 Import-Module (Join-Path $uiTestsRoot 'Suites\Deterministic.Helpers.psm1') -Force -DisableNameChecking
+
+if ($PaneLayout) { $Settings['EtwPaneLayout'] = $PaneLayout }
 
 $textGrabExe = [IO.Path]::GetFullPath($TextGrabPath)
 if (-not (Test-Path -LiteralPath $textGrabExe -PathType Leaf)) { throw "Text Grab executable was not found: $textGrabExe" }

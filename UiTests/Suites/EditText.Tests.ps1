@@ -101,6 +101,93 @@ Register-UiTest -Suite 'EditText' -Name 'calculator-pane-surface-can-be-entered'
     Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
 }
 
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-calculator-pane-opens-shows-a-result-and-hides' -Script {
+    param($Context)
+
+    # v5 E4a: the editor area rendered from classic.json through AvalonDock.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-on' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'TextBoxSplitter' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorCopyAllButton' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'TextBoxSplitter' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    $failure = Join-Path $profile 'diagnostics\failure.json'
+    Assert-UiTestFile -Path $failure -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-calculator-toggle-leaves-focus-in-the-editor' -Script {
+    param($Context)
+
+    # Showing an AvalonDock anchorable makes it the active content, which moves focus into it unless the host puts focus back.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-focus' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '2 * 3'
+    Set-UiTestForegroundWindow -Target $editText
+
+    # Visit the results first, so AvalonDock remembers them as the pane's last focused element.
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '6' -TimeoutSeconds $Context.TimeoutSeconds
+    Focus-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults'
+    Focus-UiTestElement -Target $editText -AutomationId 'EditText.Editor'
+
+    foreach ($expectResults in @($false, $true, $false)) {
+        Send-UiTestKeys -Target $editText -AutomationId 'EditText.Editor' -Keys 'ctrl+p' -Via send-input
+        if ($expectResults) {
+            Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -TimeoutSeconds $Context.TimeoutSeconds
+        }
+        else {
+            Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+        }
+        Start-Sleep -Milliseconds 300
+        $focused = Get-UiTestFocusedElement -Target $editText
+        if ($focused -notlike '*#EditText.Editor *') {
+            throw "After Ctrl+P (results shown: $expectResults) focus was on '$focused', not the editor."
+        }
+    }
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-editor-area-matches-the-hand-written-fixtures' -Script {
+    param($Context)
+
+    # v5 E4a step 7. The capture opens its own windows and sends Tab keys, so it runs in a child process
+    # with its own module state. EditTextUiaParity.psm1 lists what may differ, and why.
+    $suiteRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Join-Path (Get-Location) 'UiTests\Suites' }
+    Import-Module (Join-Path $suiteRoot 'EditTextUiaParity.psm1') -Force
+    $capture = Join-Path $Context.OutputDirectory 'uia-pane-layout'
+    $exporter = Join-Path $suiteRoot '..\Scripts\Export-EditTextUiaFixtures.ps1'
+    $shell = (Get-Process -Id $PID).Path
+    & $shell -NoProfile -File $exporter -TextGrabPath (Get-DeterministicTextGrabExecutable $Context) -OutputDirectory $capture -PaneLayout On -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The UI Automation capture failed with exit code $LASTEXITCODE." }
+
+    $problems = @(Compare-EditTextUiaParity -FixtureDirectory (Join-Path $suiteRoot '..\Fixtures\EditTextUia') -ActualDirectory $capture)
+    if ($problems.Count -gt 0) {
+        throw "The pane layout's editor area differs from the hand-written window's:`n$($problems -join "`n`n")"
+    }
+}
+
+Register-UiTest -Suite 'EditText' -Name 'hand-written-grid-calculator-pane-still-opens' -Script {
+    param($Context)
+
+    # The way back for testers in 4.17: EtwPaneLayout = Off keeps the 4.16 editor grid.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-off' -Settings @{ EtwPaneLayout = 'Off' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    $splitterClass = Get-UiTestProperty -Target $editText -AutomationId 'TextBoxSplitter' -Property 'ClassName'
+    if ($splitterClass -ne 'GridSplitter') {
+        throw "Expected the hand-written GridSplitter with EtwPaneLayout = Off; found '$splitterClass'."
+    }
+}
+
 Register-UiTest -Suite 'EditText' -Name 'spreadsheet-and-markdown-modes-are-opened-from-stable-parent-menus' -Script {
     param($Context)
 

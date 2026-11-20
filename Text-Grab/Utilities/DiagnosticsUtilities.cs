@@ -232,6 +232,7 @@ public static class DiagnosticsUtilities
             CalcShowErrors = s.CalcShowErrors,
             CalcShowPane = s.CalcShowPane,
             CalcPaneWidth = s.CalcPaneWidth,
+            EtwPaneLayout = s.EtwPaneLayout,
 
             // Web search (name only, not URLs)
             DefaultWebSearch = s.DefaultWebSearch ?? string.Empty,
@@ -601,6 +602,7 @@ public class SettingsInfoModel
     public bool CalcShowErrors { get; set; }
     public bool CalcShowPane { get; set; }
     public int CalcPaneWidth { get; set; }
+    public string EtwPaneLayout { get; set; } = string.Empty;
 
     // Web search (name of default search only — URLs are not included)
     public string DefaultWebSearch { get; set; } = string.Empty;

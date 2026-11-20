@@ -4,6 +4,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
 using static Tests.EditTextWindowTestHost;
@@ -27,10 +28,29 @@ namespace Tests;
 /// <c>Window_Loaded</c> never runs here either (see <see cref="EditTextWindowTestHost"/>), so
 /// <see cref="InitializeCalcPane"/> runs just the calc pane's part of it.
 /// </para>
+/// <para>
+/// From E4a they run twice: here against the hand-written grid, and in
+/// <see cref="PaneLayoutCalcPaneCharacterizationTests"/> against the pane layout. The width assertions
+/// go through <see cref="CalcWidth"/> and <see cref="CalcSpace"/>, which read the grid's column or the
+/// live layout.
+/// </para>
 /// </remarks>
-public class CalcPaneCharacterizationTests
+public class CalcPaneCharacterizationTests : IDisposable
 {
     private const string ResultsAutomationId = "EditText.CalculatorResults";
+
+    private readonly IDisposable paneLayoutScope;
+
+    public CalcPaneCharacterizationTests() => paneLayoutScope = UsePaneLayout(UsesPaneLayout);
+
+    /// <summary>Whether these tests' windows render their editor area from a layout (E4a).</summary>
+    protected virtual bool UsesPaneLayout => false;
+
+    public void Dispose()
+    {
+        paneLayoutScope.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     // ---- Evaluation ----
 
@@ -102,13 +122,13 @@ public class CalcPaneCharacterizationTests
             CalcPaneWidth = 260,
         });
         LayOut(window);
-        Assert.Equal(new GridLength(260), CalcColumn(window).Width);
+        Assert.Equal(new GridLength(260), CalcWidth(window));
 
         InitializeCalcPane(window);
         LayOut(window);
 
         Assert.Equal(Visibility.Visible, CalcResults(window).Visibility);
-        Assert.Equal(new GridLength(260), CalcColumn(window).Width);
+        Assert.Equal(new GridLength(260), CalcSpace(window));
         HistoryInfo saved = window.AsHistoryItem();
         Assert.True(saved.HasCalcPaneOpen);
         Assert.Equal(260, saved.CalcPaneWidth);
@@ -126,7 +146,7 @@ public class CalcPaneCharacterizationTests
 
         window.SetCalcPaneOpen(true);
 
-        Assert.Equal(new GridLength(200), CalcColumn(window).Width);
+        Assert.Equal(new GridLength(200), CalcSpace(window));
     }
 
     [WpfFact]
@@ -141,13 +161,13 @@ public class CalcPaneCharacterizationTests
         InitializeCalcPane(window);
 
         window.SetCalcPaneOpen(false);
-        Assert.Equal(new GridLength(0), CalcColumn(window).Width);
+        Assert.Equal(new GridLength(0), CalcSpace(window));
         HistoryInfo closed = window.AsHistoryItem();
         Assert.False(closed.HasCalcPaneOpen);
         Assert.Equal(0, closed.CalcPaneWidth);
 
         window.SetCalcPaneOpen(true);
-        Assert.Equal(new GridLength(260), CalcColumn(window).Width);
+        Assert.Equal(new GridLength(260), CalcSpace(window));
         Assert.Equal(260, window.AsHistoryItem().CalcPaneWidth);
     }
 
@@ -256,6 +276,34 @@ public class CalcPaneCharacterizationTests
 
     internal static ColumnDefinition CalcColumn(EditTextWindow window) => (ColumnDefinition)window.FindName("CalcColumn");
 
+    /// <summary>
+    /// The calc pane's width, shown or not: the hand-written grid's column, or with the pane layout,
+    /// the calc pane's size in the live layout.
+    /// </summary>
+    internal static GridLength CalcWidth(EditTextWindow window)
+        => window.CurrentLayout is EtwLayoutDefinition layout
+            ? AsGridLength(CalcChild(layout))
+            : CalcColumn(window).Width;
+
+    /// <summary>
+    /// The space the calc pane takes: the hand-written grid's column, which is 0 wide while the pane is
+    /// closed, or with the pane layout, the calc pane's size while it is shown and 0 while it is hidden.
+    /// </summary>
+    internal static GridLength CalcSpace(EditTextWindow window)
+    {
+        if (window.CurrentLayout is not EtwLayoutDefinition layout)
+            return CalcColumn(window).Width;
+
+        DockChild calc = CalcChild(layout);
+        return calc.Collapsed ? new GridLength(0) : AsGridLength(calc);
+    }
+
+    private static DockChild CalcChild(EtwLayoutDefinition layout)
+        => Assert.Single(((SplitNode)layout.Root).Children, child => child.Node is PaneNode { PaneId: PaneIds.Calc });
+
+    private static GridLength AsGridLength(DockChild child)
+        => new(child.Size, child.Unit == DockSizeUnit.Star ? GridUnitType.Star : GridUnitType.Pixel);
+
     internal static async Task WaitForResults(EditTextWindow window, string expected)
     {
         DateTime deadline = DateTime.UtcNow.AddSeconds(5);
@@ -323,7 +371,16 @@ public class CalcPaneCharacterizationTests
         DoEvents();
     }
 
-    private static T? FindByAutomationId<T>(DependencyObject root, string automationId) where T : DependencyObject
+    /// <summary>
+    /// The element with this AutomationId: by the visual tree first, which reaches into the pane
+    /// layout's AvalonDock containers, then by the logical tree, which reaches what is not laid out.
+    /// </summary>
+    private static T? FindByAutomationId<T>(EditTextWindow window, string automationId) where T : DependencyObject
+        => CalcPaneTests.VisualDescendants<T>(CalcPaneTests.WindowContent(window))
+            .FirstOrDefault(element => AutomationProperties.GetAutomationId(element) == automationId)
+            ?? FindByAutomationIdInLogicalTree<T>(window, automationId);
+
+    private static T? FindByAutomationIdInLogicalTree<T>(DependencyObject root, string automationId) where T : DependencyObject
     {
         foreach (object child in LogicalTreeHelper.GetChildren(root))
         {
@@ -333,7 +390,7 @@ public class CalcPaneCharacterizationTests
             if (element is T match && AutomationProperties.GetAutomationId(element) == automationId)
                 return match;
 
-            if (FindByAutomationId<T>(element, automationId) is T found)
+            if (FindByAutomationIdInLogicalTree<T>(element, automationId) is T found)
                 return found;
         }
 

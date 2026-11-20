@@ -24,10 +24,15 @@ public enum PaneDock
 /// The pane's width, or its height when docked at the top or bottom, in device-independent pixels.
 /// </param>
 /// <param name="ConfigType">The type the pane's layout config reads into, if it has one.</param>
+/// <param name="MinSize">
+/// The narrowest (or, docked at the top or bottom, shortest) the pane can be made, in device-independent
+/// pixels. The pane host keeps it at least this size.
+/// </param>
 public sealed record PaneDescriptor(
     string Id,
     string Title,
     string IconKey,
     PaneDock DefaultDock,
     double DefaultSize,
-    Type? ConfigType = null);
+    Type? ConfigType = null,
+    double MinSize = 0);

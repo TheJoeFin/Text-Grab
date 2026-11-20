@@ -14,6 +14,7 @@ public class ThirdPartyNoticeUtilitiesTests
             "BenchmarkDotNet",
             "CliWrap",
             "Dapplo.Windows.User32",
+            "Dirkster.AvalonDock",
             "Humanizer.Core",
             "Magick.NET-Q16-AnyCPU",
             "Magick.NET.SystemDrawing",

@@ -114,9 +114,12 @@ Requires E3 `calc` merged. Does **not** require E2 or the other E3 clusters.
 ### Intentional differences (setting on)
 
 - **The splitter double-click is gone.** Today it toggles the calc pane between a 50/50 split and closed. D1 allows dropping it; say so in the release notes.
-- **The calc pane's shadow** (`CalcPaneShadow`): rebuild it inside the calc pane's view or drop it, and record which.
-- **AvalonDock's container elements** appear in the UI Automation tree; the parity test lists them.
-- Add any others found during the run here, each with its reason.
+- **The calc pane's shadow** (`CalcPaneShadow`): rebuilt, in the pane host's anchorable template (`PaneHostResources.xaml`), at the left edge of the pane's content. It now starts right of the resize bar instead of under it.
+- **AvalonDock's container elements** appear in the UI Automation tree: each pane's container, a TabControl that UI Automation reports as a `Tab`, wraps the pane's own elements, and a hidden calc pane leaves an empty, zero-width `Tab`. No tab items, title bars or buttons appear. The parity test (`UiTests/Suites/EditTextUiaParity.psm1`) unwraps these and fails on anything else.
+- **The resize bar is AvalonDock's, beside the calc pane.** It keeps the old splitter's AutomationId (`TextBoxSplitter`) but is a `LayoutGridResizerControl`. It is a 5 px column of its own between the editor and the pane, where the old splitter was drawn over the pane's left edge inside the pane's width, so at the same calc width the editor area is 5 px narrower. In the UI Automation tree and the Tab order it now comes between the editor and the pane (where it is on screen) instead of after the pane's buttons. It stays a Tab stop, and arrow keys move it 10 px, as the GridSplitter's keyboard resizing did. Dragging shows AvalonDock's ghost bar (a short-lived top-level window) and applies on release, like the old splitter's `ShowsPreview`.
+- **A hidden calc pane is out of the UI Automation tree and the Tab order.** The hand-written grid left its Copy All and Info buttons in a column 0 wide: still in the tree and still Tab stops (Ctrl+Tab from the editor reached them), though not visible. With the pane layout, AvalonDock takes a hidden anchorable's content out of the visual tree.
+- **A layout without the calc pane** (in 4.17 only through `--layout`, a link or a history item, since Classic has it) disables the calc toggle button and the Show calculations pane item, and Ctrl+P does nothing.
+- **Not a difference, on purpose:** a new window opens the calc pane at Classic's 200 px. The hand-written window does the same in practice: it reads `CalcPaneWidth` but opens at the column's XAML width (pinned by `CalcPaneCharacterizationTests.NewWindow_OpensThePaneAtTheXamlColumnWidthNotTheSavedWidth`). Honoring `CalcPaneWidth` instead, as step 8 could be read, would open the pane at 400 px (the setting's default) for anyone who has never resized it. See *After the E4a run*.
 
 ### Out of scope
 

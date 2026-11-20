@@ -38,8 +38,9 @@ public partial class CalcPane : UserControl, IEditorPane
 {
     public const string PaneId = "textgrab.pane.calc";
 
+    // The minimum is the results box's MinWidth.
     public static readonly PaneDescriptor Definition = new(
-        PaneId, "Calculations", "Calculator24", PaneDock.Right, DefaultSize: 200);
+        PaneId, "Calculations", "Calculator24", PaneDock.Right, DefaultSize: 200, MinSize: 150);
 
     public static readonly DependencyProperty ResultsFontSizeProperty = DependencyProperty.Register(
         nameof(ResultsFontSize), typeof(double), typeof(CalcPane), new PropertyMetadata(16.0));
