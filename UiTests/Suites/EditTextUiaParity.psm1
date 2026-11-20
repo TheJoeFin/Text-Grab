@@ -21,10 +21,22 @@ Set-StrictMode -Version Latest
     realizes those as it lays out, and the editor area is 5 px narrower with the resize bar beside the calc
     pane rather than over it, so which empty cells near the edge have one varies. They carry no name.
 
+    Not compared, on either side: spreadsheet rows past row 10. The data grid virtualizes rows, and the
+    rows at the bottom edge of the viewport (row 12 and beyond here) are only sometimes realized with all of
+    their parts, e.g. the row header's PART_TopHeaderGripper, so the same window dumps differently from run to
+    run (it failed about half the runs on the hand-written window's parent commit too). Rows 1 to 10 are
+    fully inside the viewport and are compared in full, as is everything outside the data grid's rows.
+
+    The data grid's header resize grippers (the PART_Left/Right/Top/BottomHeaderGripper thumbs) are not
+    compared at all: they are realized lazily, and a column header's PART_RightHeaderGripper was also seen
+    missing mid-grid (column B), not only at the edge. They are template internals of the grid with no
+    AutomationId of ours; the headers, rows, cells and everything else are still compared.
+
     Anything else that differs fails the check.
 #>
 
 $script:CalcButtonIds = @('EditText.CalculatorCopyAllButton', 'EditText.CalculatorInfoButton')
+$script:LastComparedSpreadsheetRow = 10
 
 function ConvertFrom-UiaTreeLines {
     param([AllowEmptyCollection()][string[]]$Lines)
@@ -49,6 +61,12 @@ function ConvertTo-UiaTreeLines {
     foreach ($child in $Node.Children) {
         # An empty spreadsheet cell's unnamed text block (see the module's notes).
         if ($Node.Line -like '*(DataGridCell)' -and $child.Line -eq 'Text (TextBlock)') { continue }
+        # A virtualized row at the viewport's edge (see the module's notes).
+        # A data grid header's resize grippers (see the module's notes).
+        if ($child.Line -match '^Thumb #PART_(Left|Right|Top|Bottom)HeaderGripper \(Thumb\)$') { continue }
+        if ($child.Line -like '*(DataGridRow)' -and $child.Children.Count -gt 0 -and
+            $child.Children[0].Line -match '^HeaderItem "(\d+)" \(DataGridRowHeader\)$' -and
+            [int]$Matches[1] -gt $script:LastComparedSpreadsheetRow) { continue }
         ('  ' * $Level) + $child.Line
         ConvertTo-UiaTreeLines -Node $child -Level ($Level + 1)
     }
