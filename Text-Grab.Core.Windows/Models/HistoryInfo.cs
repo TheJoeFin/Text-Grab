@@ -77,6 +77,14 @@ public class HistoryInfo : IEquatable<HistoryInfo>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? EditTextTableDocumentJson { get; set; }
 
+    /// <summary>
+    /// The Edit Text Window layout the item was saved with (v5 E4a), or null for Classic. A plain string,
+    /// never an enum, and omitted when null: a build that does not know layouts ignores it, and a history
+    /// file written without layouts reads as Classic.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? LayoutId { get; set; }
+
     [JsonIgnore]
     public ILanguage OcrLanguage
     {

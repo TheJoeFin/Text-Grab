@@ -26,11 +26,16 @@ namespace Text_Grab;
 /// </summary>
 public partial class App : System.Windows.Application
 {
+    /// <param name="LayoutId">
+    /// The Edit Text Window layout <c>--layout &lt;id&gt;</c> asked for (v5 E4a), unvalidated: the layout
+    /// store refuses an ID that cannot be a layout's, and the window then says why.
+    /// </param>
     internal readonly record struct StartupArguments(
         bool IsQuiet,
         bool OpenInGrabFrame,
         string? PrimaryArgument,
-        string? GrabFramePath);
+        string? GrabFramePath,
+        string? LayoutId = null);
 
     #region Fields
 
@@ -299,6 +304,7 @@ public partial class App : System.Windows.Application
         bool openInGrabFrame = false;
         string? primaryArgument = null;
         string? grabFramePath = null;
+        string? layoutId = null;
 
         string[] startupArgs = [.. args];
         for (int index = 0; index < startupArgs.Length; index++)
@@ -308,6 +314,14 @@ public partial class App : System.Windows.Application
             {
                 if (string.Equals(arg, "--automation-profile", StringComparison.OrdinalIgnoreCase))
                     index++;
+
+                continue;
+            }
+
+            if (string.Equals(arg, "--layout", StringComparison.OrdinalIgnoreCase))
+            {
+                if (index + 1 < startupArgs.Length)
+                    layoutId = startupArgs[++index];
 
                 continue;
             }
@@ -341,7 +355,7 @@ public partial class App : System.Windows.Application
             }
         }
 
-        return new StartupArguments(isQuiet, openInGrabFrame, primaryArgument, grabFramePath);
+        return new StartupArguments(isQuiet, openInGrabFrame, primaryArgument, grabFramePath, layoutId);
     }
 
     private static async Task<bool> HandleStartupArgs(string[] args)
@@ -377,7 +391,14 @@ public partial class App : System.Windows.Application
         }
 
         if (string.IsNullOrWhiteSpace(startupArguments.PrimaryArgument))
-            return false;
+        {
+            // "--layout <id>" on its own opens an Edit Text Window in that layout.
+            if (string.IsNullOrWhiteSpace(startupArguments.LayoutId))
+                return false;
+
+            WindowUtilities.OpenNewEditTextWindow(startupArguments.LayoutId);
+            return true;
+        }
 
         string currentArgument = startupArguments.PrimaryArgument;
 
@@ -397,11 +418,11 @@ public partial class App : System.Windows.Application
 
         if (isStandardMode)
         {
-            LaunchStandardMode(launchMode);
+            LaunchStandardMode(launchMode, startupArguments.LayoutId);
             return true;
         }
 
-        bool openedFile = await TryToOpenFilePathAsync(currentArgument, startupArguments.IsQuiet);
+        bool openedFile = await TryToOpenFilePathAsync(currentArgument, startupArguments.IsQuiet, startupArguments.LayoutId);
         if (openedFile)
             return true;
 
@@ -433,6 +454,12 @@ public partial class App : System.Windows.Application
             case "edit-text":
                 {
                     EditTextWindow etw = new();
+
+                    // text-grab://edit-text?layout=<id> (v5 E4a). Any web page can open the link, so an ID
+                    // that cannot be a layout's is dropped here rather than shown back in a notice.
+                    if (ProtocolUtilities.TryGetLayoutId(parameters, out string layoutId))
+                        _ = etw.RequestLayoutAsync(layoutId);
+
                     try
                     {
                         string clipboardText = Clipboard.GetText();
@@ -526,12 +553,14 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private static void LaunchStandardMode(TextGrabMode launchMode)
+    private static void LaunchStandardMode(TextGrabMode launchMode, string? layoutId = null)
     {
         switch (launchMode)
         {
             case TextGrabMode.EditText:
                 EditTextWindow manipulateTextWindow = new();
+                if (!string.IsNullOrWhiteSpace(layoutId))
+                    _ = manipulateTextWindow.RequestLayoutAsync(layoutId);
                 manipulateTextWindow.Show();
                 break;
             case TextGrabMode.GrabFrame:
@@ -559,7 +588,8 @@ public partial class App : System.Windows.Application
         _defaultSettings.Save();
     }
 
-    public static async Task<bool> TryToOpenFilePathAsync(string possiblePath, bool isQuiet = false)
+    /// <param name="layoutId">The Edit Text Window layout to open a text file in (<c>--layout</c>), or null.</param>
+    public static async Task<bool> TryToOpenFilePathAsync(string possiblePath, bool isQuiet = false, string? layoutId = null)
     {
         if (!File.Exists(possiblePath))
             return false;
@@ -587,6 +617,8 @@ public partial class App : System.Windows.Application
         else
         {
             EditTextWindow manipulateTextWindow = new();
+            if (!string.IsNullOrWhiteSpace(layoutId))
+                _ = manipulateTextWindow.RequestLayoutAsync(layoutId);
             Task openTask = manipulateTextWindow.OpenPath(possiblePath);
             manipulateTextWindow.Show();
             manipulateTextWindow.Activate();

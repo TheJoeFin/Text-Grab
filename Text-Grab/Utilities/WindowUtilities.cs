@@ -440,12 +440,31 @@ public static partial class WindowUtilities
     }
 
     /// <summary>
+    /// Opens a new, empty Edit Text Window, in the layout <paramref name="layoutId"/> names (v5 E4a) or,
+    /// when it is null, the window's default. A layout that cannot be used leaves Classic, and the window
+    /// says why.
+    /// </summary>
+    internal static EditTextWindow OpenNewEditTextWindow(string? layoutId = null)
+    {
+        EditTextWindow newWindow = new();
+        if (!string.IsNullOrWhiteSpace(layoutId))
+            _ = newWindow.RequestLayoutAsync(layoutId);
+
+        newWindow.Show();
+        newWindow.Activate();
+        return newWindow;
+    }
+
+    /// <summary>
     /// Always opens a fresh Edit Text Window holding <paramref name="text"/>, optionally already
     /// in spreadsheet mode, regardless of whether other Edit Text Windows are open.
     /// </summary>
-    internal static EditTextWindow? OpenTextInNewEditTextWindow(string text, bool enterSpreadsheetMode = false)
+    /// <param name="layoutId">The layout to open in (v5 E4a), or null for the window's default.</param>
+    internal static EditTextWindow? OpenTextInNewEditTextWindow(string text, bool enterSpreadsheetMode = false, string? layoutId = null)
     {
         EditTextWindow newWindow = new(text, isEncoded: false);
+        if (!string.IsNullOrWhiteSpace(layoutId))
+            _ = newWindow.RequestLayoutAsync(layoutId);
 
         try
         {

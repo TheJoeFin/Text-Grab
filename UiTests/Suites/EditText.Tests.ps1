@@ -173,6 +173,61 @@ Register-UiTest -Suite 'EditText' -Name 'pane-layout-editor-area-matches-the-han
     }
 }
 
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-a-layout-file-in-the-store-opens-with-the-layout-argument' -Script {
+    param($Context)
+
+    # v5 E4a "Done when": a second layout file dropped in the store opens with --layout. This one puts the
+    # calc pane on the editor's left, which Classic never does.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-store' -Settings @{ EtwPaneLayout = 'On' }
+    $layouts = Join-Path $profile 'data\layouts'
+    New-Item -ItemType Directory -Path $layouts -Force | Out-Null
+    @'
+{
+  "schemaVersion": "1.0",
+  "id": "calc-left",
+  "name": "Calc on the left",
+  "root": {
+    "type": "split",
+    "orientation": "horizontal",
+    "children": [
+      { "node": { "type": "pane", "paneId": "textgrab.pane.calc" }, "size": 220, "unit": "pixel" },
+      { "node": { "type": "pane", "paneId": "textgrab.pane.editor" }, "size": 1, "unit": "star" }
+    ]
+  }
+}
+'@ | Set-Content -LiteralPath (Join-Path $layouts 'calc-left.json') -Encoding utf8
+
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'calc-left') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+
+    $results = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.CalculatorResults', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    $editor = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.Editor', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    if ([int]$results.x -ge [int]$editor.x) {
+        throw "With --layout calc-left the calc results should be left of the editor; results x=$($results.x), editor x=$($editor.x)."
+    }
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-an-unknown-layout-opens-classic-and-says-why' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-unknown' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'no-such-layout') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestDiagnosticEvent -Path (Join-Path $profile 'diagnostics\events.jsonl') -EventName 'layout-notice' -TimeoutSeconds $Context.TimeoutSeconds
+    $notice = Get-Content -LiteralPath (Join-Path $profile 'diagnostics\events.jsonl') | ForEach-Object { $_ | ConvertFrom-Json } |
+        Where-Object eventName -eq 'layout-notice' | Select-Object -First 1
+    if ([string]$notice.details.notice -notlike '*no-such-layout*Classic*') {
+        throw "The notice should name the layout and say Classic opened instead; it was '$($notice.details.notice)'."
+    }
+
+    # Classic: the calc pane still opens, to the editor's right.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+}
+
 Register-UiTest -Suite 'EditText' -Name 'hand-written-grid-calculator-pane-still-opens' -Script {
     param($Context)
 

@@ -1,6 +1,10 @@
+using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +28,18 @@ public partial class EditTextWindow
 
     /// <summary>Whether this window renders its editor area from a layout. Fixed when the window is made.</summary>
     private readonly bool usesPaneLayout = PaneLayoutOverride ?? PaneLayoutSetting.IsOn(AppUtilities.TextGrabSettings.EtwPaneLayout);
+
+    /// <summary>The layout a caller asked for (<c>--layout</c>, a link, code), or null.</summary>
+    private string? requestedLayoutId;
+
+    /// <summary>The layout the history item this window reopened was saved with, or null.</summary>
+    private string? historyLayoutId;
+
+    /// <summary>Counts layout resolutions, so that only the latest one applies.</summary>
+    private int layoutResolution;
+
+    /// <summary>Why a layout could not be used, waiting for the window to be shown.</summary>
+    private string? pendingLayoutNotice;
 
     /// <summary>
     /// The window's pane host, when <see cref="usesPaneLayout"/>; otherwise null and never made. Held as
@@ -115,6 +131,117 @@ public partial class EditTextWindow
 
     private static bool IsKnownPane(string paneId)
         => AppServices.Provider.GetServices<IEditorPaneFactory>().Any(factory => factory.Descriptor.Id == paneId);
+
+    /// <summary>
+    /// Opens this window in the layout with this ID: what <c>--layout</c>, <c>text-grab://edit-text?layout=</c>
+    /// and <see cref="WindowUtilities"/> use. A layout that cannot be used leaves Classic, and the window
+    /// says why once it is shown. Completes when the layout is applied.
+    /// </summary>
+    internal Task RequestLayoutAsync(string? layoutId)
+    {
+        requestedLayoutId = string.IsNullOrWhiteSpace(layoutId) ? null : layoutId.Trim();
+        return ResolveLayoutAsync();
+    }
+
+    /// <summary>Remembers the layout a history item was saved with and applies it.</summary>
+    private void UseHistoryLayout(string? layoutId)
+    {
+        historyLayoutId = string.IsNullOrWhiteSpace(layoutId) ? null : layoutId;
+        if (historyLayoutId is not null)
+            _ = ResolveLayoutAsync();
+    }
+
+    /// <summary>
+    /// A file opened into a window that was given no layout takes its file type's built-in layout, if it
+    /// has one (<see cref="LayoutFileTypeDefaults"/>, empty in E4a).
+    /// </summary>
+    private void UseFileTypeLayout(string filePath)
+    {
+        if (requestedLayoutId is null && historyLayoutId is null && LayoutFileTypeDefaults.LayoutIdFor(filePath) is not null)
+            _ = ResolveLayoutAsync();
+    }
+
+    /// <summary>The layout to save with this window's history item: null for Classic.</summary>
+    private string? LayoutIdToSave()
+    {
+        // With the pane layout off, an item reopened from history keeps the layout it was saved with.
+        if (paneLayout is null)
+            return historyLayoutId;
+
+        return LayoutId == LayoutIds.Classic ? null : LayoutId;
+    }
+
+    /// <summary>
+    /// Chooses this window's layout (decision D5: the caller's, the history item's, the file type's,
+    /// then Classic) and shows it. Only the latest call applies.
+    /// </summary>
+    private async Task ResolveLayoutAsync()
+    {
+        int resolution = ++layoutResolution;
+        LayoutRequest request = new(requestedLayoutId, historyLayoutId, OpenedFilePath);
+
+        if (paneLayout is null)
+        {
+            if (requestedLayoutId is not null && requestedLayoutId != LayoutIds.Classic)
+                ShowLayoutNotice($"The layout \"{requestedLayoutId}\" needs the new pane layout, which is turned off in Settings > Edit Text. Text Grab opened the previous editor instead.");
+            return;
+        }
+
+        ResolvedLayout resolved;
+        try
+        {
+            resolved = await new LayoutResolver(AppServices.Provider.GetRequiredService<ILayoutStore>(), IsKnownPane).ResolveAsync(request);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            resolved = new ResolvedLayout(BuiltInLayouts.Classic, $"The layout could not be loaded: {ex.Message} Text Grab opened the Classic layout instead.");
+        }
+
+        if (resolution != layoutResolution || _isClosed)
+            return;
+
+        string? notice = resolved.Notice;
+        if (resolved.Layout.Id != LayoutId && ApplyLayout(resolved.Layout) is string problem)
+            notice ??= $"{problem} Text Grab kept the {LayoutId} layout.";
+
+        if (notice is not null)
+            ShowLayoutNotice(notice);
+    }
+
+    /// <summary>
+    /// Says why a layout could not be used: logged for diagnostics and UI tests at once, and shown to the
+    /// person once the window is on screen, never while it is being made.
+    /// </summary>
+    private void ShowLayoutNotice(string notice)
+    {
+        Debug.WriteLine($"Layout notice: {notice}");
+        AutomationDiagnostics.Record("layout-notice", new { notice });
+
+        if (!IsLoaded)
+        {
+            pendingLayoutNotice = notice;
+            return;
+        }
+
+        // Not modal: the window behind it works as it would have in Classic.
+        _ = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "Layout not available",
+            Content = notice,
+            CloseButtonText = "OK",
+            Owner = this,
+        }.ShowDialogAsync(showAsDialog: false);
+    }
+
+    /// <summary>Shows the notice a layout left while the window was being made. Called from <c>Window_Loaded</c>.</summary>
+    private void ShowPendingLayoutNotice()
+    {
+        if (pendingLayoutNotice is not string notice)
+            return;
+
+        pendingLayoutNotice = null;
+        Dispatcher.BeginInvoke(() => ShowLayoutNotice(notice), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
 
     // The one place the window names LayoutRenderer, kept out of line so that compiling any other method
     // never loads it (and with it AvalonDock).

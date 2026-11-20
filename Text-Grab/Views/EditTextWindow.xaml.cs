@@ -206,6 +206,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
             RestoreCalcPaneWidth(widthToRestore);
         }
+
+        UseHistoryLayout(historyInfo.LayoutId);
     }
 
     #endregion Constructors
@@ -553,7 +555,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             EditorMode = editorMode,
             // Plain text is saved as "", not null, so restoring keeps it rather than detecting a language.
             CodeLanguage = editorMode == EtwEditorMode.Code && isCodeLanguageSet ? codeLanguageName ?? string.Empty : null,
-            EditTextTableDocumentJson = tableDocument?.SerializeToJson()
+            EditTextTableDocumentJson = tableDocument?.SerializeToJson(),
+            LayoutId = LayoutIdToSave(),
         };
 
         if (string.IsNullOrWhiteSpace(historyId))
@@ -2338,6 +2341,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // A history item's text is already in place; once the editor has laid out, offer to resume it.
         if (!string.IsNullOrEmpty(historyId))
             _ = Dispatcher.BeginInvoke(ShowResumeReadingBookmarkIfNeeded, DispatcherPriority.ApplicationIdle);
+
+        ShowPendingLayoutNotice();
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)

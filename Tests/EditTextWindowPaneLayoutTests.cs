@@ -321,6 +321,81 @@ public class EditTextWindowPaneLayoutTests
     private static LayoutAnchorablePane AnchorablePane(EditTextWindow window)
         => Assert.Single(LayoutElements(PaneHost(window)!.Layout).OfType<LayoutAnchorablePane>());
 
+    // ---- History and requested layouts (steps 10-11) ----
+
+    [WpfFact]
+    public void History_AClassicWindowSavesNoLayout()
+    {
+        using IDisposable _ = UsePaneLayout();
+        EditTextWindow window = CreateWindow("1 + 1");
+
+        Assert.Null(window.AsHistoryItem().LayoutId);
+    }
+
+    [WpfFact]
+    public void History_ALayoutTheWindowShowsIsSavedWithItsItem()
+    {
+        using IDisposable _ = UsePaneLayout();
+        EditTextWindow window = CreateWindow("1 + 1");
+
+        Assert.Null(window.ApplyLayout(new EtwLayoutDefinition("1.0", "bare", "Bare", new PaneNode(PaneIds.Editor))));
+
+        Assert.Equal("bare", window.AsHistoryItem().LayoutId);
+    }
+
+    [WpfFact]
+    public void History_AnItemsLayoutThatCannotBeHad_OpensClassicAndSaysWhyOnceShown()
+    {
+        using IDisposable _ = UsePaneLayout();
+
+        EditTextWindow window = new(new HistoryInfo { TextContent = "1 + 1", LayoutId = "not-a-saved-layout" });
+        LayOut(window);
+
+        Assert.Equal(LayoutIds.Classic, window.LayoutId);
+        Assert.Contains("not-a-saved-layout", PendingLayoutNotice(window));
+        Assert.NotNull(window.FindName("CalcPaneControl"));
+    }
+
+    [WpfFact]
+    public void History_WithThePaneLayoutOff_AnItemKeepsTheLayoutItWasSavedWith()
+    {
+        using IDisposable _ = UsePaneLayout(on: false);
+
+        EditTextWindow window = new(new HistoryInfo { TextContent = "1 + 1", LayoutId = "wide-calc" });
+
+        Assert.Equal("wide-calc", window.AsHistoryItem().LayoutId);
+        Assert.Null(PendingLayoutNotice(window));
+    }
+
+    [WpfFact]
+    public async Task RequestLayout_Classic_IsClassicWithNoNotice()
+    {
+        using IDisposable _ = UsePaneLayout();
+        EditTextWindow window = CreateWindow("1 + 1");
+
+        await window.RequestLayoutAsync(LayoutIds.Classic);
+
+        Assert.Equal(LayoutIds.Classic, window.LayoutId);
+        Assert.Null(PendingLayoutNotice(window));
+    }
+
+    [WpfFact]
+    public async Task RequestLayout_WithThePaneLayoutOff_SaysWhy()
+    {
+        using IDisposable _ = UsePaneLayout(on: false);
+        EditTextWindow window = CreateWindow("1 + 1");
+
+        await window.RequestLayoutAsync("wide-calc");
+
+        Assert.Contains("pane layout", PendingLayoutNotice(window));
+        Assert.Null(PaneHost(window));
+    }
+
+    private static string? PendingLayoutNotice(EditTextWindow window)
+        => (string?)typeof(EditTextWindow)
+            .GetField("pendingLayoutNotice", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(window);
+
     private static DockChild CalcChild(EditTextWindow window)
         => Assert.Single(((SplitNode)window.CurrentLayout!.Root).Children, child => child.Node is PaneNode { PaneId: PaneIds.Calc });
 

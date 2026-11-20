@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
 using Text_Grab.Core.Actions;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -96,9 +97,14 @@ internal static class AppServices
             return registry;
         });
 
-        // Edit Text Window panes (v5 E3), one factory per kind. The window still places the calc pane
-        // from its own XAML; the layout renderer (E4a) makes panes through these.
+        // Edit Text Window panes (v5 E3), one factory per kind. The window and its pane layout (E4a) make
+        // every pane through these, and only for panes the window shows.
         services.AddSingleton<IEditorPaneFactory, CalcPaneFactory>();
+
+        // Edit Text Window layouts (v5 E4a): the built-in ones and those saved as layouts/<id>.json. The
+        // folder is chosen when the store is first resolved, which is when a window is first asked for a
+        // layout by ID, by a history item or by its file's type.
+        services.AddSingleton<ILayoutStore>(static _ => new FileLayoutStore(FileLayoutStore.GetDefaultDirectory()));
     }
 
     /// <summary>

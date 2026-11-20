@@ -128,6 +128,21 @@ public class StartupTests
         Assert.Equal("Settings", startupArguments.PrimaryArgument);
     }
 
+    [Theory]
+    [InlineData(new[] { "--layout", "mermaid", "EditText" }, "mermaid", "EditText")]
+    [InlineData(new[] { "EditText", "--LAYOUT", "mermaid" }, "mermaid", "EditText")]
+    [InlineData(new[] { "--layout", "second" }, "second", null)]
+    [InlineData(new[] { "--automation-profile", @"C:\profile", "--layout", "second", "EditText" }, "second", "EditText")]
+    [InlineData(new[] { "EditText", "--layout" }, null, "EditText")]
+    [InlineData(new[] { "EditText" }, null, "EditText")]
+    public void ParseStartupArguments_ReadsTheLayoutWithoutTakingItAsThePrimaryArgument(string[] args, string? layoutId, string? primary)
+    {
+        App.StartupArguments startupArguments = App.ParseStartupArguments(args);
+
+        Assert.Equal(layoutId, startupArguments.LayoutId);
+        Assert.Equal(primary, startupArguments.PrimaryArgument);
+    }
+
     [Fact]
     public void ParseStartupArguments_FindsGrabFramePathCaseInsensitive()
     {

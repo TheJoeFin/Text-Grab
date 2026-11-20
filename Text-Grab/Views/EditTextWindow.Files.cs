@@ -280,6 +280,8 @@ public partial class EditTextWindow
             ResetSpreadsheetUndoHistory();
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
+            if (shouldTrackOpenedFile)
+                UseFileTypeLayout(pathOfFileToOpen);
 
             if (shouldTrackOpenedFile && windowWasBlank && DefaultSettings.EtwRememberFilePlacement
                 && FileWindowPlacementStore.GetBounds(pathOfFileToOpen) is string fileBounds
