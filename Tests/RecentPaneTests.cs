@@ -436,6 +436,27 @@ public class RecentPaneTests
         pane.Detach();
     }
 
+    [WpfFact]
+    public void TypingInTheSearchBox_NarrowsTheRowsAndTheEmptyTextSaysNoMatches()
+    {
+        EditTextWindow window = CreateWindow("x");
+        RecentPane pane = new(new ListRecentItemsSource(RecentItemsViewModelTests.Text("alpha note"), RecentItemsViewModelTests.Text("beta note", 1)));
+        pane.Attach(window.Session, config: null);
+        pane.Measure(new Size(260, 400));
+        pane.Arrange(new Rect(0, 0, 260, 400));
+        pane.UpdateLayout();
+        TextBox search = VisualDescendants<TextBox>(pane).First(box => System.Windows.Automation.AutomationProperties.GetAutomationId(box) == "EditText.Recent.Search");
+
+        search.Text = "zzz";
+        pane.UpdateLayout();
+
+        Assert.Equal("zzz", pane.ViewModel.Query);
+        Assert.Empty(pane.ViewModel.Items);
+        Assert.Equal(0, ItemsListOf(pane).Items.Count);
+        Assert.Equal(Visibility.Visible, VisualDescendants<TextBlock>(pane).First(t => System.Windows.Automation.AutomationProperties.GetAutomationId(t) == "EditText.Recent.EmptyText").Visibility);
+        pane.Detach();
+    }
+
     // ---- Which windows make it ----
 
     [WpfFact]

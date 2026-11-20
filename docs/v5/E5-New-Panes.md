@@ -51,7 +51,7 @@ A searchable list of recent Edit Text Window items, grabs and files. Activating 
 - **Config:** none to persist (`SaveConfig` is null; width and shown state are the host's). The search text is not kept.
 - **CommunityToolkit.Mvvm 8.4.0**, not 8.4.2: 8.4.1+ require `Microsoft.Windows.SDK.NET.Ref` 10.0.22621.56 and the projects pin .48. Partial-property generation needs LangVersion preview, so the view model uses `[ObservableProperty]` fields with MVVMTK0045 (WinRT only) disabled in that file.
 - **Tests** replace history for the whole assembly (`FakeRecentItemsSource`, an `AsyncLocal` list set by a module initializer), so no test reads a person's history.
-- **Not verified:** the new UI tests (`recent-pane-*` in `EditText.Tests.ps1`, helper `Set-DeterministicTextHistory`) were written but the UI run was stopped by low system memory, so they have never run. Also unchecked by hand: both themes, keyboard-only use, touch.
+- **UI tests** (`recent-pane-*` in `EditText.Tests.ps1`, helper `Set-DeterministicTextHistory`) pass: full UI command 27 pass, 0 fail, 9 skip. Two test bugs were found on the first run: the helper wrote a doubly nested JSON array (the app read it as empty history), and the tests needed the window in front. A row's `AutomationId` (`EditText.Recent.Item`, set in the item style) does not reach UI Automation; rows are list items named `Edit Text: <text>`, and `EditText.Recent.Item` only matches the list by prefix. Tests select rows by name. Unchecked by hand: both themes, keyboard-only use, touch.
 
 ## `folder-tree` — Folder tree
 
@@ -138,7 +138,7 @@ The pane is registered, ships with a layout, has tests, and appears in the phase
 
 | Pane | Ships in | Status |
 |---|---|---|
-| `recent` | 4.17.0-beta2 | Done (191b7f4); UI tests in 9458b43 not yet run |
+| `recent` | 4.17.0-beta2 | Done (191b7f4) |
 | `folder-tree` | 4.17.0-beta2 if the rest lands smoothly, otherwise 4.18 | Not started |
 | `mermaid` | 4.17.0-beta2 | Not started |
 | `markdown-preview` | 4.17.0-beta2 | Not started |

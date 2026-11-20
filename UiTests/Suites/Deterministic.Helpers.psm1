@@ -162,7 +162,8 @@ function Set-DeterministicTextHistory {
             EditorMode = 'Text'
         }
     }
-    ConvertTo-Json -InputObject @($items) -Depth 4 -AsArray | Set-Content -LiteralPath (Join-Path $history 'HistoryTextOnly.json') -Encoding utf8
+    # Piped, so each item is one element; -InputObject with an array wraps it in a second array.
+    @($items) | ConvertTo-Json -Depth 4 -AsArray | Set-Content -LiteralPath (Join-Path $history 'HistoryTextOnly.json') -Encoding utf8
 }
 
 function Assert-DeterministicAutomationHealthy {
