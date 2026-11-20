@@ -257,6 +257,20 @@ function Open-DeterministicMenu {
     Wait-UiTestElement -Target $Target -AutomationId $ChildAutomationId -TimeoutSeconds $Context.TimeoutSeconds
 }
 
+function Open-DeterministicPickerSubmenu {
+    param(
+        [Parameter(Mandatory)]$Target,
+        [Parameter(Mandatory)]$Context,
+        [Parameter(Mandatory)][string]$SubmenuAutomationId,
+        [Parameter(Mandatory)][string]$ChildName
+    )
+
+    # Layouts and Panes are submenus of the Window menu. Their dynamic items reach UI Automation by name only.
+    Open-DeterministicMenu -Target $Target -MenuAutomationId 'EditText.Menu.Window' -ChildAutomationId $SubmenuAutomationId -Context $Context
+    Click-UiTestElement -Target $Target -AutomationId $SubmenuAutomationId
+    Wait-UiTestElement -Target $Target -AutomationId $ChildName -TimeoutSeconds $Context.TimeoutSeconds
+}
+
 function Set-DeterministicInteractiveValue {
     param(
         [Parameter(Mandatory)]$Target,
@@ -284,5 +298,6 @@ Export-ModuleMember -Function @(
     'Assert-DeterministicLeftOf',
     'Assert-DeterministicAutomationHealthy',
     'Open-DeterministicMenu',
+    'Open-DeterministicPickerSubmenu',
     'Set-DeterministicInteractiveValue'
 )

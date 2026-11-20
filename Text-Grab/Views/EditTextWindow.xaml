@@ -875,6 +875,7 @@
                 </MenuItem>
                 <MenuItem
                     x:Name="WindowMenuItem"
+                    AutomationProperties.AutomationId="EditText.Menu.Window"
                     Header="_Window"
                     SubmenuOpened="WindowMenuItem_SubmenuOpened">
                     <MenuItem

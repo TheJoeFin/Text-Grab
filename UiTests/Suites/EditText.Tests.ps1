@@ -514,3 +514,118 @@ Register-UiTest -Suite 'EditText' -Name 'markdown-preview-an-md-file-without-a-l
 Register-UiTest -Suite 'EditText' -Name 'clipboard-watcher-remains-system-integration-only' -SkipReason 'Clipboard watcher behavior depends on an external clipboard change and is owned by the system-integration suite.' -Script {
     param($Context)
 }
+
+# ---- v5 E6 picker: the Layouts and Panes submenus of the Window menu ----
+
+Register-UiTest -Suite 'EditText' -Name 'layouts-menu-lists-the-built-in-layouts-and-choosing-explorer-shows-the-recent-pane' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-explorer' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Picker seeded note')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Classic'
+    foreach ($name in @('Explorer', 'Markdown preview', 'Mermaid')) {
+        Wait-UiTestElement -Target $editText -AutomationId $name -TimeoutSeconds $Context.TimeoutSeconds
+    }
+    Invoke-UiTestElement -Target $editText -AutomationId 'Explorer'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: Picker seeded note' -TimeoutSeconds $Context.TimeoutSeconds
+
+    # And back: the recent pane leaves, and the editor still works.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Classic'
+    Invoke-UiTestElement -Target $editText -AutomationId 'Classic'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value 'still typing'
+    Assert-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Expected 'still typing'
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'panes-menu-hides-and-shows-calc-and-agrees-with-the-calc-toggle-button' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-panes' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+
+    # Panes > Calculations shows the pane. The Panes items exist before the menu opens, so their IDs reach UI Automation.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.calc'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.calc'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+
+    # The toolbar button hides it; the menu, which reads the layout as it opens, must then offer to show it.
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.calc'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.calc'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+
+    # And the menu hides what the button showed.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.calc'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.calc'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'save-current-layout-as-puts-a-layout-in-the-store-lists-it-and-opens-with-the-layout-argument' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-save' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+
+    # Arrange the window: the recent pane beside the editor, which Classic never has.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.recent'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.recent'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Classic'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Layouts.SaveAs'
+    $dialog = Wait-UiTestDialog -ProcessId $editText.ProcessId -Title 'Save current layout as' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $dialog -AutomationId 'EditText.LayoutName' -Value 'Ui Saved'
+    Invoke-UiTestElement -Target $dialog -AutomationId 'Save'
+
+    $saved = Join-Path $profile 'data\layouts\ui-saved.json'
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Context.TimeoutSeconds)
+    while (-not (Test-Path -LiteralPath $saved) -and [DateTimeOffset]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
+    Assert-UiTestFile -Path $saved
+    $json = Get-Content -LiteralPath $saved -Raw | ConvertFrom-Json
+    if ($json.name -ne 'Ui Saved' -or $json.basedOn -ne 'classic') {
+        throw "The saved layout should be named 'Ui Saved' and based on classic; it was '$($json.name)' / '$($json.basedOn)'."
+    }
+
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Ui Saved'
+
+    # The saved file opens in a window of its own, here in a new profile so that no instance is shared.
+    $second = New-DeterministicSeedProfile -Context $Context -Name 'picker-save-open' -Settings @{ EtwPaneLayout = 'On' }
+    $layouts = Join-Path $second 'data\layouts'
+    New-Item -ItemType Directory -Path $layouts -Force | Out-Null
+    Copy-Item -LiteralPath $saved -Destination (Join-Path $layouts 'ui-saved.json')
+    $reopened = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'ui-saved') -WindowTitle 'Edit Text' -ProfileDirectory $second
+    Wait-UiTestElement -Target $reopened -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $second 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'a-user-who-never-opens-the-layouts-or-panes-menus-sees-the-classic-window' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-untouched' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Not shown in Classic')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    # No notice, no layout folder: nothing was resolved from or written to the store.
+    $events = Join-Path $profile 'diagnostics\events.jsonl'
+    if ((Test-Path -LiteralPath $events) -and (Get-Content -LiteralPath $events | Select-String -SimpleMatch 'layout-notice')) {
+        throw 'A window that was never asked for a layout recorded a layout notice.'
+    }
+    if (Test-Path -LiteralPath (Join-Path $profile 'data\layouts')) {
+        throw 'A window that never opened the Layouts menu created the layout store folder.'
+    }
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}

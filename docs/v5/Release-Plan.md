@@ -83,7 +83,7 @@ The plan as first written could not ship a pane before converting every command 
 | 3 | E5 `recent` | #2; D4 | Sonnet | Closes #592. Adds `CommunityToolkit.Mvvm` (D4). |
 | 4 | E5 `mermaid` | #2; D4 | Sonnet | The building blocks are all on `dev`. Adds the `.mmd` and `.mermaid` entries to the built-in file-type map. **Done (b6cf46e)**, no new packages; it also decided how a layout's `DefaultMode` meets `OpenPath` and made a window render its built-in layout first (see E5 *After the `mermaid` run*). |
 | 5 | E5 `markdown-preview` | #2; D4 | Sonnet | Source side in Code mode with Markdown highlighting. **Done (see E5 *After the `markdown-preview` run*)**, no new packages; reachable only by `--layout markdown-preview`, a link or history (`.md` is not in the file-type map). |
-| 6 | E6 `picker` | #2 | Sonnet | Layouts menu, Panes toggles, "Save current layout as…". |
+| 6 | E6 `picker` | #2 | Sonnet | Layouts menu, Panes toggles, "Save current layout as…". **Done (see E6 *After the `picker` run*)**, no new packages; the submenus are in the Window menu. |
 | 7 | E5 `folder-tree` | #2; D4 | Sonnet | **Conditional.** Start it only once #1–#6 are merged with every gate green and no open pane regression; decide when #6 merges. Otherwise it moves to 4.18. In 4.17 it calls the window's folder OCR directly, because the `files` controller it should reuse is extracted in 4.18. |
 
 **Decisions** (all `Confirmed` on 2026-11-19; the README has the full text):
@@ -155,7 +155,7 @@ Decisions due before 5.0-beta1: **D2** (ribbon), **D3** (range highlighting — 
 | E5 `recent` | In progress (`recent` done, 191b7f4; `mermaid` done, b6cf46e; `markdown-preview` done) | 4.17.0-beta2 |
 | E5 `mermaid` | Done (b6cf46e) | 4.17.0-beta2 |
 | E5 `markdown-preview` | Done (see E5 notes) | 4.17.0-beta2 |
-| E6 `picker` | Not started | 4.17.0-beta2 |
+| E6 `picker` | Done (see E6 notes) | 4.17.0-beta2 |
 | E5 `folder-tree` | Not started | 4.17.0-beta2 if #1–#6 land smoothly, otherwise 4.18 |
 | E2 | Not started | 4.18 |
 | E3, other clusters | Not started | 4.18 |

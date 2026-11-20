@@ -45,6 +45,9 @@ public partial class EditTextWindow
     {
         LayoutsMenuItem.Visibility = Visibility.Visible;
         PanesMenuItem.Visibility = Visibility.Visible;
+
+        // A submenu with no items does not open, so it would never raise SubmenuOpened to be filled.
+        LoadPaneMenuItems();
     }
 
     // ---- The menus ----
@@ -126,7 +129,18 @@ public partial class EditTextWindow
         if (paneLayout is null)
             return;
 
-        PanesMenuItem.Items.Clear();
+        // Made once; after that only which items are checked changes, as the layout does.
+        if (PanesMenuItem.Items.Count > 0)
+        {
+            foreach (MenuItem existing in PanesMenuItem.Items.OfType<MenuItem>())
+            {
+                if (existing.Tag is string existingPaneId)
+                    existing.IsChecked = paneLayout.IsPaneVisible(existingPaneId);
+            }
+
+            return;
+        }
+
         foreach (PaneDescriptor descriptor in AppServices.Provider.GetServices<IEditorPaneFactory>()
             .Select(factory => factory.Descriptor)
             .OrderBy(descriptor => descriptor.Title, StringComparer.CurrentCultureIgnoreCase))
@@ -136,7 +150,7 @@ public partial class EditTextWindow
                 Header = descriptor.Title.Replace("_", "__", StringComparison.Ordinal),
                 IsCheckable = true,
                 IsChecked = paneLayout.IsPaneVisible(descriptor.Id),
-                Tag = PickerItemMarker,
+                Tag = descriptor.Id,
             };
             System.Windows.Automation.AutomationProperties.SetAutomationId(item, $"EditText.Menu.Panes.{descriptor.Id[(descriptor.Id.LastIndexOf('.') + 1)..]}");
             string paneId = descriptor.Id;
