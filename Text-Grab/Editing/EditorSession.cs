@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using Text_Grab.Core.Editing;
 using Text_Grab.Models;
 
@@ -31,24 +33,38 @@ internal sealed class EditorSession : IEditorSession
     private readonly IEditorSurface spreadsheetSurface;
     private readonly IEditorSurface codeSurface;
     private readonly Func<EtwEditorMode> getMode;
+    private readonly Func<CultureInfo> getCulture;
+    private readonly Func<IReadOnlyList<double>?> getSelectedCellNumbers;
     private bool isSyncingTextFromSpreadsheet = false;
     private bool isSyncingTextFromMarkdown = false;
     private bool isSyncingTextFromCode = false;
 
+    /// <param name="getCulture">The window's chosen culture; the current culture when null.</param>
+    /// <param name="getSelectedCellNumbers">
+    /// The selected spreadsheet cells' numbers, as <see cref="IEditorSession.SelectedCellNumbers"/>
+    /// describes them; always null when null.
+    /// </param>
     public EditorSession(
         TextBoxSurface textSurface,
         IEditorSurface markdownSurface,
         IEditorSurface spreadsheetSurface,
         IEditorSurface codeSurface,
-        Func<EtwEditorMode> getMode)
+        Func<EtwEditorMode> getMode,
+        Func<CultureInfo>? getCulture = null,
+        Func<IReadOnlyList<double>?>? getSelectedCellNumbers = null)
     {
         this.textSurface = textSurface;
         this.markdownSurface = markdownSurface;
         this.spreadsheetSurface = spreadsheetSurface;
         this.codeSurface = codeSurface;
         this.getMode = getMode;
+        this.getCulture = getCulture ?? (static () => CultureInfo.CurrentCulture);
+        this.getSelectedCellNumbers = getSelectedCellNumbers ?? (static () => null);
 
         textSurface.TextChanged += (_, _) => TextChanged?.Invoke(this, EventArgs.Empty);
+        textSurface.ViewportChanged += Surface_ViewportChanged;
+        if (codeSurface is ILineViewport codeViewport)
+            codeViewport.ViewportChanged += Surface_ViewportChanged;
     }
 
     public string Text
@@ -70,6 +86,18 @@ internal sealed class EditorSession : IEditorSession
     public event EventHandler? TextChanged;
 
     public event EventHandler? ModeChanged;
+
+    public CultureInfo Culture => getCulture();
+
+    public IReadOnlyList<double>? SelectedCellNumbers => getSelectedCellNumbers();
+
+    public event EventHandler? SelectedCellsChanged;
+
+    public double FirstVisibleLine => Viewport.FirstVisibleLine;
+
+    public event EventHandler? ViewportChanged;
+
+    public bool ScrollByWheel(int wheelDelta) => Viewport.ScrollByWheel(wheelDelta);
 
     public void ReplaceSelection(string replacement) => textSurface.ReplaceSelection(replacement);
 
@@ -106,6 +134,9 @@ internal sealed class EditorSession : IEditorSession
 
     /// <summary>Called by the window after it switches editors.</summary>
     internal void RaiseModeChanged() => ModeChanged?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Called by the window when the spreadsheet editor's selected cells change.</summary>
+    internal void RaiseSelectedCellsChanged() => SelectedCellsChanged?.Invoke(this, EventArgs.Empty);
 
     /// <summary>True while <see cref="Text"/> is being written from the spreadsheet editor.</summary>
     internal bool IsSyncingTextFromSpreadsheet => isSyncingTextFromSpreadsheet;
@@ -234,6 +265,19 @@ internal sealed class EditorSession : IEditorSession
     }
 
     private IEditorSurface ActiveSurface => SurfaceFor(Mode);
+
+    /// <summary>
+    /// The editor a view scrolling with the text follows: the visible one when it shows the text line
+    /// for line (text and code modes), otherwise the text box, which holds the text in every mode.
+    /// </summary>
+    private ILineViewport Viewport => ActiveSurface as ILineViewport ?? textSurface;
+
+    private void Surface_ViewportChanged(object? sender, EventArgs e)
+    {
+        // The hidden editor can report a change too (layout, a document load); only the followed one counts.
+        if (ReferenceEquals(sender, Viewport))
+            ViewportChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     private IEditorSurface SurfaceFor(EtwEditorMode mode) => mode switch
     {

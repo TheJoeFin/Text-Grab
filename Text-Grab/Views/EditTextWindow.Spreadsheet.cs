@@ -744,6 +744,8 @@ public partial class EditTextWindow
                 UpdateCalcPaneTextDisplay();
                 UpdateAggregateStatusDisplay();
             }
+
+            SessionImpl.RaiseSelectedCellsChanged();
         }
     }
 
@@ -1955,6 +1957,21 @@ public partial class EditTextWindow
 
         editor = FindVisualParent<System.Windows.Controls.TextBox>(focusedElement);
         return editor is not null;
+    }
+
+    /// <summary>
+    /// The numbers in the selected cells, for <see cref="Core.Editing.IEditorSession.SelectedCellNumbers"/>:
+    /// null outside spreadsheet mode or with no cells selected.
+    /// </summary>
+    private IReadOnlyList<double>? GetSelectedSpreadsheetCellNumbers()
+    {
+        if (editorMode != EtwEditorMode.Spreadsheet)
+            return null;
+
+        List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
+        return selectedCellCoordinates.Count == 0
+            ? null
+            : ExtractSpreadsheetSelectionNumbers(spreadsheetTable, selectedCellCoordinates);
     }
 
     private bool TryGetSpreadsheetSelectionNumbersPreviewText(out string previewText)

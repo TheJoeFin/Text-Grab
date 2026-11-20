@@ -245,7 +245,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 range => SelectInMarkdownEditor(range.Start, range.Length)),
             new SpreadsheetSurface(textSurface, GetSpreadsheetTextFromTable, RefreshSpreadsheetFromText),
             CodeSurfaceImpl,
-            () => editorMode);
+            () => editorMode,
+            () => selectedCultureInfo,
+            GetSelectedSpreadsheetCellNumbers);
         EditorModeChanged += (_, _) => session.RaiseModeChanged();
         return session;
     }
