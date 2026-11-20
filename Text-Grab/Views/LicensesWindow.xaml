@@ -131,6 +131,6 @@
             HorizontalAlignment="Right"
             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
             Style="{StaticResource TextBodyNormal}"
-            Text="The app and tests currently reference 26 direct NuGet packages." />
+            Text="{Binding Packages.Count, StringFormat='The app and tests currently reference {0} direct NuGet packages.'}" />
     </Grid>
 </ui:FluentWindow>
