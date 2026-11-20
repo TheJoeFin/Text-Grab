@@ -140,6 +140,31 @@ function New-DeterministicSeedProfile {
     return $profile
 }
 
+function Set-DeterministicTextHistory {
+    <#
+    .SYNOPSIS
+        Seeds the isolated profile's Edit Text history (what the recent items pane and the tray flyout list).
+        Texts are written newest first, a minute apart. Call before starting Text Grab with the profile.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ProfileDirectory,
+        [Parameter(Mandatory)][string[]]$Texts
+    )
+
+    $history = Join-Path $ProfileDirectory 'history'
+    New-Item -ItemType Directory -Path $history -Force | Out-Null
+    $now = [DateTimeOffset]::Now
+    $items = for ($i = 0; $i -lt $Texts.Count; $i++) {
+        [ordered]@{
+            ID = [guid]::NewGuid().ToString()
+            TextContent = $Texts[$i]
+            CaptureDateTime = $now.AddMinutes(-($i + 1)).ToString('o')
+            EditorMode = 'Text'
+        }
+    }
+    ConvertTo-Json -InputObject @($items) -Depth 4 -AsArray | Set-Content -LiteralPath (Join-Path $history 'HistoryTextOnly.json') -Encoding utf8
+}
+
 function Assert-DeterministicAutomationHealthy {
     param([Parameter(Mandatory)]$Context)
 
@@ -182,6 +207,7 @@ Export-ModuleMember -Function @(
     'Wait-FullscreenGrabDismissed',
     'New-DeterministicTarget',
     'New-DeterministicSeedProfile',
+    'Set-DeterministicTextHistory',
     'Assert-DeterministicAutomationHealthy',
     'Open-DeterministicMenu',
     'Set-DeterministicInteractiveValue'

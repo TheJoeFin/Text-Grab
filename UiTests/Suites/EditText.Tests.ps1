@@ -280,6 +280,72 @@ Register-UiTest -Suite 'EditText' -Name 'native-open-and-save-as-dialogs-use-ded
     }
 }
 
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-explorer-layout-lists-seeded-items-and-opens-one-with-enter' -Script {
+    param($Context)
+
+    # v5 E5 recent: the Explorer layout shows the recent items beside the editor; Enter in the search box opens the first.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-enter' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Recent pane seeded note')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'explorer') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Item' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.EmptyText' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    $recent = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.Recent.Items', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    $editor = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.Editor', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    if ([int]$recent.x -ge [int]$editor.x) {
+        throw "With --layout explorer the recent items should be left of the editor; recent x=$($recent.x), editor x=$($editor.x)."
+    }
+
+    Focus-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Search'
+    Send-UiTestKeys -Target $editText -AutomationId 'EditText.Recent.Search' -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'Recent pane seeded note' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-double-click-opens-an-item-in-the-blank-window' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-double-click' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Opened by a double-click')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'explorer') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Item' -TimeoutSeconds $Context.TimeoutSeconds
+    Click-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Item' -Double
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'Opened by a double-click' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-search-narrows-the-list-and-says-when-nothing-matches' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-search' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('alpha note', 'beta note')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'explorer') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Item' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Recent.Search' -Value 'zzz'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Item' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.EmptyText' -Value 'No matches' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Recent.Search' -Value 'beta'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Item' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.EmptyText' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-is-not-in-the-classic-layout' -Script {
+    param($Context)
+
+    # A window that never asks for a layout is the 4.16 window: no recent pane, and it never read history for one.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-classic' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Never shown in Classic')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Search' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
 Register-UiTest -Suite 'EditText' -Name 'clipboard-watcher-remains-system-integration-only' -SkipReason 'Clipboard watcher behavior depends on an external clipboard change and is owned by the system-integration suite.' -Script {
     param($Context)
 }
