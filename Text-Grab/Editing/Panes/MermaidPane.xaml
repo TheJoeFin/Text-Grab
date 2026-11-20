@@ -1,0 +1,167 @@
+<UserControl
+    x:Class="Text_Grab.Editing.Panes.MermaidPane"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Text_Grab.Controls"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <!--
+        Every brush and style here is a DynamicResource: the pane is made in windows that never see the
+        app's resource dictionaries (tests), where a StaticResource would throw.
+    -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel
+            Margin="8,6"
+            Orientation="Horizontal"
+            KeyboardNavigation.TabNavigation="Local">
+            <ui:Button
+                x:Name="OpenFullScreenButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.OpenFullScreen"
+                AutomationProperties.Name="Open the diagram full screen"
+                Click="OpenFullScreen_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Open full screen">
+                <ui:SymbolIcon Symbol="FullScreenMaximize24" />
+            </ui:Button>
+            <ui:Button
+                x:Name="ExportSvgButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.ExportSvg"
+                AutomationProperties.Name="Export the diagram as SVG"
+                Click="ExportSvg_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Export as SVG">
+                <ui:SymbolIcon Symbol="ArrowDownload24" />
+            </ui:Button>
+            <ui:Button
+                x:Name="ExportPngButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.ExportPng"
+                AutomationProperties.Name="Export the diagram as PNG"
+                Click="ExportPng_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Export as PNG">
+                <ui:SymbolIcon Symbol="Image24" />
+            </ui:Button>
+            <ui:Button
+                x:Name="CopyImageButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.CopyImage"
+                AutomationProperties.Name="Copy the diagram as an image"
+                Click="CopyImage_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Copy image">
+                <ui:SymbolIcon Symbol="ImageCopy24" />
+            </ui:Button>
+            <ui:Button
+                x:Name="ZoomInButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.ZoomIn"
+                AutomationProperties.Name="Zoom in"
+                Click="ZoomIn_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Zoom in">
+                <ui:SymbolIcon Symbol="ZoomIn24" />
+            </ui:Button>
+            <ui:Button
+                x:Name="ZoomOutButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.ZoomOut"
+                AutomationProperties.Name="Zoom out"
+                Click="ZoomOut_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Zoom out">
+                <ui:SymbolIcon Symbol="ZoomOut24" />
+            </ui:Button>
+            <ui:Button
+                x:Name="ResetZoomButton"
+                AutomationProperties.AutomationId="EditText.Mermaid.ResetZoom"
+                AutomationProperties.Name="Reset the zoom"
+                Click="ResetZoom_Click"
+                IsEnabled="{Binding HasDiagram}"
+                Margin="0,0,4,0"
+                Padding="8,5"
+                ToolTip="Reset zoom">
+                <ui:SymbolIcon Symbol="ArrowReset24" />
+            </ui:Button>
+            <TextBlock
+                Margin="6,0,0,0"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="Drawing..."
+                Visibility="{Binding IsRendering, Converter={StaticResource BoolToVisibility}}" />
+        </StackPanel>
+
+        <controls:ZoomBorder
+            x:Name="Zoom"
+            Grid.Row="1"
+            ClipToBounds="True"
+            ContextMenuOpening="Zoom_ContextMenuOpening">
+            <Image
+                x:Name="DiagramImage"
+                Margin="12"
+                AutomationProperties.AutomationId="EditText.Mermaid.Diagram"
+                AutomationProperties.HelpText="{Binding RenderedSourceSummary}"
+                AutomationProperties.Name="Mermaid diagram"
+                RenderOptions.BitmapScalingMode="HighQuality"
+                Source="{Binding DiagramImage}"
+                Stretch="Uniform"
+                StretchDirection="DownOnly"
+                Visibility="{Binding HasDiagram, Converter={StaticResource BoolToVisibility}}" />
+        </controls:ZoomBorder>
+
+        <TextBlock
+            x:Name="PlaceholderText"
+            Grid.Row="1"
+            Margin="16"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            AutomationProperties.AutomationId="EditText.Mermaid.Placeholder"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            IsHitTestVisible="False"
+            Text="{Binding PlaceholderText}"
+            TextAlignment="Center"
+            TextWrapping="Wrap">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasDiagram}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <Border
+            x:Name="ErrorStrip"
+            Grid.Row="2"
+            Padding="10,6"
+            Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+            Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock
+                AutomationProperties.AutomationId="EditText.Mermaid.Error"
+                AutomationProperties.LiveSetting="Polite"
+                AutomationProperties.Name="Diagram error"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Text="{Binding ErrorMessage}"
+                TextWrapping="Wrap" />
+        </Border>
+    </Grid>
+</UserControl>

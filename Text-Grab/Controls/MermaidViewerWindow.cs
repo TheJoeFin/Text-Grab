@@ -13,7 +13,7 @@ internal sealed class MermaidViewerWindow : Window
 {
     private readonly ZoomBorder zoomBorder;
 
-    internal MermaidViewerWindow(MermaidDiagram diagram)
+    internal MermaidViewerWindow(MermaidDiagram diagram, Window? owner = null)
     {
         bool light = diagram.IsLightTheme;
         Brush background = new SolidColorBrush(light ? Color.FromRgb(0xf5, 0xf5, 0xf5) : Color.FromRgb(0x20, 0x20, 0x24));
@@ -26,7 +26,7 @@ internal sealed class MermaidViewerWindow : Window
         Background = background;
 
         // Cover the owning window rather than the whole screen.
-        Window? owner = Window.GetWindow(diagram);
+        owner ??= Window.GetWindow(diagram);
         if (owner is not null)
         {
             WindowStartupLocation = WindowStartupLocation.Manual;

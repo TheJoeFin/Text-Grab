@@ -107,6 +107,18 @@ public class MermaidSourceTests
     }
 
     [Fact]
+    public void FindBlocks_ListsEveryBlockInOrder_AndFindFirstBlockTakesTheFirst()
+    {
+        IReadOnlyList<MermaidBlock> blocks = MermaidSource.FindBlocks(Document);
+
+        Assert.Equal(["flowchart LR\nA --> B", "sequenceDiagram\nAlice->>Bob: Hi"], blocks.Select(block => block.Source));
+        Assert.Equal(blocks[0], MermaidSource.FindFirstBlock(Document));
+        Assert.Empty(MermaidSource.FindBlocks("no fences at all"));
+        Assert.Null(MermaidSource.FindFirstBlock("no fences at all"));
+        Assert.Null(MermaidSource.FindFirstBlock(string.Empty));
+    }
+
+    [Fact]
     public void AnEmptyOrCaretlessDocumentHasNoBlock()
     {
         Assert.Null(MermaidSource.FindBlockAt(string.Empty, 0));

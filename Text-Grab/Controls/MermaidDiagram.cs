@@ -35,6 +35,27 @@ internal sealed class MermaidDiagram : Grid
     internal Task RenderCompletion { get; private set; }
 
     internal MermaidDiagram(string source)
+        : this(source, startRendering: true)
+    {
+    }
+
+    /// <summary>
+    /// A diagram that was already rendered elsewhere, such as the Edit Text Window's Mermaid pane (v5 E5),
+    /// which renders as the text changes. It is never put on screen: it carries the finished render so the
+    /// pane can reuse <see cref="Save"/>, <see cref="CreateContextMenu"/> and <see cref="OpenViewer"/>.
+    /// </summary>
+    internal MermaidDiagram(string source, BitmapSource bitmap, string svg, bool lightTheme)
+        : this(source, startRendering: false)
+    {
+        isLightTheme = lightTheme;
+        renderedSvg = svg;
+        image.Source = bitmap;
+        image.Visibility = Visibility.Visible;
+        fallback.Visibility = Visibility.Collapsed;
+        IsRendered = true;
+    }
+
+    private MermaidDiagram(string source, bool startRendering)
     {
         Source = source;
         image = new Image
@@ -61,7 +82,7 @@ internal sealed class MermaidDiagram : Grid
             e.Handled = true;
             OpenViewer();
         };
-        RenderCompletion = RenderAsync();
+        RenderCompletion = startRendering ? RenderAsync() : Task.CompletedTask;
         Unloaded += (_, _) => rendering?.Cancel();
         Loaded += (_, _) =>
         {
@@ -88,7 +109,7 @@ internal sealed class MermaidDiagram : Grid
     internal ContextMenu CreateContextMenu()
     {
         ContextMenu menu = new();
-        menu.Items.Add(CreateMenuItem("View full screen", OpenViewer, requiresImage: true));
+        menu.Items.Add(CreateMenuItem("View full screen", () => OpenViewer(), requiresImage: true));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateMenuItem("Save as text...", () => Save(MermaidSaveFormat.Text), requiresImage: false));
         menu.Items.Add(CreateMenuItem("Save as PNG...", () => Save(MermaidSaveFormat.Png), requiresImage: true));
@@ -114,12 +135,14 @@ internal sealed class MermaidDiagram : Grid
         private set => SetValue(IsRenderedProperty, value);
     }
 
-    internal void OpenViewer()
+    /// <param name="owner">The window the viewer covers; the one this diagram is in when null.</param>
+    internal void OpenViewer(Window? owner = null)
     {
         if (!HasRenderedImage)
             return;
 
-        MermaidViewerWindow viewer = new(this) { Owner = Window.GetWindow(this) };
+        owner ??= Window.GetWindow(this);
+        MermaidViewerWindow viewer = new(this, owner) { Owner = owner };
         viewer.ShowDialog();
     }
 

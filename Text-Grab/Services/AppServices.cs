@@ -95,6 +95,7 @@ internal static class AppServices
             CoreActions.RegisterAll(registry);
             WindowsActions.RegisterAll(registry);
             RecentPaneActions.RegisterAll(registry);
+            MermaidPaneActions.RegisterAll(registry);
             return registry;
         });
 
@@ -103,6 +104,7 @@ internal static class AppServices
         // them to look up a descriptor, so a factory must not make anything until Create is called.
         services.AddSingleton<IEditorPaneFactory, CalcPaneFactory>();
         services.AddSingleton<IEditorPaneFactory, RecentPaneFactory>();
+        services.AddSingleton<IEditorPaneFactory, MermaidPaneFactory>();
 
         // Edit Text Window layouts (v5 E4a): the built-in ones and those saved as layouts/<id>.json. The
         // folder is chosen when the store is first resolved, which is when a window is first asked for a

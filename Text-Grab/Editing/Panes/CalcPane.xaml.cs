@@ -55,6 +55,7 @@ public partial class CalcPane : UserControl, IEditorPane
     private enum AggregateType { None, Sum, Average, Count, Min, Max, Median, Product }
 
     private static int attachedCount;
+    private static int createdCount;
 
     private readonly CalculationService _calculationService = new();
     private IEditorSession? session;
@@ -65,6 +66,7 @@ public partial class CalcPane : UserControl, IEditorPane
 
     public CalcPane()
     {
+        Interlocked.Increment(ref createdCount);
         InitializeComponent();
     }
 
@@ -123,6 +125,13 @@ public partial class CalcPane : UserControl, IEditorPane
     /// exactly one, whichever way it places it.
     /// </summary>
     internal static int AttachedCount => Volatile.Read(ref attachedCount);
+
+    /// <summary>
+    /// How many calc panes have been made, attached or not, and with them their calculation services. Unlike
+    /// <see cref="AttachedCount"/>, a pane made and then detached still counts, so a test can tell that a
+    /// window never made one.
+    /// </summary>
+    internal static int CreatedCount => Volatile.Read(ref createdCount);
 
     /// <summary>The results' scroll viewer while the pointer is over the shown results, for horizontal wheel scrolling.</summary>
     internal ScrollViewer? ScrollViewerUnderMouse

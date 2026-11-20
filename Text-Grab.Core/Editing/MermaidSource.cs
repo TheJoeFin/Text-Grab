@@ -30,10 +30,26 @@ public static class MermaidSource
     /// </summary>
     public static MermaidBlock? FindBlockAt(string text, int caretOffset)
     {
-        if (string.IsNullOrEmpty(text))
-            return null;
-
         int caret = Math.Clamp(caretOffset, 0, text.Length);
+        foreach (MermaidBlock block in FindBlocks(text))
+        {
+            if (caret >= block.Block.Start && caret <= block.Block.End)
+                return block;
+        }
+
+        return null;
+    }
+
+    /// <summary>The first <c>mermaid</c> block in the text, or null.</summary>
+    public static MermaidBlock? FindFirstBlock(string text) => FindBlocks(text) is [MermaidBlock first, ..] ? first : null;
+
+    /// <summary>Every <c>mermaid</c> block in the text, in order.</summary>
+    public static IReadOnlyList<MermaidBlock> FindBlocks(string text)
+    {
+        List<MermaidBlock> blocks = [];
+        if (string.IsNullOrEmpty(text))
+            return blocks;
+
         int position = 0;
 
         while (position <= text.Length)
@@ -62,13 +78,11 @@ public static class MermaidSource
                 lines.Add(StripPrefix(line, prefixLength));
             }
 
-            if (caret >= position && caret <= blockEnd)
-                return new MermaidBlock(string.Join('\n', lines), new TextSpan(position, blockEnd - position));
-
+            blocks.Add(new MermaidBlock(string.Join('\n', lines), new TextSpan(position, blockEnd - position)));
             position = cursor;
         }
 
-        return null;
+        return blocks;
     }
 
     // The end of the line's content, and where the next line starts (past the text's end after the last line).

@@ -17,6 +17,7 @@ public class ActionIconKeyTests
         CoreActions.RegisterAll(registry);
         WindowsActions.RegisterAll(registry);
         RecentPaneActions.RegisterAll(registry);
+        MermaidPaneActions.RegisterAll(registry);
 
         foreach (ActionDescriptor descriptor in registry.All)
             Assert.True(
