@@ -128,6 +128,33 @@ public class CalcPaneTests
         Assert.Empty(pane.GetPaletteCommands());
     }
 
+    // ---- One pane per window (E4a: the pane is made by its factory, not declared in XAML) ----
+
+    [WpfFact]
+    public void Window_AttachesExactlyOneCalcPane()
+    {
+        int before = CalcPane.AttachedCount;
+
+        EditTextWindow window = CreateWindow("1 + 1");
+
+        Assert.Equal(before + 1, CalcPane.AttachedCount);
+        CalcPane shown = Assert.Single(VisualDescendants<CalcPane>(WindowContent(window)));
+        Assert.Same(Pane(window), shown);
+        Assert.Single(ResultsBoxes(window));
+    }
+
+    [WpfFact]
+    public async Task Window_OnlyItsOwnPaneEvaluates()
+    {
+        EditTextWindow window = CreateWindow("2 + 2");
+        InitializeCalcPane(window);
+        window.SetCalcPaneOpen(true);
+
+        await window.EvaluateCalcPaneAsync();
+
+        Assert.Equal(["4"], ResultsBoxes(window).Select(box => box.Text));
+    }
+
     // ---- Attach and Detach ----
 
     [WpfFact]
@@ -173,4 +200,25 @@ public class CalcPaneTests
     }
 
     private static CalcPane Pane(EditTextWindow window) => (CalcPane)window.FindName("CalcPaneControl");
+
+    /// <summary>The window's content: an unshown window applies no template of its own, so its visual tree starts here.</summary>
+    internal static DependencyObject WindowContent(EditTextWindow window) => (DependencyObject)window.Content;
+
+    /// <summary>Every calc results box in the window's visual tree.</summary>
+    internal static IEnumerable<TextBox> ResultsBoxes(EditTextWindow window)
+        => VisualDescendants<TextBox>(WindowContent(window))
+            .Where(box => System.Windows.Automation.AutomationProperties.GetAutomationId(box) == "EditText.CalculatorResults");
+
+    internal static IEnumerable<T> VisualDescendants<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            DependencyObject child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T match)
+                yield return match;
+
+            foreach (T descendant in VisualDescendants<T>(child))
+                yield return descendant;
+        }
+    }
 }

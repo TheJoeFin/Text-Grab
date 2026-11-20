@@ -973,7 +973,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Code && CodeEditorControl.Visibility == Visibility.Visible)
             return WindowUtilities.GetScrollViewer(CodeEditorControl);
 
-        if (CalcPaneControl.ScrollViewerUnderMouse is ScrollViewer calcScrollViewer)
+        if (calcPane?.ScrollViewerUnderMouse is ScrollViewer calcScrollViewer)
             return calcScrollViewer;
 
         return WindowUtilities.GetScrollViewer(PassedTextControl);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation.Peers;
@@ -51,6 +52,8 @@ public partial class CalcPane : UserControl, IEditorPane
 
     // Aggregate tracking for calc pane status display
     private enum AggregateType { None, Sum, Average, Count, Min, Max, Median, Product }
+
+    private static int attachedCount;
 
     private readonly CalculationService _calculationService = new();
     private IEditorSession? session;
@@ -114,6 +117,12 @@ public partial class CalcPane : UserControl, IEditorPane
         }
     }
 
+    /// <summary>
+    /// How many calc panes in the process are attached right now. Tests check that a window attaches
+    /// exactly one, whichever way it places it.
+    /// </summary>
+    internal static int AttachedCount => Volatile.Read(ref attachedCount);
+
     /// <summary>The results' scroll viewer while the pointer is over the shown results, for horizontal wheel scrolling.</summary>
     internal ScrollViewer? ScrollViewerUnderMouse
         => CalcResultsTextControl.Visibility == Visibility.Visible && CalcResultsTextControl.IsMouseOver
@@ -126,6 +135,7 @@ public partial class CalcPane : UserControl, IEditorPane
             throw new InvalidOperationException("The calc pane is already attached.");
 
         this.session = session;
+        Interlocked.Increment(ref attachedCount);
 
         // Set up debounce timer to avoid excessive calculations
         _debounceTimer = new DispatcherTimer
@@ -168,6 +178,7 @@ public partial class CalcPane : UserControl, IEditorPane
         CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
 
         session = null;
+        Interlocked.Decrement(ref attachedCount);
     }
 
     /// <summary>Nothing: the pane's width and open state are the host's, and Show Errors is a setting.</summary>

@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Editing.Panes;
+using Text_Grab.Services;
 using MenuItem = System.Windows.Controls.MenuItem;
 
 namespace Text_Grab;
@@ -15,22 +20,55 @@ namespace Text_Grab;
 /// </summary>
 public partial class EditTextWindow
 {
-    /// <summary>The panes in this window. Only the calc pane until layouts (E4a) place others.</summary>
-    private IEnumerable<IEditorPane> Panes => [CalcPaneControl];
+    /// <summary>The name <see cref="FrameworkElement.FindName"/> finds the calc pane by, as when the XAML declared it.</summary>
+    private const string CalcPaneName = "CalcPaneControl";
 
-    /// <summary>Connects the calc pane to this window's document. Called once, from <c>Window_Initialized</c>.</summary>
+    /// <summary>The window's calc pane, made by its factory when the window is initialized.</summary>
+    private CalcPane? calcPane;
+
+    /// <summary>The panes in this window. Only the calc pane until layouts (E4a) place others.</summary>
+    private IEnumerable<IEditorPane> Panes => calcPane is null ? [] : [calcPane];
+
+    /// <summary>A new pane of the kind <paramref name="paneId"/> names, from its factory, or null if no factory makes it.</summary>
+    private static IEditorPane? CreatePane(string paneId)
+        => AppServices.Provider.GetServices<IEditorPaneFactory>()
+            .FirstOrDefault(factory => factory.Descriptor.Id == paneId)?
+            .Create();
+
+    /// <summary>
+    /// Makes the calc pane, puts it in the editor area's second column where the XAML used to declare
+    /// it, and connects it to this window's document. Called once, from <c>Window_Initialized</c>.
+    /// </summary>
     private void AttachCalcPane()
     {
-        CalcPaneControl.Attach(Session, config: null);
-        CalcPaneControl.HideRequested += CalcPane_HideRequested;
-        CalcPaneControl.ShowErrorsToggleRequested += CalcPane_ShowErrorsToggleRequested;
+        if (CreatePane(PaneIds.Calc) is not CalcPane pane)
+            return;
+
+        calcPane = pane;
+        System.Windows.Controls.Grid.SetColumn(pane, 1);
+        EditorAreaGrid.Children.Insert(EditorAreaGrid.Children.IndexOf(ReadingEditorHost) + 1, pane);
+        ConnectCalcPane(pane);
+    }
+
+    /// <summary>The bindings, name and events every calc pane has in this window, wherever it is placed.</summary>
+    private void ConnectCalcPane(CalcPane pane)
+    {
+        RegisterName(CalcPaneName, pane);
+        pane.SetBinding(CalcPane.ResultsFontSizeProperty, new Binding(nameof(PassedTextControl.FontSize)) { Source = PassedTextControl, Mode = BindingMode.OneWay });
+        pane.SetBinding(CalcPane.ShowErrorsProperty, new Binding(nameof(MenuItem.IsChecked)) { Source = ShowErrorsMenuItem, Mode = BindingMode.OneWay });
+        pane.Attach(Session, config: null);
+        pane.HideRequested += CalcPane_HideRequested;
+        pane.ShowErrorsToggleRequested += CalcPane_ShowErrorsToggleRequested;
     }
 
     private void DetachCalcPane()
     {
-        CalcPaneControl.HideRequested -= CalcPane_HideRequested;
-        CalcPaneControl.ShowErrorsToggleRequested -= CalcPane_ShowErrorsToggleRequested;
-        CalcPaneControl.Detach();
+        if (calcPane is null)
+            return;
+
+        calcPane.HideRequested -= CalcPane_HideRequested;
+        calcPane.ShowErrorsToggleRequested -= CalcPane_ShowErrorsToggleRequested;
+        calcPane.Detach();
     }
 
     /// <summary>
@@ -64,7 +102,7 @@ public partial class EditTextWindow
     }
 
     /// <summary>Evaluates the calc pane now, rather than after the typing delay.</summary>
-    internal Task EvaluateCalcPaneAsync() => CalcPaneControl.RecalculateAsync();
+    internal Task EvaluateCalcPaneAsync() => calcPane?.RecalculateAsync() ?? Task.CompletedTask;
 
     private void CalcPane_HideRequested(object? sender, EventArgs e)
     {
@@ -78,17 +116,18 @@ public partial class EditTextWindow
         // The pane's ShowErrors is bound to the menu item, so this reaches it before the evaluation.
         ShowErrorsMenuItem.IsChecked = !ShowErrorsMenuItem.IsChecked;
         DefaultSettings.CalcShowErrors = ShowErrorsMenuItem.IsChecked;
-        _ = CalcPaneControl.RecalculateAsync();
+        _ = calcPane?.RecalculateAsync();
     }
 
     private async void ShowErrorsCheckBox_Changed(object sender, RoutedEventArgs e)
     {
         // Re-evaluate expressions when toggle changes
-        await CalcPaneControl.RecalculateAsync();
+        if (calcPane is not null)
+            await calcPane.RecalculateAsync();
     }
 
     // A bottom-bar button (ButtonInfo "Copy All Calculation Results") calls this by name.
-    private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e) => CalcPaneControl.CopyAllResults();
+    private void CalcCopyAllButton_Click(object sender, RoutedEventArgs e) => calcPane?.CopyAllResults();
 
     private void ShowCalcPaneMenuItem_Click(object sender, RoutedEventArgs e)
     {
@@ -128,6 +167,9 @@ public partial class EditTextWindow
             ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
         }
 
+        if (calcPane is null)
+            return;
+
         if (ShowCalcPaneMenuItem.IsChecked)
         {
             TextBoxSplitter.Visibility = Visibility.Visible;
@@ -146,11 +188,11 @@ public partial class EditTextWindow
             }
 
             // Shows the results and evaluates after the typing delay.
-            CalcPaneControl.IsOpen = true;
+            calcPane.IsOpen = true;
         }
         else
         {
-            CalcPaneControl.IsOpen = false;
+            calcPane.IsOpen = false;
             TextBoxSplitter.Visibility = Visibility.Collapsed;
             CalcPaneShadow.Visibility = Visibility.Collapsed;
 
@@ -174,7 +216,7 @@ public partial class EditTextWindow
             return;
 
         DefaultSettings.CalcShowErrors = menuItem.IsChecked;
-        _ = CalcPaneControl.RecalculateAsync();
+        _ = calcPane?.RecalculateAsync();
     }
 
     private void TextBoxSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)

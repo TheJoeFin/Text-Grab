@@ -6,7 +6,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Text_Grab"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:panes="clr-namespace:Text_Grab.Editing.Panes"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:utils="clr-namespace:Text_Grab.Utilities"
     Title="Edit Text"
@@ -1013,7 +1012,8 @@
             FormatRequested="ApplyMarkdownFormat"
             TableRequested="InsertMarkdownTable"
             Visibility="Collapsed" />
-        <Grid Grid.Row="3">
+        <!--  The editor area. With the pane layout on (v5 E4a), ReadingEditorHost moves into a DockingManager that takes this grid's place.  -->
+        <Grid x:Name="EditorAreaGrid" Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="CalcColumn" Width="200" />
@@ -1219,14 +1219,11 @@
                     </Button.Template>
                 </Button>
             </Grid>
-            <!--  The calc pane (v5 E3). The splitter and its shadow are the window's, drawn over the pane's edge.  -->
-            <panes:CalcPane
-                x:Name="CalcPaneControl"
-                x:FieldModifier="private"
-                Grid.Column="1"
-                ResultsFontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
-                ShowErrors="{Binding ElementName=ShowErrorsMenuItem, Path=IsChecked, Mode=OneWay}" />
-
+            <!--
+                The calc pane (v5 E3) goes here, in column 1 between ReadingEditorHost and the splitter. It is made by
+                its factory and inserted in code (AttachCalcPane), so that no layout constructs a pane it does not show.
+                The splitter and its shadow are the window's, drawn over the pane's edge.
+            -->
             <GridSplitter
                 x:Name="TextBoxSplitter"
                 Grid.Column="1"

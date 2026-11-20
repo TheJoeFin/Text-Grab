@@ -115,6 +115,21 @@ public class CalcPaneCharacterizationTests
     }
 
     [WpfFact]
+    public void NewWindow_OpensThePaneAtTheXamlColumnWidthNotTheSavedWidth()
+    {
+        // Added in E4a to pin the hand-written window before the pane layout: a window that is not
+        // restoring a history item opens the pane at the column's XAML width (200). InitializeCalcPane
+        // reads the saved CalcPaneWidth into the remembered width, but SetCalcPaneVisibility only uses
+        // that when the column is 0 wide, and collapsing remembers 200 over it.
+        EditTextWindow window = CreateWindow("1 + 1");
+        InitializeCalcPane(window);
+
+        window.SetCalcPaneOpen(true);
+
+        Assert.Equal(new GridLength(200), CalcColumn(window).Width);
+    }
+
+    [WpfFact]
     public void Closing_CollapsesTheColumnAndReopening_BringsBackItsWidth()
     {
         EditTextWindow window = new(new HistoryInfo
