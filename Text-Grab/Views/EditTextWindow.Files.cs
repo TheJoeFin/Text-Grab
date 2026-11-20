@@ -21,6 +21,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Core.Editing;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Properties;
@@ -281,22 +282,29 @@ public partial class EditTextWindow
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
             if (shouldTrackOpenedFile)
-                UseFileTypeLayout(pathOfFileToOpen);
+            {
+                await UseFileTypeLayoutAsync(pathOfFileToOpen);
+                if (_isClosed)
+                    return;
+            }
 
             if (shouldTrackOpenedFile && windowWasBlank && DefaultSettings.EtwRememberFilePlacement
                 && FileWindowPlacementStore.GetBounds(pathOfFileToOpen) is string fileBounds
                 && WindowUtilities.TryApplyStoredBounds(this, fileBounds))
                 placedFromFileBounds = true;
-            string? fileCodeLanguage = null;
+            CodeLanguageChoice? fileCodeLanguage = null;
 
             if (KindOpened == OpenContentKind.TextFile)
             {
+                // The layout the window shows may replace a Text or Markdown file's mode (LayoutDefaults): how
+                // .mmd reaches Code mode in the Mermaid layout. A multi-file open stays Text, and with the
+                // pane layout off there is no layout, so a file opens as its type says.
                 EtwEditorMode targetMode = isMultipleFiles
                     ? EtwEditorMode.Text
-                    : IoUtilities.GetEditorModeForPath(pathOfFileToOpen);
+                    : LayoutDefaults.ModeForFile(IoUtilities.GetEditorModeForPath(pathOfFileToOpen), CurrentLayout);
 
                 if (targetMode == EtwEditorMode.Code)
-                    fileCodeLanguage = CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name;
+                    fileCodeLanguage = LayoutDefaults.CodeLanguageFor(CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name, CurrentLayout);
 
                 // The text and Markdown document are replaced just below, so don't build the old text's document.
                 if (IsLoaded)
@@ -321,8 +329,8 @@ public partial class EditTextWindow
                     LoadCodeEditorFromText();
 
                     // After the text, so the folding scan that a new language starts reads the file.
-                    if (fileCodeLanguage is not null)
-                        SetCodeLanguage(fileCodeLanguage);
+                    if (fileCodeLanguage is CodeLanguageChoice languageChoice)
+                        SetCodeLanguageFor(languageChoice);
 
                     CodeEditorControl.UpdateFoldings();
                 }

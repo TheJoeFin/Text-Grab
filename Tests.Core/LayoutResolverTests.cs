@@ -23,11 +23,64 @@ public class LayoutResolverTests
     // ---- The built-in map ----
 
     [Fact]
-    public void BuiltInMap_ShipsEmpty()
+    public void BuiltInMap_HasExactlyTheMermaidEntries()
     {
-        Assert.Empty(LayoutFileTypeDefaults.Entries);
-        Assert.Null(LayoutFileTypeDefaults.LayoutIdFor(@"C:\notes\diagram.mmd"));
-        Assert.Null(LayoutFileTypeDefaults.LayoutIdFor(@"C:\notes\readme.md"));
+        // In 4.17 the only entries are .mmd and .mermaid (E5 mermaid). A new entry is a decision, so it is pinned.
+        Assert.Equal(
+            [(".mermaid", LayoutIds.Mermaid), (".mmd", LayoutIds.Mermaid)],
+            LayoutFileTypeDefaults.Entries.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => (entry.Key, entry.Value)));
+    }
+
+    [Theory]
+    [InlineData(@"C:\notes\diagram.mmd", "mermaid")]
+    [InlineData(@"C:\notes\diagram.MMD", "mermaid")]
+    [InlineData(@"C:\notes\diagram.mermaid", "mermaid")]
+    [InlineData(@"C:\notes\readme.md", null)]
+    [InlineData(@"C:\notes\readme.markdown", null)]
+    [InlineData(@"C:\notes\notes.txt", null)]
+    [InlineData(@"C:\notes\flow.mmd.txt", null)]
+    public void BuiltInMap_MapsMermaidFilesAndNothingElse(string path, string? expected)
+        => Assert.Equal(expected, LayoutFileTypeDefaults.LayoutIdFor(path));
+
+    [Fact]
+    public void TheMermaidLayoutIsBuiltIn_SoAMermaidFileNeverNeedsTheStore()
+    {
+        Assert.True(BuiltInLayouts.IsBuiltIn(LayoutFileTypeDefaults.LayoutIdFor(@"C:\a.mmd")));
+        Assert.True(BuiltInLayouts.IsBuiltIn(LayoutFileTypeDefaults.LayoutIdFor(@"C:\a.mermaid")));
+    }
+
+    [Fact]
+    public async Task AnMmdFile_ResolvesToTheBuiltInMermaidLayoutThroughTheRealMap()
+    {
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.Mermaid, out EtwLayoutDefinition mermaid));
+
+        ResolvedLayout resolved = await new LayoutResolver(new MemoryStore(mermaid), paneId => paneId is PaneIds.Mermaid)
+            .ResolveAsync(new LayoutRequest(FilePath: @"C:\a.mmd"), TestContext.Current.CancellationToken);
+
+        Assert.Same(mermaid, resolved.Layout);
+        Assert.Null(resolved.Notice);
+    }
+
+    [Fact]
+    public async Task AnMmdFileInABuildWithoutTheMermaidPane_FallsBackToClassicAndNamesThePane()
+    {
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.Mermaid, out EtwLayoutDefinition mermaid));
+
+        ResolvedLayout resolved = await new LayoutResolver(new MemoryStore(mermaid), paneId => paneId == PaneIds.Calc)
+            .ResolveAsync(new LayoutRequest(FilePath: @"C:\a.mmd"), TestContext.Current.CancellationToken);
+
+        Assert.Same(BuiltInLayouts.Classic, resolved.Layout);
+        Assert.Contains(PaneIds.Mermaid, resolved.Notice);
+    }
+
+    [Fact]
+    public void ChooseId_NeedsNoStore_AndFollowsTheSameOrder()
+    {
+        Assert.Equal("saved", LayoutResolver.ChooseId(new LayoutRequest("saved", "mermaid", @"C:\a.mmd"), null));
+        Assert.Equal("mermaid", LayoutResolver.ChooseId(new LayoutRequest(null, "mermaid", @"C:\a.txt"), null));
+        Assert.Equal("mermaid", LayoutResolver.ChooseId(new LayoutRequest(FilePath: @"C:\a.mmd"), null));
+        Assert.Null(LayoutResolver.ChooseId(new LayoutRequest(FilePath: @"C:\readme.md"), null));
+        Assert.Null(LayoutResolver.ChooseId(new LayoutRequest(" ", "", null), null));
     }
 
     [Theory]

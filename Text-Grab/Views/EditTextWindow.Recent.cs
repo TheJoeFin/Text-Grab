@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Models;
 using Text_Grab.Services;
@@ -85,7 +86,8 @@ public partial class EditTextWindow
                 break;
 
             case RecentOpenTarget.NewEditTextWindow when item.Kind == TrayFlyoutItemKind.File:
-                EditTextWindow fileWindow = new();
+                // The path goes in as the window is made, so a file with a default layout (.mmd) opens in it directly.
+                EditTextWindow fileWindow = new(new LayoutRequest(FilePath: history.SourcePath));
                 fileWindow.Show();
                 fileWindow.Activate();
                 await fileWindow.OpenPath(history.SourcePath);

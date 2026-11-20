@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Models;
 using Text_Grab.Properties;
 using Text_Grab.Services;
@@ -453,12 +454,11 @@ public partial class App : System.Windows.Application
             case "paste-code":
             case "edit-text":
                 {
-                    EditTextWindow etw = new();
-
                     // text-grab://edit-text?layout=<id> (v5 E4a). Any web page can open the link, so an ID
                     // that cannot be a layout's is dropped here rather than shown back in a notice.
-                    if (ProtocolUtilities.TryGetLayoutId(parameters, out string layoutId))
-                        _ = etw.RequestLayoutAsync(layoutId);
+                    EditTextWindow etw = ProtocolUtilities.TryGetLayoutId(parameters, out string layoutId)
+                        ? new(new LayoutRequest(RequestedId: layoutId))
+                        : new();
 
                     try
                     {
@@ -558,9 +558,8 @@ public partial class App : System.Windows.Application
         switch (launchMode)
         {
             case TextGrabMode.EditText:
-                EditTextWindow manipulateTextWindow = new();
-                if (!string.IsNullOrWhiteSpace(layoutId))
-                    _ = manipulateTextWindow.RequestLayoutAsync(layoutId);
+                // The layout is given to the window as it is made, so it renders that layout first.
+                EditTextWindow manipulateTextWindow = new(new LayoutRequest(RequestedId: layoutId));
                 manipulateTextWindow.Show();
                 break;
             case TextGrabMode.GrabFrame:
@@ -616,9 +615,9 @@ public partial class App : System.Windows.Application
         }
         else
         {
-            EditTextWindow manipulateTextWindow = new();
-            if (!string.IsNullOrWhiteSpace(layoutId))
-                _ = manipulateTextWindow.RequestLayoutAsync(layoutId);
+            // The file's path goes in with the layout, so that a window for a file with a default layout
+            // (.mmd) renders that layout first instead of Classic and then it.
+            EditTextWindow manipulateTextWindow = new(new LayoutRequest(RequestedId: layoutId, FilePath: possiblePath));
             Task openTask = manipulateTextWindow.OpenPath(possiblePath);
             manipulateTextWindow.Show();
             manipulateTextWindow.Activate();

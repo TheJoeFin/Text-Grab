@@ -40,8 +40,15 @@ public sealed class LayoutResolver
     }
 
     /// <summary>The layout ID a request names first, or null for the global default.</summary>
-    public string? ChooseId(LayoutRequest request)
-        => NullIfBlank(request.RequestedId) ?? NullIfBlank(request.HistoryId) ?? NullIfBlank(layoutForFile(request.FilePath));
+    public string? ChooseId(LayoutRequest request) => ChooseId(request, layoutForFile);
+
+    /// <summary>
+    /// <see cref="ChooseId(LayoutRequest)"/> without a store: the choice depends only on the request and
+    /// the file-type map, so a window can know the layout it opens in before anything is loaded.
+    /// </summary>
+    /// <param name="layoutForFile">A file's default layout; <see cref="LayoutFileTypeDefaults.LayoutIdFor(string?)"/> when null.</param>
+    public static string? ChooseId(LayoutRequest request, Func<string?, string?>? layoutForFile)
+        => NullIfBlank(request.RequestedId) ?? NullIfBlank(request.HistoryId) ?? NullIfBlank((layoutForFile ?? LayoutFileTypeDefaults.LayoutIdFor)(request.FilePath));
 
     public async Task<ResolvedLayout> ResolveAsync(LayoutRequest request, CancellationToken cancellationToken = default)
     {

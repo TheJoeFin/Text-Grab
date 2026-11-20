@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Layouts;
 using Text_Grab.Editing.Layout;
+using Text_Grab.Models;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -34,6 +35,19 @@ public partial class EditTextWindow
 
     /// <summary>The layout the history item this window reopened was saved with, or null.</summary>
     private string? historyLayoutId;
+
+    /// <summary>
+    /// What the window was made to open: set by the constructor before <c>InitializeComponent</c>, which
+    /// is when the first layout is rendered, so that the layout it names is rendered first and no other
+    /// layout's panes are made on the way (<see cref="TakeInitialLayoutRequest"/>).
+    /// </summary>
+    private readonly LayoutRequest? initialLayout;
+
+    /// <summary>The file the window was made to open, which <see cref="OpenedFilePath"/> does not hold until it is read.</summary>
+    private string? initialFilePath;
+
+    /// <summary>True for a window that restores a history item, whose saved mode and code language beat a layout's defaults.</summary>
+    private readonly bool modeFromHistory;
 
     /// <summary>Counts layout resolutions, so that only the latest one applies.</summary>
     private int layoutResolution;
@@ -87,9 +101,84 @@ public partial class EditTextWindow
         Grid.SetRow(paneLayout.View, Grid.GetRow(EditorAreaGrid));
         root.Children.Insert(index, paneLayout.View);
         RegisterName(PaneLayoutHostName, paneLayout.View);
-        paneLayout.Render(BuiltInLayouts.Classic);
+
+        // The layout the window was made for, when it is built in and usable, is the first one rendered:
+        // rendering Classic first would make its calc pane, and its calculation service, just to detach it.
+        (EtwLayoutDefinition? firstLayout, bool resolveAfter) = TakeInitialLayoutRequest();
+        EtwLayoutDefinition first = firstLayout ?? BuiltInLayouts.Classic;
+        paneLayout.Render(first);
         UpdateCalcToggles();
+        if (first.Id != LayoutIds.Classic)
+            ApplyLayoutDefaultMode(first);
+
+        if (resolveAfter)
+            _ = ResolveLayoutAsync();
     }
+
+    /// <summary>
+    /// Reads what the constructor was asked to open. <c>First</c> is the built-in layout to render first, or
+    /// null to render Classic. A layout that is not built in (one saved in the store), or that cannot be
+    /// shown, still renders Classic first and is then resolved the usual way (<c>ResolveAfter</c>), which
+    /// loads it or says why it cannot.
+    /// </summary>
+    private (EtwLayoutDefinition? First, bool ResolveAfter) TakeInitialLayoutRequest()
+    {
+        if (initialLayout is null)
+            return (null, false);
+
+        requestedLayoutId = string.IsNullOrWhiteSpace(initialLayout.RequestedId) ? null : initialLayout.RequestedId.Trim();
+        historyLayoutId = string.IsNullOrWhiteSpace(initialLayout.HistoryId) ? null : initialLayout.HistoryId;
+        initialFilePath = initialLayout.FilePath;
+
+        string? id = LayoutResolver.ChooseId(new LayoutRequest(requestedLayoutId, historyLayoutId, initialFilePath), layoutForFile: null);
+        if (id is null || id == LayoutIds.Classic)
+            return (null, false);
+
+        if (BuiltInLayouts.TryGet(id, out EtwLayoutDefinition layout) && EtwLayoutValidator.FindProblem(layout, IsKnownPane) is null)
+            return (layout, false);
+
+        return (null, true);
+    }
+
+    /// <summary>
+    /// With the pane layout off there is nothing to render, but a layout somebody asked for still gets its
+    /// notice, as <see cref="RequestLayoutAsync"/> gives one.
+    /// </summary>
+    private void TakeInitialLayoutRequestWithPaneLayoutOff()
+    {
+        _ = TakeInitialLayoutRequest();
+        if (requestedLayoutId is not null)
+            _ = ResolveLayoutAsync();
+    }
+
+    /// <summary>
+    /// Applies <paramref name="layout"/>'s <c>DefaultMode</c> and <c>DefaultCodeLanguage</c> to a window
+    /// that has no file and no history item, as it first takes the layout (<see cref="LayoutDefaults"/>).
+    /// A mode somebody chose is kept, and so is whatever a history item saved. A file that is opened
+    /// decides its own mode in <see cref="OpenPath"/>.
+    /// </summary>
+    private void ApplyLayoutDefaultMode(EtwLayoutDefinition layout)
+    {
+        if (modeFromHistory || !string.IsNullOrEmpty(OpenedFilePath))
+            return;
+
+        EtwEditorMode mode = LayoutDefaults.ModeForBlankWindow(editorMode, layout);
+        if (mode == editorMode)
+            return;
+
+        if (mode == EtwEditorMode.Code)
+            SetCodeLanguageFor(LayoutDefaults.CodeLanguageFor(null, layout));
+
+        // Before the window is loaded, Window_Loaded applies the mode, as it does for a history item's.
+        if (IsLoaded)
+            SetEditorMode(mode);
+        else
+            editorMode = mode;
+    }
+
+    /// <summary>Sets the code language a <see cref="LayoutDefaults.CodeLanguageFor"/> choice names: a language, Plain Text, or what the text looks like.</summary>
+    private void SetCodeLanguageFor(CodeLanguageChoice choice)
+        => SetCodeLanguage(choice.Detect ? DetectCodeLanguage() : choice.Name);
 
     /// <summary>
     /// Shows <paramref name="layout"/> in this window. Returns null, or, when the layout cannot be
@@ -147,19 +236,21 @@ public partial class EditTextWindow
     private void UseHistoryLayout(string? layoutId)
     {
         historyLayoutId = string.IsNullOrWhiteSpace(layoutId) ? null : layoutId;
-        if (historyLayoutId is not null)
+
+        // A window made for a history item was told its layout before it rendered anything.
+        if (historyLayoutId is not null && initialLayout is null)
             _ = ResolveLayoutAsync();
     }
 
     /// <summary>
     /// A file opened into a window that was given no layout takes its file type's built-in layout, if it
-    /// has one (<see cref="LayoutFileTypeDefaults"/>, empty in E4a).
+    /// has one (<see cref="LayoutFileTypeDefaults"/>: <c>.mmd</c> and <c>.mermaid</c>). Completes when the
+    /// layout is applied, so that <see cref="OpenPath"/> sets the file's mode from the layout it ends up in.
     /// </summary>
-    private void UseFileTypeLayout(string filePath)
-    {
-        if (requestedLayoutId is null && historyLayoutId is null && LayoutFileTypeDefaults.LayoutIdFor(filePath) is not null)
-            _ = ResolveLayoutAsync();
-    }
+    private Task UseFileTypeLayoutAsync(string filePath)
+        => requestedLayoutId is null && historyLayoutId is null && LayoutFileTypeDefaults.LayoutIdFor(filePath) is not null
+            ? ResolveLayoutAsync()
+            : Task.CompletedTask;
 
     /// <summary>The layout to save with this window's history item: null for Classic.</summary>
     private string? LayoutIdToSave()
@@ -178,7 +269,7 @@ public partial class EditTextWindow
     private async Task ResolveLayoutAsync()
     {
         int resolution = ++layoutResolution;
-        LayoutRequest request = new(requestedLayoutId, historyLayoutId, OpenedFilePath);
+        LayoutRequest request = new(requestedLayoutId, historyLayoutId, OpenedFilePath ?? initialFilePath);
 
         if (paneLayout is null)
         {
@@ -201,8 +292,13 @@ public partial class EditTextWindow
             return;
 
         string? notice = resolved.Notice;
-        if (resolved.Layout.Id != LayoutId && ApplyLayout(resolved.Layout) is string problem)
-            notice ??= $"{problem} Text Grab kept the {LayoutId} layout.";
+        if (resolved.Layout.Id != LayoutId)
+        {
+            if (ApplyLayout(resolved.Layout) is string problem)
+                notice ??= $"{problem} Text Grab kept the {LayoutId} layout.";
+            else
+                ApplyLayoutDefaultMode(resolved.Layout);
+        }
 
         if (notice is not null)
             ShowLayoutNotice(notice);

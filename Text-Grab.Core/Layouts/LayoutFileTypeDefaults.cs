@@ -11,17 +11,19 @@ namespace Text_Grab.Core.Layouts;
 /// extension to layout ID, with no settings UI.
 /// </summary>
 /// <remarks>
-/// It ships empty in E4a, so every file still opens in Classic, exactly as before. Each E5 run adds the
-/// entries for its own layouts; in 4.17 the only entries are <c>.mmd</c> and <c>.mermaid</c> (E5
-/// <c>mermaid</c>). Markdown files are deliberately not mapped: they keep opening in Markdown mode in
-/// Classic, and the Markdown layout stays a choice. E6 <c>defaults</c> (5.0) layers people's own choices
-/// on top of this map.
+/// It shipped empty in E4a. Each E5 run adds the entries for its own layouts; in 4.17 the only entries
+/// are <c>.mmd</c> and <c>.mermaid</c> (E5 <c>mermaid</c>), both to the Mermaid layout. Every other file
+/// still opens in Classic, exactly as before. Markdown files are deliberately not mapped: they keep opening
+/// in Markdown mode in Classic, and the Markdown layout stays a choice. E6 <c>defaults</c> (5.0) layers
+/// people's own choices on top of this map.
 /// </remarks>
 public static class LayoutFileTypeDefaults
 {
     private static readonly ReadOnlyDictionary<string, string> Map = new(
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            [".mmd"] = LayoutIds.Mermaid,
+            [".mermaid"] = LayoutIds.Mermaid,
         });
 
     /// <summary>Extension (with its dot) to layout ID.</summary>

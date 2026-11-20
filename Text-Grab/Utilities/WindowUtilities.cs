@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Extensions;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -446,9 +447,10 @@ public static partial class WindowUtilities
     /// </summary>
     internal static EditTextWindow OpenNewEditTextWindow(string? layoutId = null)
     {
-        EditTextWindow newWindow = new();
-        if (!string.IsNullOrWhiteSpace(layoutId))
-            _ = newWindow.RequestLayoutAsync(layoutId);
+        // The layout goes in as the window is made, so it renders that layout first.
+        EditTextWindow newWindow = string.IsNullOrWhiteSpace(layoutId)
+            ? new()
+            : new(new LayoutRequest(RequestedId: layoutId));
 
         newWindow.Show();
         newWindow.Activate();
@@ -462,9 +464,7 @@ public static partial class WindowUtilities
     /// <param name="layoutId">The layout to open in (v5 E4a), or null for the window's default.</param>
     internal static EditTextWindow? OpenTextInNewEditTextWindow(string text, bool enterSpreadsheetMode = false, string? layoutId = null)
     {
-        EditTextWindow newWindow = new(text, isEncoded: false);
-        if (!string.IsNullOrWhiteSpace(layoutId))
-            _ = newWindow.RequestLayoutAsync(layoutId);
+        EditTextWindow newWindow = new(text, isEncoded: false, layoutId);
 
         try
         {

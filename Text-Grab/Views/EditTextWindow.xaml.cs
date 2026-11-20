@@ -28,6 +28,7 @@ using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Core.Editing;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -159,8 +160,31 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ApplyDefaultWindowSize();
     }
 
-    public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
+    /// <summary>
+    /// A window that knows its layout before it renders (v5 E5): the one <paramref name="initialLayout"/>
+    /// names (<c>--layout</c>, a link), or the default for the file it is about to open, so that the first
+    /// layout rendered is the one it ends in and no other layout's panes are made first. Callers that open
+    /// a file in a new window give its path; the file is then opened with <see cref="OpenPath"/> as usual.
+    /// </summary>
+    internal EditTextWindow(LayoutRequest initialLayout)
     {
+        this.initialLayout = initialLayout;
+        InitializeComponent();
+        App.SetTheme();
+        ApplyDefaultWindowSize();
+    }
+
+    public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
+        : this(possiblyEncodedString, isEncoded, layoutId: null)
+    {
+    }
+
+    /// <param name="layoutId">The layout to open in (v5 E5), rendered first; null for the window's default.</param>
+    internal EditTextWindow(string possiblyEncodedString, bool isEncoded, string? layoutId)
+    {
+        if (!string.IsNullOrWhiteSpace(layoutId))
+            initialLayout = new LayoutRequest(RequestedId: layoutId);
+
         InitializeComponent();
         App.SetTheme();
         ApplyDefaultWindowSize();
@@ -175,6 +199,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public EditTextWindow(HistoryInfo historyInfo)
     {
+        // The item's own mode and language win over a layout's defaults, and its layout is rendered first.
+        modeFromHistory = true;
+        if (!string.IsNullOrWhiteSpace(historyInfo.LayoutId))
+            initialLayout = new LayoutRequest(HistoryId: historyInfo.LayoutId);
+
         InitializeComponent();
         App.SetTheme();
 
@@ -2263,9 +2292,15 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         System.Windows.DataObject.AddPastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
         InitializeCodeEditor();
         if (usesPaneLayout)
+        {
             InitializePaneLayout();
+        }
         else
+        {
             AttachCalcPane();
+            TakeInitialLayoutRequestWithPaneLayoutOff();
+        }
+
         RecordReadyWhenIdle();
         SetFontFromSettings();
         UpdateSpreadsheetModeUi();
