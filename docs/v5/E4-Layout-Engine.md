@@ -140,6 +140,18 @@ What later runs (E5, E6 `picker`, E4b) should know, including where the run depa
 - **Entry points.** `--layout <id>` (alone, it opens an Edit Text Window; with a file or `EditText`, it applies to that window), `text-grab://edit-text?layout=<id>` (also on `paste-markdown` and `paste-code`; an ID that cannot be one is dropped, since any web page can open the link), `WindowUtilities.OpenNewEditTextWindow(layoutId)` and a `layoutId` on `OpenTextInNewEditTextWindow`, and `HistoryInfo.LayoutId`: an optional string, null for Classic so that default-path history files do not change, and kept as it was when the item is reopened with the pane layout off.
 - **"Says why."** A layout that cannot be used gives Classic and a notice: recorded at once as a `layout-notice` diagnostics event (UI tests read it), and shown as a non-modal message once the window is on screen, never while it is being made.
 - **Not done here, for E5:** `DefaultMode` and `DefaultCodeLanguage` are in the model but the window does not apply them yet. E5 `mermaid` and `markdown-preview` need them, and should decide how they interact with `OpenPath`, which sets the mode from the file.
+- **Step 9, measured 2026-11-20** with `UiTests/Scripts/Measure-EditTextOpen.ps1` (Release builds, 7 runs each, medians; Off and On alternate within each run). Open time is from the window's construction until it has rendered, finished loading the file and gone idle (its `etw-ready` diagnostics event, recorded only under an automation profile); memory is the process's working set (and private bytes) 3 s later. Short document: 3 lines; large: 50,000 lines (3.6 MB), opened from the command line. Warm: a second, empty window from Window > New window in the same process.
+
+  | Build | Document | Open, off | Open, on | Change | Working set, off → on | Private bytes, off → on |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | ARM64 (native) | short | 788 ms | 850 ms | +62 ms (+7.8%) | 184.1 → 187.1 MB (+3.0) | 103.5 → 103.6 MB |
+  | ARM64 (native) | large | 2,284 ms | 2,346 ms | +62 ms (+2.7%) | 288.1 → 292.6 MB (+4.5) | 208.8 → 209.3 MB |
+  | ARM64, warm | empty | 267 ms | 257 ms | −10 ms | | |
+  | x64 (emulated on ARM64) | short | 1,526 ms | 1,703 ms | +178 ms (+11.6%) | 257.6 → 263.7 MB (+6.1) | 161.1 → 164.1 MB |
+  | x64 (emulated on ARM64) | large | 3,711 ms | 3,925 ms | +213 ms (+5.8%) | 365.1 → 370.1 MB (+5.0) | 267.4 → 268.7 MB |
+  | x64, warm | empty | 506 ms | 519 ms | +14 ms | | |
+
+  The cost is a first window's: loading and compiling AvalonDock. A second window costs about the same either way. Both are inside the run's budget (15% open time, 30 MB working set). The x64 numbers are under ARM64 emulation; a native x64 machine was not available.
 - **UI Automation.** `UiTests/Scripts/Export-EditTextUiaFixtures.ps1` captures the editor area's tree and focus order; `UiTests/Fixtures/EditTextUia` holds the hand-written window's (identical on `dev` without E3 and on E3 `calc`). `UiTests/Suites/EditTextUiaParity.psm1` is the comparison, and lists what it accepts.
 
 ### Out of scope

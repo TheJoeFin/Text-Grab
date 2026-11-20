@@ -2262,6 +2262,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             InitializePaneLayout();
         else
             AttachCalcPane();
+        RecordReadyWhenIdle();
         SetFontFromSettings();
         UpdateSpreadsheetModeUi();
         UpdateWindowTitle();
