@@ -15,6 +15,9 @@ public static class LayoutIds
     /// <summary>Today's window: the editor with the calc pane to its right.</summary>
     public const string Classic = "classic";
 
+    /// <summary>The editor with the recent items pane to its left (v5 E5 <c>recent</c>).</summary>
+    public const string Explorer = "explorer";
+
     public const int MaxLength = 64;
 
     private static readonly string[] ReservedDeviceNames =

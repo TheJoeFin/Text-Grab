@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "id": "explorer",
+  "name": "Explorer",
+  "root": {
+    "type": "split",
+    "orientation": "horizontal",
+    "children": [
+      {
+        "node": { "type": "pane", "paneId": "textgrab.pane.recent" },
+        "size": 260,
+        "unit": "pixel"
+      },
+      {
+        "node": { "type": "pane", "paneId": "textgrab.pane.editor" },
+        "size": 1,
+        "unit": "star"
+      },
+      {
+        "node": { "type": "pane", "paneId": "textgrab.pane.calc" },
+        "size": 200,
+        "unit": "pixel",
+        "collapsed": true
+      }
+    ]
+  }
+}

@@ -73,4 +73,7 @@ public static class PaneIds
 
     /// <summary>The calc pane.</summary>
     public const string Calc = "textgrab.pane.calc";
+
+    /// <summary>The recent items pane (v5 E5).</summary>
+    public const string Recent = "textgrab.pane.recent";
 }

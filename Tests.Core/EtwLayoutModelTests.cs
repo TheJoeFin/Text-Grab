@@ -382,6 +382,27 @@ public class EtwLayoutModelTests
     [InlineData("é")]
     public void LayoutIds_RefusesWhatCouldNotBeAPlainFileName(string? id) => Assert.False(LayoutIds.IsValid(id));
 
+    // ---- Built-in layouts ----
+
+    [Fact]
+    public void Explorer_IsBuiltInWithRecentLeftOfTheEditorAndCalcCollapsedOnTheRight()
+    {
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.Explorer, out EtwLayoutDefinition explorer));
+        Assert.True(LayoutIds.IsValid(explorer.Id));
+        Assert.Null(EtwLayoutValidator.FindProblem(explorer, id => id is PaneIds.Recent or PaneIds.Calc));
+        Assert.Equal([PaneIds.Recent, PaneIds.Editor, PaneIds.Calc], EtwLayoutValidator.PaneIdsIn(explorer.Root));
+
+        SplitNode root = Assert.IsType<SplitNode>(explorer.Root);
+        Assert.Equal(DockOrientation.Horizontal, root.Orientation);
+        Assert.Equal((260d, DockSizeUnit.Pixel, false), (root.Children[0].Size, root.Children[0].Unit, root.Children[0].Collapsed));
+        Assert.Equal((1d, DockSizeUnit.Star, false), (root.Children[1].Size, root.Children[1].Unit, root.Children[1].Collapsed));
+        Assert.Equal((200d, DockSizeUnit.Pixel, true), (root.Children[2].Size, root.Children[2].Unit, root.Children[2].Collapsed));
+    }
+
+    [Fact]
+    public void Classic_DoesNotHaveTheRecentPane()
+        => Assert.DoesNotContain(PaneIds.Recent, EtwLayoutValidator.PaneIdsIn(BuiltInLayouts.Classic.Root));
+
     [Fact]
     public void LayoutIds_RefusesOverlongIds() => Assert.False(LayoutIds.IsValid(new string('a', LayoutIds.MaxLength + 1)));
 
