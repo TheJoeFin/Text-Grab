@@ -47,6 +47,14 @@ public interface IEditorPane
 
     /// <summary>The commands this pane adds to the Edit Text Window's command palette right now.</summary>
     IReadOnlyList<PaneCommand> GetPaletteCommands() => [];
+
+    /// <summary>
+    /// The window the pane is in was activated: a chance for a pane that shows data from outside the
+    /// window, such as history, to look again. A pane that is hidden should only note that it is stale.
+    /// </summary>
+    void OnWindowActivated()
+    {
+    }
 }
 
 /// <summary>One entry a pane adds to the command palette.</summary>

@@ -2126,6 +2126,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Activated(object sender, EventArgs e)
     {
+        // Panes that show data from outside the window, such as the recent items, look again.
+        foreach (Editing.Panes.IEditorPane pane in Panes)
+            pane.OnWindowActivated();
+
         // Pick up a spell-check mode changed from the settings page while this window was open.
         if (Enum.TryParse(DefaultSettings.EtwSpellCheckMode, out SpellCheckMode settingsMode)
             && settingsMode != spellCheckMode)

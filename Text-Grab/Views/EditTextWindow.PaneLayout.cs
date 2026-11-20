@@ -257,6 +257,12 @@ public partial class EditTextWindow
             return;
         }
 
+        if (pane is RecentPane recent)
+        {
+            AttachRecentPane(recent, config);
+            return;
+        }
+
         pane.Attach(Session, config);
     }
 
@@ -267,6 +273,12 @@ public partial class EditTextWindow
             DetachCalcPane();
             UnregisterName(CalcPaneName);
             calcPane = null;
+            return;
+        }
+
+        if (pane is RecentPane recent)
+        {
+            DetachRecentPane(recent);
             return;
         }
 

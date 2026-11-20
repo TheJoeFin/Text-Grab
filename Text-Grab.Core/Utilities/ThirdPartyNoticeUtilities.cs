@@ -30,7 +30,7 @@ public static class ThirdPartyNoticeUtilities
     [
         new("AvalonEdit", "6.3.1.120", "App", "MIT", "https://github.com/icsharpcode/AvalonEdit", "https://github.com/icsharpcode/AvalonEdit/blob/master/LICENSE", false, "Code mode editor in the Edit Text Window."),
         new("CliWrap", "3.10.5", "App", "MIT", "https://github.com/Tyrrrz/CliWrap", "https://github.com/Tyrrrz/CliWrap/blob/master/License.txt"),
-        new("CommunityToolkit.Mvvm", "8.4.2", "App", "MIT", "https://github.com/CommunityToolkit/dotnet", "https://github.com/CommunityToolkit/dotnet/blob/main/License.md", false, "View models of the Edit Text Window's panes."),
+        new("CommunityToolkit.Mvvm", "8.4.0", "App", "MIT", "https://github.com/CommunityToolkit/dotnet", "https://github.com/CommunityToolkit/dotnet/blob/main/License.md", false, "View models of the Edit Text Window's panes."),
         new("Dapplo.Windows.User32", "3.23.3", "App", "MIT", "https://github.com/dapplo/Dapplo.Windows", "https://github.com/dapplo/Dapplo.Windows/blob/master/LICENSE"),
         new("Dirkster.AvalonDock", "5.0.2", "App", "MS-PL", "https://github.com/Dirkster99/AvalonDock", "https://github.com/Dirkster99/AvalonDock/blob/master/LICENSE", false, "Hosts the Edit Text Window's panes. Includes its Dirkster.AvalonDock.Core package, under the same license."),
         new("Humanizer.Core", "3.0.10", "App", "MIT", "https://github.com/Humanizr/Humanizer", "https://github.com/Humanizr/Humanizer/blob/main/license.txt"),
