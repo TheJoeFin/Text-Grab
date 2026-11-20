@@ -20,7 +20,7 @@ Let users choose, switch and build layouts without editing JSON, and offer a rib
 
 ## Current state (verify)
 
-- E4a: `EtwLayoutDefinition`, `ILayoutStore`, `LayoutRenderer` for the dock tree, built-in layouts as embedded resources. The menu bar, bottom bar and status bar are still hand-written XAML.
+- E4a: `EtwLayoutDefinition`, `ILayoutStore`, `LayoutRenderer` for the dock tree (rendered through AvalonDock with pane chrome hidden, D1), built-in layouts as embedded resources. The menu bar, bottom bar and status bar are still hand-written XAML.
 - E4b (needed by `ribbon` and `editor` only): chrome rendered from the definition; `ChromeKind.Ribbon` modeled but rendered as a menu bar.
 - E5 may have added more built-in layouts and panes.
 - `Text-Grab/Controls/BottomBarSettings.xaml(.cs)` is the existing "customize the bottom bar" dialog: two lists, add/remove/reorder. It is the starting point for the layout editor.
@@ -32,8 +32,10 @@ Let users choose, switch and build layouts without editing JSON, and offer a rib
 ## `picker` — Layout switcher (Sonnet)
 
 - A layout menu in the window (in the existing Window menu for Classic chrome) listing built-in and user layouts, with the current one checked. In 4.17 this is hand-written XAML with a dynamic list, like the window's other menus; E4b later expresses it as a `DynamicList` chrome item.
-- A **Panes** submenu beside it: one checkable item per registered pane factory, which adds the pane to the live layout at its `DefaultDock` or removes it. This is how a 4.17 user arranges panes without a layout editor.
-- Switching re-renders the dock area in place: the document, selection and file state are untouched because they live on the session, not in the layout. Panes not in the new layout are detached; new ones are attached. The editor pane is never rebuilt by a switch, so each editor's own undo history (the text box's, and AvalonEdit's in Code mode) survives.
+- A **Panes** submenu beside it: one checkable item per registered pane factory. Checking adds the pane to the live layout at its `DefaultDock`, or shows it if the layout already has it collapsed. Unchecking collapses a pane that is in the layout's saved definition, and removes and detaches one that is not. This is how a 4.17 user arranges panes without a layout editor; panes have no close buttons or title bars in 4.17 (D1), so this menu and the existing toggles are the only way.
+- **Keep the calc controls in sync.** The Panes item for calc must agree with `ShowCalcPaneMenuItem`, `CalcToggleButton`, Ctrl+P, the `CalcShowPane` setting and the history-restore flag on `ShowCalcPaneMenuItem.Tag`.
+- **The command palette** (Ctrl+Shift+P) lists menu items automatically, but it only sees dynamic submenus that `OpenCommandPaletteAsync` fills first. Fill the Layouts list there, as grab templates are, or it won't appear in the palette.
+- Switching re-renders the dock area in place: the document, selection and file state are untouched because they live on the session, not in the layout. Panes not in the new layout are detached; new ones are attached. The editor pane is never rebuilt by a switch, so each editor's own undo history (the text box's, and AvalonEdit's in Code mode) survives. With AvalonDock (D1), keep the editor's `LayoutDocument` and its content across a switch, and rebuild only the panes around it.
 - A layout's `DefaultMode` and `DefaultCodeLanguage` apply when a window **opens** with it. Switching layouts on a window that already holds a document changes the mode only if the new layout names one, and never when that would lose anything (a spreadsheet with table formatting stays a spreadsheet).
 - "Save current layout as…", "Reset to built-in", "Delete" (user layouts only), "Set as default".
 - Actions for each registered in the action registry (`textgrab.layout.switch` with the layout ID as config, and so on), so a layout can be bound to a hotkey or a button.
@@ -68,7 +70,7 @@ Traps: icon-only buttons need tooltips and accessible names. A ribbon taller tha
 A dialog (successor to `BottomBarSettings`) for editing a user layout without JSON.
 
 - **Chrome tab:** choose menu bar / ribbon / none; a tree of groups and items; add an action from a searchable list of the registry; reorder, rename, remove; add separators and submenus.
-- **Panes tab:** the dock tree as a nested list; add a pane from the registered factories; choose side and size; remove; reorder. (No drag-to-dock, per D1 — the tree editor is the mechanism.)
+- **Panes tab:** the dock tree as a nested list; add a pane from the registered factories; choose side and size; remove; reorder. (Dragging panes is off through 4.17 under D1. If AvalonDock's drag-to-dock is on by 5.0, the tree editor stays the keyboard-accessible way to arrange panes.)
 - **Bottom bar tab:** today's `BottomBarSettings` behavior, driven by action IDs.
 - Live preview: apply changes to the open window as they are made; **Cancel** restores the layout as it was when the dialog opened.
 - Editing a built-in layout creates a user copy on first change.
@@ -80,7 +82,7 @@ Test the editor's view model exhaustively (add, move, remove at every level; can
 
 ## Out of scope
 
-- Drag-to-dock, floating windows, multi-document tabs in one window.
+- Turning on AvalonDock's drag-to-dock, floating windows or auto-hide; each is its own D1 follow-up. Multi-document tabs in one window.
 - A full Office-style ribbon with galleries, contextual tabs and quick-access toolbar customization.
 - Sharing layouts online.
 

@@ -36,12 +36,12 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 | E5 | [New panes](E5-New-Panes.md) | E4a (\+ per pane) | 4.17: `recent`, `mermaid`, `markdown-preview`. 5.0: `transformer`, `audio` | Not started |
 | E6 | [Ribbon, layout picker, layout editor](E6-Ribbon-Layout-Editor.md) | `picker`: E4a. Others: E4b | `picker`: 4.17. Others: 5.0 | Not started |
 
-Order from here: **4.17** — E3 `calc` → E4a → E5 `recent`, `mermaid`, `markdown-preview` and E6 `picker` (E5 `folder-tree` if time allows). **4.18** — E2 → the other E3 clusters → E4b, with W1 alongside. **5.0** — W2, E5 `transformer` and `audio`, the rest of E6 → W3.
+Order from here: **4.17** — E3 `calc` → E4a → E5 `recent`, `mermaid`, `markdown-preview` and E6 `picker` (E5 `folder-tree` only if the rest lands smoothly; see the release plan). **4.18** — E2 → the other E3 clusters → E4b, with W1 alongside. **5.0** — W2, E5 `transformer` and `audio`, the rest of E6 → W3.
 
 ## Rules for every phase
 
 1. **Check prerequisites first.** If a phase your plan depends on is not `Done` in the table above, stop and say so.
-2. **Verify "Current state" before relying on it.** Line numbers and counts in the phase files were correct on 2026-11-09 (`dev` @ `08eae21`); the unfinished E and W files were revised on 2026-11-14 (`dev` @ `2bc0599`) after Code mode landed. Re-check them with a search; fix the phase file if they have drifted.
+2. **Verify "Current state" before relying on it.** Line numbers and counts in the phase files were correct on 2026-11-09 (`dev` @ `08eae21`); the unfinished E and W files were revised on 2026-11-14 (`dev` @ `2bc0599`) after Code mode landed, and E3 `calc`, E4a, E5 and E6 `picker` again on 2026-11-19 (`dev` @ `5e3b889`) after D1, D4 and D5 were confirmed. Re-check them with a search; fix the phase file if they have drifted.
 3. **Stay in scope.** If you find a blocker outside your phase, stop and report it. Do not widen the phase to fix it.
 4. **No behavior change unless the plan says so.** Change only what the work requires. No drive-by renames, reformatting or "cleanup".
 5. **Tests before risky moves.** When a plan says "characterization tests first", write and pass them against the *old* code before changing it.

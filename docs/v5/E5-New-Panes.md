@@ -25,6 +25,7 @@ This phase is one run per pane. Your prompt names which. The panes are independe
 5. Tests for the view model and for any new Core / Core.Windows code.
 6. `AutomationId`s on interactive elements; keyboard access to every operation; both themes.
 7. `Detach` releases everything (subscriptions, timers, watchers, audio devices, models).
+8. A view that survives re-parenting: AvalonDock (D1) moves it when the layout changes and when the pane is hidden or shown, so no setup or teardown in `Loaded` / `Unloaded`. A hidden pane goes idle but stays attached (see E3 *Design*).
 
 ---
 
@@ -38,7 +39,7 @@ A searchable list of recent Edit Text Window items, grabs and files. Activating 
 
 - Reuse `Text-Grab/Services/TrayFlyoutItemProvider.cs` (`LoadAll`, `Merge`, `Query`) and `Text-Grab/Models/TrayFlyoutItem.cs`; the tray flyout already solved projection, search and icons. Reuse how `TrayFlyoutController` opens each item kind.
 - Without F6: reload when the window is activated. With F6: subscribe to `HistoryStore.Changed`.
-- Layout: **Explorer** (recent on the left; `folder-tree` joins it as a tab when that pane exists).
+- Layout: **Explorer** (recent in the left pane). If `folder-tree` ships in 4.17, it replaces `recent` in that left pane: one or the other, never both at once (decided 2026-11-19). Tab headers are hidden in 4.17 (D1), so choosing between them is a Panes menu or layout choice, not a tab.
 
 ## `folder-tree` — Folder tree
 
@@ -126,7 +127,7 @@ The pane is registered, ships with a layout, has tests, and appears in the phase
 | Pane | Ships in | Status |
 |---|---|---|
 | `recent` | 4.17.0-beta2 | Not started |
-| `folder-tree` | 4.17.0-beta2 (stretch) or 4.18 | Not started |
+| `folder-tree` | 4.17.0-beta2 if the rest lands smoothly, otherwise 4.18 | Not started |
 | `mermaid` | 4.17.0-beta2 | Not started |
 | `markdown-preview` | 4.17.0-beta2 | Not started |
 | `transformer` | 5.0.0-beta1 | Not started |
