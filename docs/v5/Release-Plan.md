@@ -89,7 +89,7 @@ The plan as first written could not ship a pane before converting every command 
 - Layout files are user-editable input: an unknown pane ID or a malformed file opens Classic and says why.
 - No E2 work merges to `dev` between beta1 and 4.17.0. E2 touches every menu handler; keeping it out means a regression in this window is a pane regression.
 
-**Not in 4.17:** generated menus, ribbon, layout editor, per-file-type defaults (unless `defaults` falls out cheaply), transformer pane, audio pane, anything workflow.
+**Not in 4.17:** generated menus, ribbon, layout editor, user-set per-file-type defaults (E6 `defaults`), transformer pane, audio pane, anything workflow. One exception, confirmed 2026-11-19: a fixed, built-in map from file type to layout, so `.mmd` and `.mermaid` files open in the Mermaid layout. It has no settings UI and no other entries. See [E4a](E4-Layout-Engine.md) step 11.
 
 **Exit:** two weeks with no open regression in the calc pane (width and open state restored from history and settings), window position restore, or any of the three other editor modes.
 

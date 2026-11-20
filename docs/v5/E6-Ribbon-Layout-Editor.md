@@ -44,6 +44,7 @@ Let users choose, switch and build layouts without editing JSON, and offer a rib
 
 - A section on the Edit Text Window settings page: global default layout, and a default per file kind (Markdown, spreadsheet/CSV, Mermaid, audio/video, code, plain text). "Code" is one kind covering every extension in `CodeLanguages`; do not offer a default per language. Stored in the layout store's metadata file, not in `Settings.settings`.
 - Resolution order is E4's: explicit → history item → file type → global.
+- The file-type step already has a built-in map from 4.17 ([E4a](E4-Layout-Engine.md) step 11: `.mmd` and `.mermaid` → Mermaid). A user's default for a file kind overrides the built-in entry, and resetting it returns to the built-in entry. Do not copy the built-in map into the metadata file: keep it as the fallback, so built-in entries added later still reach users who never changed a default.
 - Export a layout to a file; import one (validate, show its name and what panes it uses, save as a user layout). Unknown pane or action IDs import with a warning, not a failure.
 - Include user layouts in `SettingsImportExportUtilities` export and import. Read how it handles the other file-backed settings and follow that.
 

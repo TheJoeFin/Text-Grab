@@ -63,7 +63,7 @@ Source on the left, live diagram on the right.
 - Debounce rendering (about 300 ms after the last keystroke); cancel an in-flight render when a new one starts; on a render error keep the last good diagram and show the error in a strip.
 - The pane renders the **whole document** when the layout is Mermaid, or the fenced `mermaid` block under the caret when the document is Markdown.
 - Actions: export SVG, export PNG, copy image, open full screen — reuse `MermaidDiagram.Save` and `CreateContextMenu`.
-- Layout: **Mermaid**. Default layout for `.mmd` / `.mermaid` files.
+- Layout: **Mermaid**. Default layout for `.mmd` / `.mermaid` files: add both extensions to the built-in file-type map from [E4a](E4-Layout-Engine.md) step 11. Test that each opens in the Mermaid layout in Code mode, and that a `.md` file still opens in Markdown mode in Classic.
 
 ## `markdown-preview` — Markdown source and preview
 

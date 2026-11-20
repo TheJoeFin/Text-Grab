@@ -83,6 +83,7 @@ Requires E3 `calc` merged. Does **not** require E2 or the other E3 clusters.
 8. Migrate persisted state: on first use, the existing calc width and open state become the user's live Classic layout. The old settings keep being written so a downgrade still works.
 9. Flip the setting's default to **on**. Leave the old XAML path in place for one release.
 10. Entry points: `WindowUtilities` parameter, `--layout`, protocol parameter, the history field, with tests for the parsing and for an older-shaped history file.
+11. **Built-in file-type defaults.** Implement the "default for the file type" step of the resolution order (Design, **Scope**) with a fixed, read-only map from file extension to layout ID, in `Text_Grab.Core.Layouts` beside the model. It ships **empty** in E4a, so every file still resolves to Classic and opens exactly as before. E5 runs add the entries for their own layouts; in 4.17 the only entries are `.mmd` and `.mermaid` (E5 `mermaid`). Do not map `.md`: Markdown files keep opening in Markdown mode in Classic, and the Markdown layout stays a choice in the Layouts menu. There is no settings UI; E6 `defaults` (5.0) layers user choices on top of this map. Tests: a history item's layout beats the file type; an extension that is not in the map resolves to Classic; a mapped layout ID that is missing from the store falls back to Classic.
 
 ### Out of scope
 
