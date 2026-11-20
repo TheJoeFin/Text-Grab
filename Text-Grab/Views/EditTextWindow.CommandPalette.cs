@@ -10,6 +10,7 @@ using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Text_Grab.Core.Actions;
+using Text_Grab.Editing.Panes;
 using Text_Grab.Models;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
@@ -119,10 +120,10 @@ public partial class EditTextWindow
             }
         }
 
-        if (CalcResultsTextControl.Visibility == Visibility.Visible)
+        foreach (IEditorPane pane in Panes)
         {
-            AddButton(CalcCopyAllButton, "Copy All Results", "Calculations");
-            AddButton(CalcInfoButton, "Calculation Pane Help", "Calculations");
+            foreach (PaneCommand command in pane.GetPaletteCommands())
+                Add(command.Name, command.Group, "", command.Execute);
         }
 
         if (BottomBar.Visibility == Visibility.Visible)

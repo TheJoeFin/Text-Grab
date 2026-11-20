@@ -97,6 +97,8 @@ Register-UiTest -Suite 'EditText' -Name 'calculator-pane-surface-can-be-entered'
     Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
     Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
     Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -TimeoutSeconds $Context.TimeoutSeconds
+    # The pane evaluates after its typing delay.
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
 }
 
 Register-UiTest -Suite 'EditText' -Name 'spreadsheet-and-markdown-modes-are-opened-from-stable-parent-menus' -Script {

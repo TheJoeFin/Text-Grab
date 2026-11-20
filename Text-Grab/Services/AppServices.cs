@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab.Core.Abstractions;
 using Text_Grab.Core.Actions;
+using Text_Grab.Editing.Panes;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
 using Text_Grab.Utilities;
@@ -94,6 +95,10 @@ internal static class AppServices
             WindowsActions.RegisterAll(registry);
             return registry;
         });
+
+        // Edit Text Window panes (v5 E3), one factory per kind. The window still places the calc pane
+        // from its own XAML; the layout renderer (E4a) makes panes through these.
+        services.AddSingleton<IEditorPaneFactory, CalcPaneFactory>();
     }
 
     /// <summary>

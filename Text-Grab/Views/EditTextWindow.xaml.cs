@@ -119,7 +119,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     // Store extracted pattern and precision for mouse wheel adjustment
     private ExtractedPattern? currentExtractedPattern = null;
     private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
-    private CalculationResult? calculationResult;
     private EditTextTableDocument? tableDocument;
     private readonly SpreadsheetUndoHistory spreadsheetUndoHistory = new();
     private readonly DataTable spreadsheetTable = new();
@@ -974,30 +973,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Code && CodeEditorControl.Visibility == Visibility.Visible)
             return WindowUtilities.GetScrollViewer(CodeEditorControl);
 
-        if (CalcResultsTextControl.Visibility == Visibility.Visible && CalcResultsTextControl.IsMouseOver)
-            return WindowUtilities.GetScrollViewer(CalcResultsTextControl);
+        if (CalcPaneControl.ScrollViewerUnderMouse is ScrollViewer calcScrollViewer)
+            return calcScrollViewer;
 
         return WindowUtilities.GetScrollViewer(PassedTextControl);
-    }
-
-    // Keep calc pane scroll in sync with main text box
-    private void PassedTextControl_ScrollChanged(object sender, ScrollChangedEventArgs e)
-    {
-        try
-        {
-            if (CalcResultsTextControl.Visibility != Visibility.Visible)
-                return;
-
-            // Obtain internal ScrollViewers for both text boxes
-            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv
-                && WindowUtilities.GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv
-                && !NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
-            {
-                // Mirror vertical offset only (horizontal can differ due to content widths)
-                calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
-            }
-        }
-        catch { /* no-op */ }
     }
 
     private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -1548,13 +1527,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         UpdateLineAndColumnText();
 
-        // Reset the debounce timer
-        _debounceTimer?.Stop();
-        _debounceTimer?.Start();
-        // If a newline append auto-scrolls the main box, ensure calc scroll follows too
-        // Schedule after layout so offsets are accurate
-        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
-
         if (SessionImpl.IsSyncingTextFromSpreadsheet || SessionImpl.IsSyncingTextFromMarkdown)
         {
             if (SessionImpl.IsSyncingTextFromMarkdown)
@@ -1601,14 +1573,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         UpdatePendingFileEditState();
     }
 
-    private DispatcherTimer? _debounceTimer = null;
-    private const int DEBOUNCE_DELAY_MS = 300;
-    private readonly CalculationService _calculationService = new();
-    private AggregateType _selectedAggregate = AggregateType.None;
-
     protected override void OnClosed(EventArgs e)
     {
-        _debounceTimer?.Stop();
+        DetachCalcPane();
         base.OnClosed(e);
     }
 
@@ -2209,12 +2176,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Tick -= EscapeKeyTimer_Tick;
 
         MarkdownEditorControl.RemoveHandler(Hyperlink.RequestNavigateEvent, new RequestNavigateEventHandler(MarkdownEditorControl_RequestNavigate));
-        PassedTextControl.RemoveHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged));
-        CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
-
-        HideCalcPaneContextItem.Click -= HideCalcPaneContextItem_Click;
-        ShowCalcErrorsContextItem.Click -= ShowCalcErrorsContextItem_Click;
-        CopyAllContextItem.Click -= CopyAllContextItem_Click;
 
         ClearDynamicMenuItems();
 
@@ -2303,6 +2264,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         MarkdownEditorControl.PreviewTextInput += MarkdownEditorControl_PreviewTextInput;
         System.Windows.DataObject.AddPastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
         InitializeCodeEditor();
+        AttachCalcPane();
         SetFontFromSettings();
         UpdateSpreadsheetModeUi();
         UpdateWindowTitle();

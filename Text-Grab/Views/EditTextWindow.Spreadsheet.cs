@@ -739,12 +739,7 @@ public partial class EditTextWindow
         {
             UpdateLineAndColumnText();
 
-            if (CalcResultsTextControl.Visibility == Visibility.Visible)
-            {
-                UpdateCalcPaneTextDisplay();
-                UpdateAggregateStatusDisplay();
-            }
-
+            // The calc pane shows the selected numbers in place of its results.
             SessionImpl.RaiseSelectedCellsChanged();
         }
     }
@@ -1972,21 +1967,6 @@ public partial class EditTextWindow
         return selectedCellCoordinates.Count == 0
             ? null
             : ExtractSpreadsheetSelectionNumbers(spreadsheetTable, selectedCellCoordinates);
-    }
-
-    private bool TryGetSpreadsheetSelectionNumbersPreviewText(out string previewText)
-    {
-        previewText = string.Empty;
-
-        if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
-
-        List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
-        if (selectedCellCoordinates.Count == 0)
-            return false;
-
-        previewText = BuildSpreadsheetSelectionNumbersPreviewText(spreadsheetTable, selectedCellCoordinates);
-        return !string.IsNullOrEmpty(previewText);
     }
 
     private void SpreadsheetContextMenu_Opened(object sender, RoutedEventArgs e)
