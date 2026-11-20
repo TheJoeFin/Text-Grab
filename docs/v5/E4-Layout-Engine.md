@@ -152,6 +152,8 @@ What later runs (E5, E6 `picker`, E4b) should know, including where the run depa
   | x64, warm | empty | 506 ms | 519 ms | +14 ms | | |
 
   The cost is a first window's: loading and compiling AvalonDock. A second window costs about the same either way. Both are inside the run's budget (15% open time, 30 MB working set). The x64 numbers are under ARM64 emulation; a native x64 machine was not available.
+
+  The default was then flipped to on, in a commit of its own (`8033cba`, `PaneLayoutSetting.DefaultIsOn`), so the owner can revert just that. The hand-written grid stays for this release as the way back: Settings > Edit Text > *Use the new pane layout* writes `Off`. It can be deleted in 4.18, with the `EtwPaneLayout` setting's `Off` value, the hand-written grid in `EditTextWindow.xaml` (`EditorAreaGrid`, `CalcColumn`, `TextBoxSplitter`, `CalcPaneShadow`), and the off branches in `EditTextWindow.Calc.cs`.
 - **UI Automation.** `UiTests/Scripts/Export-EditTextUiaFixtures.ps1` captures the editor area's tree and focus order; `UiTests/Fixtures/EditTextUia` holds the hand-written window's (identical on `dev` without E3 and on E3 `calc`). `UiTests/Suites/EditTextUiaParity.psm1` is the comparison, and lists what it accepts.
 
 ### Out of scope

@@ -100,7 +100,7 @@ The plan as first written could not ship a pane before converting every command 
 - Layout files are user-editable input: an unknown pane ID or a malformed file opens Classic and says why.
 - **Feature freeze (confirmed 2026-11-19).** Until 4.17.0 ships, `dev` takes only the beta2 work above, fixes for regressions found in the betas, and release hardening (notices, version, release notes). That rules out E2 work, other features, and dependency bumps beyond the two packages beta2 adds; open Dependabot pull requests wait until after 4.17.0. E2 touches every menu handler, and the aim is that a regression in this window is a pane regression.
 - **Fourteen non-pane commits** landed after beta1 shipped and before the freeze (`d028b76..6739e10`). They include the command palette, the Markdown formatting toolbar and table changes, speech commands in the Selection menu, window-only spell check, text file associations and icons, opening copied file paths, the reading-position scrollbar bookmark, a history-update fix and the reduced-motion setting. They ship in beta2, so its release notes and test pass must cover them. The file associations change the package manifest, so they need the MSIX package build.
-- **New packages:** `Dirkster.AvalonDock` (Ms-PL, #2) and `CommunityToolkit.Mvvm` (MIT, #3). The run that adds each one also adds it to `BUILT-WITH.md` and the in-app list (`ThirdPartyNoticeUtilities` and its test), and reports it for the MSIX build check.
+- **New packages:** `Dirkster.AvalonDock` (Ms-PL, #2; 5.0.2, which brings `Dirkster.AvalonDock.Core` and 17 satellite resource folders into the app's output) and `CommunityToolkit.Mvvm` (MIT, #3). The run that adds each one also adds it to `BUILT-WITH.md` and the in-app list (`ThirdPartyNoticeUtilities` and its test), and reports it for the MSIX build check.
 - **Tags:** beta2 is `v4.17.0-beta2`, titled "v4.17.0 Beta 2". Run the Release workflow from `dev`. It makes a draft pre-release whose tag points at the commit it ran from (`target_commitish: github.sha`); the tag itself appears when you publish the draft. Stable is `v4.17.0`. The workflow always marks a release as a pre-release, so mark stable as the latest release when you publish it.
 
 **Not in 4.17:** generated menus, ribbon, layout editor, user-set per-file-type defaults (E6 `defaults`), transformer pane, audio pane, anything workflow. One exception, confirmed 2026-11-19: a fixed, built-in map from file type to layout, so `.mmd` and `.mermaid` files open in the Mermaid layout. It has no settings UI and no other entries. See [E4a](E4-Layout-Engine.md) step 11.
@@ -151,7 +151,7 @@ Decisions due before 5.0-beta1: **D2** (ribbon), **D3** (range highlighting — 
 | F1–F5, A1, E1, Code mode | Done, on `dev` | 4.17.0-beta1 |
 | F6 | Shelved | When a consumer needs it; `recent` works without it |
 | E3 `calc` | Done (0fb4420) | 4.17.0-beta2 |
-| E4a | Not started | 4.17.0-beta2 |
+| E4a | Done (8033cba) | 4.17.0-beta2 |
 | E5 `recent`, `mermaid`, `markdown-preview` | Not started | 4.17.0-beta2 |
 | E6 `picker` | Not started | 4.17.0-beta2 |
 | E5 `folder-tree` | Not started | 4.17.0-beta2 if #1–#6 land smoothly, otherwise 4.18 |
