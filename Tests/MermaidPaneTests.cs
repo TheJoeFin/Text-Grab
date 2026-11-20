@@ -375,7 +375,7 @@ public class MermaidPaneTests
         Assert.Equal(PaneIds.Mermaid, MermaidPane.PaneId);
 
         string[] ids = [.. AppServices.Provider.GetServices<IEditorPaneFactory>().Select(factory => factory.Descriptor.Id).Order(StringComparer.Ordinal)];
-        Assert.Equal(["textgrab.pane.calc", "textgrab.pane.mermaid", "textgrab.pane.recent"], ids);
+        Assert.Equal(["textgrab.pane.calc", "textgrab.pane.markdownPreview", "textgrab.pane.mermaid", "textgrab.pane.recent"], ids);
 
         ActionRegistry registry = new();
         MermaidPaneActions.RegisterAll(registry);

@@ -221,6 +221,7 @@ public class AppServicesTests
         WindowsActions.RegisterAll(expected);
         RecentPaneActions.RegisterAll(expected);
         MermaidPaneActions.RegisterAll(expected);
+        MarkdownPreviewPaneActions.RegisterAll(expected);
         Assert.Equal(expected.All.Select(d => d.Id), registry.All.Select(d => d.Id));
 
         Assert.NotNull(registry.GetTransform("textgrab.text.trimLines"));

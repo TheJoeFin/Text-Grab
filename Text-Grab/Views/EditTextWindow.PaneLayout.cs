@@ -359,6 +359,10 @@ public partial class EditTextWindow
             return;
         }
 
+        // Relative images in the preview resolve against the file the window has open.
+        if (pane is MarkdownPreviewPane preview)
+            preview.FilePathProvider = () => OpenedFilePath;
+
         pane.Attach(Session, config);
     }
 

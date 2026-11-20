@@ -96,6 +96,7 @@ internal static class AppServices
             WindowsActions.RegisterAll(registry);
             RecentPaneActions.RegisterAll(registry);
             MermaidPaneActions.RegisterAll(registry);
+            MarkdownPreviewPaneActions.RegisterAll(registry);
             return registry;
         });
 
@@ -105,6 +106,7 @@ internal static class AppServices
         services.AddSingleton<IEditorPaneFactory, CalcPaneFactory>();
         services.AddSingleton<IEditorPaneFactory, RecentPaneFactory>();
         services.AddSingleton<IEditorPaneFactory, MermaidPaneFactory>();
+        services.AddSingleton<IEditorPaneFactory, MarkdownPreviewPaneFactory>();
 
         // Edit Text Window layouts (v5 E4a): the built-in ones and those saved as layouts/<id>.json. The
         // folder is chosen when the store is first resolved, which is when a window is first asked for a
