@@ -352,6 +352,117 @@ Register-UiTest -Suite 'EditText' -Name 'recent-pane-is-not-in-the-classic-layou
     Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
 }
 
+Register-UiTest -Suite 'EditText' -Name 'mermaid-an-mmd-file-opens-the-mermaid-layout-in-code-mode-with-the-diagram-pane' -Script {
+    param($Context)
+
+    # v5 E5 mermaid: .mmd is in the built-in file-type map, so the file opens in the Mermaid layout, in Code mode
+    # as Plain Text, with the diagram pane beside the editor and no calc pane.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-mmd' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'flow.mmd'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'Plain Text' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Error' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicLeftOf -Target $editText -Left 'EditText.CodeEditor' -Right 'EditText.Mermaid.Diagram'
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText' `
+        -Predicate { param($value) $value -like 'flowchart LR*Draw it*' } -Description 'the diagram of the file' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-editing-the-source-updates-the-diagram-and-a-broken-source-keeps-it-under-an-error' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-edit' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'flow.mmd'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestForegroundWindow -Target $editText
+
+    # The picture follows the source. The help text is the start of the source the picture was drawn from.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "flowchart LR`r`nX --> Y"
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*X --> Y*' } -Description 'the edited source to be drawn' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+
+    # A source that does not draw keeps the last good diagram and says why in the strip.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value 'this is not a Mermaid diagram'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Error' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    $kept = Get-UiTestProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText'
+    if ($kept -notlike '*X --> Y*') {
+        throw "A broken source should leave the last good diagram; its help text is now '$kept'."
+    }
+
+    # Fixing it draws again and clears the strip.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "flowchart LR`r`nP --> Q"
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*P --> Q*' } -Description 'the fixed source to be drawn' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Error' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-layout-argument-opens-the-mermaid-layout-in-code-mode-on-a-blank-window' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-layout-arg' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'mermaid') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'Plain Text' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicLeftOf -Target $editText -Left 'EditText.CodeEditor' -Right 'EditText.Mermaid.Placeholder'
+
+    Set-UiTestForegroundWindow -Target $editText
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "flowchart LR`r`nA --> B"
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-a-txt-file-still-opens-in-classic-without-the-diagram-pane' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-txt' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'notes.txt'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'Plain notes' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    # Classic still has its calc pane.
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-a-markdown-file-still-opens-in-markdown-mode-in-classic' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-md' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'readme.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-pane-is-not-in-the-classic-layout' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-classic' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
 Register-UiTest -Suite 'EditText' -Name 'clipboard-watcher-remains-system-integration-only' -SkipReason 'Clipboard watcher behavior depends on an external clipboard change and is owned by the system-integration suite.' -Script {
     param($Context)
 }

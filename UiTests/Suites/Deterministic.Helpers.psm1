@@ -166,6 +166,75 @@ function Set-DeterministicTextHistory {
     @($items) | ConvertTo-Json -Depth 4 -AsArray | Set-Content -LiteralPath (Join-Path $history 'HistoryTextOnly.json') -Encoding utf8
 }
 
+function Copy-DeterministicMermaidFixture {
+    <#
+    .SYNOPSIS
+        Copies a file from UiTests\Fixtures\Mermaid into the isolated profile's temp folder and returns the copy's path,
+        so a test opens (and may edit) the copy rather than the file in the repository.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ProfileDirectory,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    $temp = Join-Path $ProfileDirectory 'temp'
+    New-Item -ItemType Directory -Path $temp -Force | Out-Null
+    $source = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $PSScriptRoot) "Fixtures\Mermaid\$Name"))
+    $destination = Join-Path $temp $Name
+    Copy-Item -LiteralPath $source -Destination $destination -Force
+    return $destination
+}
+
+function Wait-DeterministicProperty {
+    <#
+    .SYNOPSIS
+        Polls a UI Automation property of an element until $Predicate, given the property's value, returns true.
+        Returns the value that satisfied it.
+    #>
+    param(
+        [Parameter(Mandatory)]$Target,
+        [Parameter(Mandatory)][string]$AutomationId,
+        [Parameter(Mandatory)][string]$Property,
+        [Parameter(Mandatory)][scriptblock]$Predicate,
+        [Parameter(Mandatory)][string]$Description,
+        [int]$TimeoutSeconds = 30
+    )
+
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
+    $last = $null
+    do {
+        try {
+            $last = Get-UiTestProperty -Target $Target -AutomationId $AutomationId -Property $Property
+            if (& $Predicate $last) { return $last }
+        }
+        catch {
+            # The element may not exist yet, or between two renders.
+            $last = "<$($_.Exception.Message)>"
+        }
+        Start-Sleep -Milliseconds 300
+    } while ([DateTimeOffset]::UtcNow -lt $deadline)
+
+    throw "Timed out after $TimeoutSeconds seconds waiting for $Description (AutomationId '$AutomationId', $Property). Last value: '$last'."
+}
+
+function Assert-DeterministicLeftOf {
+    <#
+    .SYNOPSIS
+        Fails unless the element $Left is left of the element $Right on screen.
+    #>
+    param(
+        [Parameter(Mandatory)]$Target,
+        [Parameter(Mandatory)][string]$Left,
+        [Parameter(Mandatory)][string]$Right
+    )
+
+    $leftBox = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', $Left, '--window', [string]$Target.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    $rightBox = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', $Right, '--window', [string]$Target.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    if ([int]$leftBox.x -ge [int]$rightBox.x) {
+        throw "'$Left' should be left of '$Right'; x=$($leftBox.x) and x=$($rightBox.x)."
+    }
+}
+
 function Assert-DeterministicAutomationHealthy {
     param([Parameter(Mandatory)]$Context)
 
@@ -209,6 +278,9 @@ Export-ModuleMember -Function @(
     'New-DeterministicTarget',
     'New-DeterministicSeedProfile',
     'Set-DeterministicTextHistory',
+    'Copy-DeterministicMermaidFixture',
+    'Wait-DeterministicProperty',
+    'Assert-DeterministicLeftOf',
     'Assert-DeterministicAutomationHealthy',
     'Open-DeterministicMenu',
     'Set-DeterministicInteractiveValue'

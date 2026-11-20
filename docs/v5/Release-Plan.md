@@ -81,7 +81,7 @@ The plan as first written could not ship a pane before converting every command 
 | 1 | E3 `calc` | E1 | Opus | Defines `IEditorPane`. Add a scroll offset to `IEditorSurface` for the text **and code** surfaces, which fixes calc scrolling in Code mode. |
 | 2 | E4a | #1; D1, D5 | Opus | Classic = editor + calc pane, rendered from `classic.json` through AvalonDock (D1), which only replaces what the window does today. Parity is limited to the editor area and the calc pane. Adds `Dirkster.AvalonDock`. |
 | 3 | E5 `recent` | #2; D4 | Sonnet | Closes #592. Adds `CommunityToolkit.Mvvm` (D4). |
-| 4 | E5 `mermaid` | #2; D4 | Sonnet | The building blocks are all on `dev`. Adds the `.mmd` and `.mermaid` entries to the built-in file-type map. |
+| 4 | E5 `mermaid` | #2; D4 | Sonnet | The building blocks are all on `dev`. Adds the `.mmd` and `.mermaid` entries to the built-in file-type map. **Done (b6cf46e)**, no new packages; it also decided how a layout's `DefaultMode` meets `OpenPath` and made a window render its built-in layout first (see E5 *After the `mermaid` run*). |
 | 5 | E5 `markdown-preview` | #2; D4 | Sonnet | Source side in Code mode with Markdown highlighting. |
 | 6 | E6 `picker` | #2 | Sonnet | Layouts menu, Panes toggles, "Save current layout as…". |
 | 7 | E5 `folder-tree` | #2; D4 | Sonnet | **Conditional.** Start it only once #1–#6 are merged with every gate green and no open pane regression; decide when #6 merges. Otherwise it moves to 4.18. In 4.17 it calls the window's folder OCR directly, because the `files` controller it should reuse is extracted in 4.18. |
@@ -152,8 +152,9 @@ Decisions due before 5.0-beta1: **D2** (ribbon), **D3** (range highlighting — 
 | F6 | Shelved | When a consumer needs it; `recent` works without it |
 | E3 `calc` | Done (0fb4420) | 4.17.0-beta2 |
 | E4a | Done (8033cba) | 4.17.0-beta2 |
-| E5 `recent` | In progress (`recent` done, 191b7f4) | 4.17.0-beta2 |
-| E5 `mermaid`, `markdown-preview` | Not started | 4.17.0-beta2 |
+| E5 `recent` | In progress (`recent` done, 191b7f4; `mermaid` done, b6cf46e) | 4.17.0-beta2 |
+| E5 `mermaid` | Done (b6cf46e) | 4.17.0-beta2 |
+| E5 `markdown-preview` | Not started | 4.17.0-beta2 |
 | E6 `picker` | Not started | 4.17.0-beta2 |
 | E5 `folder-tree` | Not started | 4.17.0-beta2 if #1–#6 land smoothly, otherwise 4.18 |
 | E2 | Not started | 4.18 |
