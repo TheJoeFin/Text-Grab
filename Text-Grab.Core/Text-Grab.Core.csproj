@@ -38,4 +38,9 @@
     <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The built-in Edit Text Window layouts (v5 E4a), read by Layouts/BuiltInLayouts.cs. -->
+    <EmbeddedResource Include="Layouts\BuiltIn\*.json" LogicalName="Text_Grab.Core.Layouts.BuiltIn.%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
