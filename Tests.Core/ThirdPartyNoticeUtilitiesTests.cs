@@ -13,6 +13,7 @@ public class ThirdPartyNoticeUtilitiesTests
             "AvalonEdit",
             "BenchmarkDotNet",
             "CliWrap",
+            "CommunityToolkit.Mvvm",
             "Dapplo.Windows.User32",
             "Dirkster.AvalonDock",
             "Humanizer.Core",

@@ -92,6 +92,8 @@
     <ItemGroup>
         <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
         <PackageReference Include="CliWrap" Version="3.10.5" />
+        <!-- View models of the Edit Text Window's new panes (v5 E5, decision D4). -->
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="Dapplo.Windows.User32" Version="3.23.3" />
         <!-- The Edit Text Window's pane host (v5 E4a, decision D1). Brings Dirkster.AvalonDock.Core with it. -->
         <PackageReference Include="Dirkster.AvalonDock" Version="5.0.2" />
