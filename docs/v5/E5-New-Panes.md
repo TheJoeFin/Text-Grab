@@ -41,6 +41,18 @@ A searchable list of recent Edit Text Window items, grabs and files. Activating 
 - Without F6: reload when the window is activated. With F6: subscribe to `HistoryStore.Changed`.
 - Layout: **Explorer** (recent in the left pane). If `folder-tree` ships in 4.17, it replaces `recent` in that left pane: one or the other, never both at once (decided 2026-11-19). Tab headers are hidden in 4.17 (D1), so choosing between them is a Panes menu or layout choice, not a tab.
 
+### After the `recent` run (2026-11-20, `v5/e5-pane-recent`)
+
+- **Built:** `RecentPane` / `RecentPaneFactory` / `RecentItemsViewModel` in `Text-Grab/Editing/Panes/` (`RecentItems.cs` holds the view model, the injectable `IRecentItemsSource`, and `RecentItemOpener`, the pure rule for where an item opens). The window side is `EditTextWindow.Recent.cs`. Layout `explorer` (`LayoutIds.Explorer`): recent 260 px | editor | calc (collapsed), so Ctrl+P still works and Classic's calc pane is kept. IDs: `textgrab.pane.recent`; actions `textgrab.recent.open`, `.openInNewWindow`, `.search`, `.refresh` (descriptors only, registered by `RecentPaneActions` in the app).
+- **Items** come from `TrayFlyoutItemProvider.LoadAll` over all sources (up to 100 rows; search reaches past the cap). Read on attach and on window activation (F6 is shelved). A hidden pane only marks itself stale. `IEditorPane` gained a default member `OnWindowActivated()`.
+- **Deviation: "empty or unmodified".** An item opens in this window only when the window is blank: no text and no file open. `ShowHistoryItem` does not reset `OpenedFilePath` or the saved-file text, so reusing a window with a file open could later save history text over that file. Resetting file state is a follow-up if the owner wants unmodified file windows reused.
+- **Opening:** double-click or Enter opens; Ctrl+Enter and the context menu's "Open in new window" always use a new window. Grabs and PDFs opened in a Grab Frame open a `GrabFrame`; a missing file offers "Remove recent item". Not copied from the tray: single click does not open.
+- **Construction order:** Recent is not in Classic, so Classic windows never make it or read history (tests: `Classic_NeverMakesTheRecentPaneOrReadsHistory`, `RecentPane.CreatedCount`). `RecentPaneFactory` holds nothing, because every window resolves all factories to look up descriptors. The general "Classic renders first" order is unchanged; `.mmd` (mermaid) will hit it for the calc pane.
+- **Config:** none to persist (`SaveConfig` is null; width and shown state are the host's). The search text is not kept.
+- **CommunityToolkit.Mvvm 8.4.0**, not 8.4.2: 8.4.1+ require `Microsoft.Windows.SDK.NET.Ref` 10.0.22621.56 and the projects pin .48. Partial-property generation needs LangVersion preview, so the view model uses `[ObservableProperty]` fields with MVVMTK0045 (WinRT only) disabled in that file.
+- **Tests** replace history for the whole assembly (`FakeRecentItemsSource`, an `AsyncLocal` list set by a module initializer), so no test reads a person's history.
+- **Not verified:** the new UI tests (`recent-pane-*` in `EditText.Tests.ps1`, helper `Set-DeterministicTextHistory`) were written but the UI run was stopped by low system memory, so they have never run. Also unchecked by hand: both themes, keyboard-only use, touch.
+
 ## `folder-tree` — Folder tree
 
 **Depends on:** E4, F5 (`FolderWatcherService`), F3 (`IOcrService`).
@@ -126,7 +138,7 @@ The pane is registered, ships with a layout, has tests, and appears in the phase
 
 | Pane | Ships in | Status |
 |---|---|---|
-| `recent` | 4.17.0-beta2 | Not started |
+| `recent` | 4.17.0-beta2 | Done (191b7f4); UI tests in 9458b43 not yet run |
 | `folder-tree` | 4.17.0-beta2 if the rest lands smoothly, otherwise 4.18 | Not started |
 | `mermaid` | 4.17.0-beta2 | Not started |
 | `markdown-preview` | 4.17.0-beta2 | Not started |

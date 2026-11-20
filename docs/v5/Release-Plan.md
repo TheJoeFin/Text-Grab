@@ -152,7 +152,8 @@ Decisions due before 5.0-beta1: **D2** (ribbon), **D3** (range highlighting — 
 | F6 | Shelved | When a consumer needs it; `recent` works without it |
 | E3 `calc` | Done (0fb4420) | 4.17.0-beta2 |
 | E4a | Done (8033cba) | 4.17.0-beta2 |
-| E5 `recent`, `mermaid`, `markdown-preview` | Not started | 4.17.0-beta2 |
+| E5 `recent` | In progress (`recent` done, 191b7f4; UI tests written, not yet run) | 4.17.0-beta2 |
+| E5 `mermaid`, `markdown-preview` | Not started | 4.17.0-beta2 |
 | E6 `picker` | Not started | 4.17.0-beta2 |
 | E5 `folder-tree` | Not started | 4.17.0-beta2 if #1–#6 land smoothly, otherwise 4.18 |
 | E2 | Not started | 4.18 |
