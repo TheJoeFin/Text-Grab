@@ -47,6 +47,89 @@ public sealed class FileLayoutStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task BasedOn_SurvivesASaveAndLoad_AndIsOmittedWhenNull()
+    {
+        FileLayoutStore store = new(directory);
+        await store.SaveAsync(BuiltInLayouts.Classic with { Id = "copy", Name = "Copy", BasedOn = LayoutIds.Explorer }, TestContext.Current.CancellationToken);
+        await store.SaveAsync(BuiltInLayouts.Classic with { Id = "plain", Name = "Plain" }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(LayoutIds.Explorer, (await store.LoadAsync("copy", TestContext.Current.CancellationToken)).Layout!.BasedOn);
+        Assert.Null((await store.LoadAsync("plain", TestContext.Current.CancellationToken)).Layout!.BasedOn);
+        Assert.DoesNotContain("basedOn", await File.ReadAllTextAsync(Path.Combine(directory, "plain.json"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void LoadSync_ReadsAStoredLayoutAndAFailureTheWayLoadAsyncDoes()
+    {
+        FileLayoutStore store = new(directory);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "saved.json"), EtwLayoutSerializer.Serialize(BuiltInLayouts.Classic with { Id = "saved", Name = "Saved" }));
+        File.WriteAllText(Path.Combine(directory, "broken.json"), "{ not json");
+
+        Assert.Equal("Saved", store.Load("saved").Layout!.Name);
+        Assert.Same(BuiltInLayouts.Classic, store.Load(LayoutIds.Classic).Layout);
+        Assert.Contains("There is no layout", store.Load("absent").Error);
+        Assert.Contains("could not be used", store.Load("broken").Error);
+        Assert.Contains("can't be a layout ID", store.Load("../x").Error);
+    }
+
+    [Fact]
+    public async Task TheGlobalDefault_IsSavedInTheMetadataFileAndClearedWithNull()
+    {
+        FileLayoutStore store = new(directory);
+        Assert.Equal(new LayoutStoreDefaults(null), store.ReadDefaults());
+        Assert.False(Directory.Exists(directory));
+
+        await store.SetGlobalDefaultAsync("explorer", TestContext.Current.CancellationToken);
+
+        Assert.True(File.Exists(Path.Combine(directory, FileLayoutStore.MetadataFileName)));
+        Assert.Equal(new LayoutStoreDefaults("explorer"), store.ReadDefaults());
+        Assert.Equal(new LayoutStoreDefaults("explorer"), await store.ReadDefaultsAsync(TestContext.Current.CancellationToken));
+
+        await store.SetGlobalDefaultAsync(null, TestContext.Current.CancellationToken);
+        Assert.Equal(new LayoutStoreDefaults(null), store.ReadDefaults());
+    }
+
+    [Fact]
+    public async Task TheMetadataFile_IsNotALayoutAndKeepsMembersItDoesNotKnow()
+    {
+        FileLayoutStore store = new(directory);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, FileLayoutStore.MetadataFileName), """{ "fileKinds": { "markdown": "explorer" } }""");
+
+        await store.SetGlobalDefaultAsync("mermaid", TestContext.Current.CancellationToken);
+
+        Assert.Contains("fileKinds", File.ReadAllText(Path.Combine(directory, FileLayoutStore.MetadataFileName)));
+        Assert.DoesNotContain(await store.ListAsync(TestContext.Current.CancellationToken), summary => !summary.IsBuiltIn);
+    }
+
+    [Theory]
+    [InlineData("{ not json")]
+    [InlineData("[1, 2]")]
+    [InlineData("""{ "globalDefault": 5 }""")]
+    [InlineData("""{ "globalDefault": "../escape" }""")]
+    public void AMalformedMetadataFile_GivesNoDefaultAndAReason(string json)
+    {
+        FileLayoutStore store = new(directory);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, FileLayoutStore.MetadataFileName), json);
+
+        LayoutStoreDefaults defaults = store.ReadDefaults();
+
+        Assert.Null(defaults.GlobalDefaultId);
+        Assert.False(string.IsNullOrEmpty(defaults.Error));
+    }
+
+    [Fact]
+    public async Task SettingAnIdThatCannotBeOne_IsRefused()
+    {
+        FileLayoutStore store = new(directory);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => store.SetGlobalDefaultAsync("../escape", TestContext.Current.CancellationToken));
+        Assert.False(Directory.Exists(directory));
+    }
+
+    [Fact]
     public async Task Save_OverABuiltInLayout_IsRefused()
     {
         FileLayoutStore store = new(directory);

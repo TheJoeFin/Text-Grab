@@ -22,6 +22,10 @@ namespace Text_Grab.Core.Layouts;
 /// <param name="Chrome">E4b. Null means the window's built-in menus, which is all E4a renders.</param>
 /// <param name="BottomBarActionIds">E4b. Null means the bottom bar from settings.</param>
 /// <param name="StatusItemIds">E4b. Null means the built-in status items.</param>
+/// <param name="BasedOn">
+/// The built-in layout this one was saved from (E6 <c>picker</c>), which "Reset layout" returns to.
+/// Optional; builds that predate it ignore it (and keep it, as an unknown member, when they save).
+/// </param>
 public sealed record EtwLayoutDefinition(
     string SchemaVersion,
     string Id,
@@ -32,7 +36,8 @@ public sealed record EtwLayoutDefinition(
     WindowOptions? Window = null,
     ChromeDefinition? Chrome = null,
     IReadOnlyList<string>? BottomBarActionIds = null,
-    IReadOnlyList<string>? StatusItemIds = null)
+    IReadOnlyList<string>? StatusItemIds = null,
+    string? BasedOn = null)
 {
     /// <summary>
     /// Members this version does not know, kept so that a layout written by a newer Text Grab

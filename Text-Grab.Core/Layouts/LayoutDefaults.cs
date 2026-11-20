@@ -21,7 +21,9 @@ namespace Text_Grab.Core.Layouts;
 /// spreadsheet, a source file as code with its own language) keeps it, and so does a multi-file open.</item>
 /// <item>A window with no file and no history item, still in its default Text mode when the layout is first
 /// applied (<c>--layout mermaid</c>, a link, a new window), takes the layout's mode. A mode somebody
-/// already chose is never replaced, and switching layouts later never changes the mode.</item>
+/// already chose is never replaced.</item>
+/// <item>Switching layouts later (E6 <c>picker</c>, <see cref="ModeOnSwitch"/>) changes the mode only when
+/// the new layout names one, and never when that would lose something.</item>
 /// <item>A null <see cref="EtwLayoutDefinition.DefaultMode"/> changes nothing, which is why Classic and
 /// every window with no layout behave as before.</item>
 /// </list>
@@ -40,6 +42,40 @@ public static class LayoutDefaults
     /// <param name="currentMode">The window's mode now; anything but <see cref="EtwEditorMode.Text"/> was chosen on purpose and stays.</param>
     public static EtwEditorMode ModeForBlankWindow(EtwEditorMode currentMode, EtwLayoutDefinition? layout)
         => currentMode == EtwEditorMode.Text && layout?.DefaultMode is EtwEditorMode layoutMode ? layoutMode : currentMode;
+
+    /// <summary>
+    /// The mode for a window that already holds a document when the person switches to
+    /// <paramref name="layout"/> (v5 E6 <c>picker</c>): the layout's <see cref="EtwLayoutDefinition.DefaultMode"/> if
+    /// it names one, unless leaving the current mode would lose something.
+    /// </summary>
+    /// <remarks>
+    /// Nothing is lost by leaving Text or Code. A spreadsheet whose table carries formatting (wrapped
+    /// cells, column widths, row heights) stays a spreadsheet. Markdown mode stays Markdown mode: there
+    /// is no cheap check that the rendered document gives back the same text, so it is never left.
+    /// A layout with no default mode (Classic, Explorer) changes nothing.
+    /// </remarks>
+    /// <param name="currentMode">The window's mode now.</param>
+    /// <param name="layout">The layout being switched to.</param>
+    /// <param name="spreadsheetHasFormatting"><see cref="Text_Grab.Models.EditTextTableDocument.HasViewFormatting"/> for the window's table.</param>
+    public static EtwEditorMode ModeOnSwitch(EtwEditorMode currentMode, EtwLayoutDefinition? layout, bool spreadsheetHasFormatting)
+    {
+        if (layout?.DefaultMode is not EtwEditorMode layoutMode || layoutMode == currentMode)
+            return currentMode;
+
+        return currentMode switch
+        {
+            EtwEditorMode.Markdown => currentMode,
+            EtwEditorMode.Spreadsheet when spreadsheetHasFormatting => currentMode,
+            _ => layoutMode,
+        };
+    }
+
+    /// <summary>
+    /// The language to set when a switch enters Code mode: the layout's, but only if the window has no
+    /// language yet; otherwise null, which means leave it.
+    /// </summary>
+    public static CodeLanguageChoice? CodeLanguageOnSwitch(bool languageAlreadySet, EtwLayoutDefinition? layout)
+        => languageAlreadySet ? null : CodeLanguageFor(null, layout);
 
     /// <summary>
     /// The highlighting for a document the layout put in Code mode: the language its file extension gave,

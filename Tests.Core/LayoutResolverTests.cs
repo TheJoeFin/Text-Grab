@@ -225,5 +225,68 @@ public class LayoutResolverTests
         public Task SaveAsync(EtwLayoutDefinition layout, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public LayoutReadResult Load(string id) => LoadAsync(id).GetAwaiter().GetResult();
+
+        public LayoutStoreDefaults GlobalDefault { get; set; } = new(null);
+
+        public LayoutStoreDefaults ReadDefaults() => GlobalDefault;
+
+        public Task<LayoutStoreDefaults> ReadDefaultsAsync(CancellationToken cancellationToken = default) => Task.FromResult(GlobalDefault);
+
+        public Task SetGlobalDefaultAsync(string? id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    }
+
+    // ---- The global default (E6 picker) ----
+
+    [Fact]
+    public async Task TheGlobalDefault_IsUsedWhenNothingMoreSpecificIsChosen()
+    {
+        MemoryStore store = new(Saved) { GlobalDefault = new("saved") };
+
+        ResolvedLayout resolved = await new LayoutResolver(store, paneId => paneId == PaneIds.Calc).ResolveAsync(new LayoutRequest(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("saved", resolved.Layout.Id);
+        Assert.Null(resolved.Notice);
+    }
+
+    [Fact]
+    public async Task TheGlobalDefault_LosesToTheCallerTheHistoryItemAndTheFileType()
+    {
+        MemoryStore store = new(Saved, Mermaid) { GlobalDefault = new("saved") };
+        LayoutResolver resolver = new(store, _ => true, path => LayoutFileTypeDefaults.LayoutIdFor(path, TestMap));
+
+        Assert.Equal("classic", (await resolver.ResolveAsync(new LayoutRequest(RequestedId: "classic"), TestContext.Current.CancellationToken)).Layout.Id);
+        Assert.Equal("mermaid", (await resolver.ResolveAsync(new LayoutRequest(HistoryId: "mermaid"), TestContext.Current.CancellationToken)).Layout.Id);
+        Assert.Equal("mermaid", (await resolver.ResolveAsync(new LayoutRequest(FilePath: @"C:\a.mmd"), TestContext.Current.CancellationToken)).Layout.Id);
+    }
+
+    [Fact]
+    public async Task AMissingGlobalDefault_FallsBackToClassicAndSaysWhy()
+    {
+        MemoryStore store = new() { GlobalDefault = new("gone") };
+
+        ResolvedLayout resolved = await new LayoutResolver(store, _ => true).ResolveAsync(new LayoutRequest(), TestContext.Current.CancellationToken);
+
+        Assert.Same(BuiltInLayouts.Classic, resolved.Layout);
+        Assert.Contains("gone", resolved.Notice);
+    }
+
+    [Fact]
+    public async Task AMalformedMetadataFile_FallsBackToClassicAndSaysWhy()
+    {
+        MemoryStore store = new() { GlobalDefault = new(null, "The layout settings file is not valid.") };
+
+        ResolvedLayout resolved = await new LayoutResolver(store, _ => true).ResolveAsync(new LayoutRequest(), TestContext.Current.CancellationToken);
+
+        Assert.Same(BuiltInLayouts.Classic, resolved.Layout);
+        Assert.Contains("not valid", resolved.Notice);
+    }
+
+    [Fact]
+    public void TheChoiceWithAGlobalDefault_PutsItLast()
+    {
+        Assert.Equal("saved", LayoutResolver.ChooseId(new LayoutRequest(GlobalDefaultId: "saved"), null));
+        Assert.Equal("explorer", LayoutResolver.ChooseId(new LayoutRequest(RequestedId: "explorer", GlobalDefaultId: "saved"), null));
     }
 }

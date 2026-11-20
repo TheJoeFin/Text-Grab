@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Text_Grab.Utilities;
@@ -22,6 +24,11 @@ public sealed class FileLayoutStore : ILayoutStore
 {
     public const string FolderName = "layouts";
     private const string Extension = ".json";
+
+    /// <summary>The store's metadata file: the global default layout today, and E6 <c>defaults</c>' per-file-kind entries later.</summary>
+    public const string MetadataFileName = ".store.json";
+
+    private const string GlobalDefaultMember = "globalDefault";
 
     public FileLayoutStore(string directory)
     {
@@ -69,32 +76,144 @@ public sealed class FileLayoutStore : ILayoutStore
 
     public async Task<LayoutReadResult> LoadAsync(string id, CancellationToken cancellationToken = default)
     {
-        if (BuiltInLayouts.TryGet(id, out EtwLayoutDefinition builtIn))
-            return new LayoutReadResult(builtIn, null);
-
-        if (!LayoutIds.IsValid(id))
-            return LayoutReadResult.Failed($"\"{id}\" can't be a layout ID.");
-
-        string path = PathFor(id);
-        if (!File.Exists(path))
-            return LayoutReadResult.Failed($"There is no layout \"{id}\".");
+        if (CheckBeforeReading(id) is LayoutReadResult early)
+            return early;
 
         string json;
         try
         {
-            json = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
+            json = await File.ReadAllTextAsync(PathFor(id), cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return LayoutReadResult.Failed($"The layout \"{id}\" could not be read: {ex.Message}");
         }
 
+        return Parse(id, json);
+    }
+
+    public LayoutReadResult Load(string id)
+    {
+        if (CheckBeforeReading(id) is LayoutReadResult early)
+            return early;
+
+        string json;
+        try
+        {
+            json = File.ReadAllText(PathFor(id));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return LayoutReadResult.Failed($"The layout \"{id}\" could not be read: {ex.Message}");
+        }
+
+        return Parse(id, json);
+    }
+
+    // The built-in layout, or a reason there is nothing to read; null when the file is there to read.
+    private LayoutReadResult? CheckBeforeReading(string id)
+    {
+        if (BuiltInLayouts.TryGet(id, out EtwLayoutDefinition builtIn))
+            return new LayoutReadResult(builtIn, null);
+
+        if (!LayoutIds.IsValid(id))
+            return LayoutReadResult.Failed($"\"{id}\" can't be a layout ID.");
+
+        return File.Exists(PathFor(id)) ? null : LayoutReadResult.Failed($"There is no layout \"{id}\".");
+    }
+
+    private static LayoutReadResult Parse(string id, string json)
+    {
         LayoutReadResult read = EtwLayoutSerializer.Read(json);
         if (read.Layout is null)
             return LayoutReadResult.Failed($"The layout \"{id}\" could not be used. {read.Error}");
 
         // The file name is the ID: a copied file that still carries the old ID is still this layout.
         return read.Layout.Id == id ? read : new LayoutReadResult(read.Layout with { Id = id }, null);
+    }
+
+    public LayoutStoreDefaults ReadDefaults()
+    {
+        string path = MetadataPath;
+        if (!File.Exists(path))
+            return new LayoutStoreDefaults(null);
+
+        try
+        {
+            return ParseDefaults(File.ReadAllText(path));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new LayoutStoreDefaults(null, $"The layout settings could not be read: {ex.Message}");
+        }
+    }
+
+    public async Task<LayoutStoreDefaults> ReadDefaultsAsync(CancellationToken cancellationToken = default)
+    {
+        string path = MetadataPath;
+        if (!File.Exists(path))
+            return new LayoutStoreDefaults(null);
+
+        try
+        {
+            return ParseDefaults(await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new LayoutStoreDefaults(null, $"The layout settings could not be read: {ex.Message}");
+        }
+    }
+
+    public async Task SetGlobalDefaultAsync(string? id, CancellationToken cancellationToken = default)
+    {
+        if (id is not null && !LayoutIds.IsValid(id))
+            throw new ArgumentException($"\"{id}\" can't be a layout ID.", nameof(id));
+
+        // Every other member of the file is kept: E6 `defaults` adds its own.
+        JsonObject metadata = [];
+        if (File.Exists(MetadataPath))
+        {
+            try
+            {
+                if (JsonNode.Parse(await File.ReadAllTextAsync(MetadataPath, cancellationToken).ConfigureAwait(false)) is JsonObject existing)
+                    metadata = existing;
+            }
+            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+            {
+                // A file that cannot be read is replaced.
+            }
+        }
+
+        if (id is null)
+            metadata.Remove(GlobalDefaultMember);
+        else
+            metadata[GlobalDefaultMember] = id;
+
+        System.IO.Directory.CreateDirectory(Directory);
+        string temporaryPath = MetadataPath + ".tmp";
+        await File.WriteAllTextAsync(temporaryPath, metadata.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
+        File.Move(temporaryPath, MetadataPath, overwrite: true);
+    }
+
+    private static LayoutStoreDefaults ParseDefaults(string json)
+    {
+        try
+        {
+            if (JsonNode.Parse(json, documentOptions: new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip }) is not JsonObject metadata)
+                return new LayoutStoreDefaults(null, "The layout settings file is not valid.");
+
+            if (metadata[GlobalDefaultMember] is not JsonNode node)
+                return new LayoutStoreDefaults(null);
+
+            string? id = node is JsonValue value && value.TryGetValue(out string? text) ? text : null;
+            return LayoutIds.IsValid(id)
+                ? new LayoutStoreDefaults(id)
+                : new LayoutStoreDefaults(null, "The default layout in the layout settings is not a layout ID.");
+        }
+        catch (JsonException ex)
+        {
+            return new LayoutStoreDefaults(null, $"The layout settings file is not valid: {ex.Message}");
+        }
     }
 
     public async Task SaveAsync(EtwLayoutDefinition layout, CancellationToken cancellationToken = default)
@@ -130,4 +249,7 @@ public sealed class FileLayoutStore : ILayoutStore
     }
 
     private string PathFor(string id) => Path.Combine(Directory, id + Extension);
+
+    // A leading '.' can never start a layout ID, so no layout can have this name and the listing skips it.
+    private string MetadataPath => Path.Combine(Directory, MetadataFileName);
 }

@@ -52,6 +52,68 @@ public class LayoutDefaultsTests
         Assert.Equal(EtwEditorMode.Text, LayoutDefaults.ModeForBlankWindow(EtwEditorMode.Text, null));
     }
 
+    // ---- Switching layouts on a window with a document (E6 picker) ----
+
+    [Theory]
+    [InlineData(EtwEditorMode.Text, false, EtwEditorMode.Code)]
+    [InlineData(EtwEditorMode.Code, false, EtwEditorMode.Code)]
+    [InlineData(EtwEditorMode.Spreadsheet, false, EtwEditorMode.Code)]
+    [InlineData(EtwEditorMode.Spreadsheet, true, EtwEditorMode.Spreadsheet)]
+    [InlineData(EtwEditorMode.Markdown, false, EtwEditorMode.Markdown)]
+    public void ASwitchToACodeLayout_ChangesTheModeUnlessThatWouldLoseSomething(EtwEditorMode current, bool formatted, EtwEditorMode expected)
+        => Assert.Equal(expected, LayoutDefaults.ModeOnSwitch(current, Layout(EtwEditorMode.Code), formatted));
+
+    [Theory]
+    [InlineData(EtwEditorMode.Text)]
+    [InlineData(EtwEditorMode.Code)]
+    [InlineData(EtwEditorMode.Markdown)]
+    [InlineData(EtwEditorMode.Spreadsheet)]
+    public void ASwitchToALayoutWithNoMode_ChangesNothing(EtwEditorMode current)
+    {
+        Assert.Equal(current, LayoutDefaults.ModeOnSwitch(current, Layout(null), false));
+        Assert.Equal(current, LayoutDefaults.ModeOnSwitch(current, BuiltInLayouts.Classic, true));
+        Assert.Equal(current, LayoutDefaults.ModeOnSwitch(current, null, false));
+    }
+
+    [Fact]
+    public void ASwitchToATextLayout_LeavesCodeModeForTextButNeverMarkdownOrFormattedTables()
+    {
+        Assert.Equal(EtwEditorMode.Text, LayoutDefaults.ModeOnSwitch(EtwEditorMode.Code, Layout(EtwEditorMode.Text), false));
+        Assert.Equal(EtwEditorMode.Markdown, LayoutDefaults.ModeOnSwitch(EtwEditorMode.Markdown, Layout(EtwEditorMode.Text), false));
+        Assert.Equal(EtwEditorMode.Spreadsheet, LayoutDefaults.ModeOnSwitch(EtwEditorMode.Spreadsheet, Layout(EtwEditorMode.Text), true));
+    }
+
+    [Fact]
+    public void ASwitchSetsTheLanguageOnlyWhenTheWindowHasNone()
+    {
+        EtwLayoutDefinition layout = Layout(EtwEditorMode.Code, CodeLanguages.Markdown);
+
+        Assert.Null(LayoutDefaults.CodeLanguageOnSwitch(languageAlreadySet: true, layout));
+        Assert.Equal(new CodeLanguageChoice(CodeLanguages.Markdown, false), LayoutDefaults.CodeLanguageOnSwitch(languageAlreadySet: false, layout));
+    }
+
+    [Fact]
+    public void ATableWithWrapWidthsOrHeights_HasViewFormatting()
+    {
+        EditTextTableDocument plain = EditTextTableDocument.CreateFromText("a\tb\n1\t2");
+        Assert.False(plain.HasViewFormatting);
+
+        EditTextTableDocument wrapped = EditTextTableDocument.CreateFromText("a\tb\n1\t2");
+        wrapped.SetCellWrap(0, 0, true);
+        Assert.True(wrapped.HasViewFormatting);
+
+        EditTextTableDocument wide = EditTextTableDocument.CreateFromText("a\tb\n1\t2");
+        wide.SetColumnWidth(0, 120);
+        Assert.True(wide.HasViewFormatting);
+
+        EditTextTableDocument tall = EditTextTableDocument.CreateFromText("a\tb\n1\t2");
+        tall.SetRowHeight(0, 40);
+        Assert.True(tall.HasViewFormatting);
+
+        // It is not a stored member: the table's JSON does not change.
+        Assert.DoesNotContain("HasViewFormatting", plain.SerializeToJson());
+    }
+
     // ---- The language ----
 
     [Fact]
