@@ -17,8 +17,11 @@ internal static class PaneLayoutSetting
     public const string On = "On";
     public const string Off = "Off";
 
-    /// <summary>The pane layout for people who have not chosen.</summary>
-    public const bool DefaultIsOn = false;
+    /// <summary>
+    /// The pane layout for people who have not chosen. On from v5 E4a step 9; the hand-written editor grid
+    /// stays one release as the way back (the Edit Text settings page writes Off).
+    /// </summary>
+    public const bool DefaultIsOn = true;
 
     public static bool IsOn(string? value)
     {
