@@ -16,7 +16,7 @@ Each file in this folder is the work plan for one phase. Every phase is sized to
 Update the Status column when you finish a phase (`Not started` → `In progress` → `Done (<short commit hash>)`).
 
 | Phase | Work plan | Depends on | Ships in | Status |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | F1 | [DI composition root](F1-DI-Composition-Root.md) | — | 4.17 | Done (790bc4e) |
 | F2 | [Per-call OCR option overrides](F2-OCR-Option-Overrides.md) | — | 4.17 | Done (9d8b126) |
 | F3 | [Headless OCR service](F3-Headless-OCR-Service.md) | F2 | 4.17 | Done (bf1a568) |
@@ -33,7 +33,7 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 | E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | `calc`: E1. Others: E2 | `calc`: 4.17. Others: 4.18 | Not started |
 | E4a | [Pane host and pane layouts](E4-Layout-Engine.md) | E3 `calc` | 4.17 | Not started |
 | E4b | [Chrome from the layout definition](E4-Layout-Engine.md) | E2, E3, E4a | 4.18 (opt-in) | Not started |
-| E5 | [New panes](E5-New-Panes.md) | E4a (+ per pane) | 4.17: `recent`, `mermaid`, `markdown-preview`. 5.0: `transformer`, `audio` | Not started |
+| E5 | [New panes](E5-New-Panes.md) | E4a (\+ per pane) | 4.17: `recent`, `mermaid`, `markdown-preview`. 5.0: `transformer`, `audio` | Not started |
 | E6 | [Ribbon, layout picker, layout editor](E6-Ribbon-Layout-Editor.md) | `picker`: E4a. Others: E4b | `picker`: 4.17. Others: 5.0 | Not started |
 
 Order from here: **4.17** — E3 `calc` → E4a → E5 `recent`, `mermaid`, `markdown-preview` and E6 `picker` (E5 `folder-tree` if time allows). **4.18** — E2 → the other E3 clusters → E4b, with W1 alongside. **5.0** — W2, E5 `transformer` and `audio`, the rest of E6 → W3.
@@ -46,13 +46,14 @@ Order from here: **4.17** — E3 `calc` → E4a → E5 `recent`, `mermaid`, `mar
 4. **No behavior change unless the plan says so.** Change only what the work requires. No drive-by renames, reformatting or "cleanup".
 5. **Tests before risky moves.** When a plan says "characterization tests first", write and pass them against the *old* code before changing it.
 6. **Follow the tier rules** in [`../Core-Split-Plan.md`](../Core-Split-Plan.md) §1 and §3. In short:
-   - Dependencies point one way: `Text-Grab` (WPF app) → `Text-Grab.Core.Windows` → `Text-Grab.Core`.
-   - `Text-Grab.Core` is plain `net10.0`: no WPF, no WinRT, no P/Invoke, no `System.Drawing.Common`.
-   - `Text-Grab.Core.Windows` keeps `UseWPF=false` and `UseWindowsForms=false`. Never flip them, and never add a `FrameworkReference` to `Microsoft.WindowsDesktop.App`.
-   - All projects share `RootNamespace = Text_Grab`. Moved files keep their namespace.
-   - Geometry in Core and Core.Windows is `System.Drawing.RectangleF` / `PointF` / `SizeF`. `BitmapSource` never leaves the app.
-   - Both libraries must keep `<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>`.
-   - Anything the app registers for lower tiers to call is registered from a `[ModuleInitializer]`, not from `App.appStartup`. The `Tests` project loads the app assembly without ever raising the WPF Startup event.
+   
+     - Dependencies point one way: `Text-Grab` (WPF app) → `Text-Grab.Core.Windows` → `Text-Grab.Core`.
+     - `Text-Grab.Core` is plain `net10.0`: no WPF, no WinRT, no P/Invoke, no `System.Drawing.Common`.
+     - `Text-Grab.Core.Windows` keeps `UseWPF=false` and `UseWindowsForms=false`. Never flip them, and never add a `FrameworkReference` to `Microsoft.WindowsDesktop.App`.
+     - All projects share `RootNamespace = Text_Grab`. Moved files keep their namespace.
+     - Geometry in Core and Core.Windows is `System.Drawing.RectangleF` / `PointF` / `SizeF`. `BitmapSource` never leaves the app.
+     - Both libraries must keep `<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>`.
+     - Anything the app registers for lower tiers to call is registered from a `[ModuleInitializer]`, not from `App.appStartup`. The `Tests` project loads the app assembly without ever raising the WPF Startup event.
 7. **New code style:** nullable enabled, file-scoped namespaces, records for data models, `async` + `CancellationToken` on anything that does I/O. New namespaces: `Text_Grab.Core.Actions`, `Text_Grab.Core.Workflows`, `Text_Grab.Core.Abstractions`, `Text_Grab.Core.Editing`, `Text_Grab.Core.Layouts`. Also read `.github/copilot-instructions.md`.
 8. **Git:** work on a new branch off `dev` named in your prompt. If the working tree is dirty when you start, stop and report. Commit after each step that passes the gates. Do not push, and do not open a pull request, unless told to.
 
@@ -89,12 +90,12 @@ Things that have bitten people here:
 Open design decisions. A phase that lists one as **required** must use the value in the Choice column. If Status is `Default`, the choice is a recommendation the owner has not yet confirmed: use it for spikes and prototypes, but ask before building production code on it.
 
 | ID | Decision | Choice | Alternative | Required by | Status |
-|---|---|---|---|---|---|
-| D1 | Docking | Own split-tree from `Grid` + `GridSplitter`; no drag-to-dock in the first release; layout model stays library-agnostic | AvalonDock | E4a — **needed for 4.17** | Default |
+| --- | --- | --- | --- | --- | --- |
+| D1 | Docking | Use AvalonDock v5<br />for 4.17-beta2 just replace existing capability (no floating panes, auto-hide, or drag for now) and hide chrome until more features are turned on. Double clicking for pane sizing could get dropped.<br />layouts persist as our JSON, not AvalonDock XML | Own split-tree from Grid \+ GridSplitter | E4a — **needed for 4.17** | Confirmed |
 | D2 | Ribbon | Custom tabbed command bar built from WPF-UI controls, generated from the action registry | Fluent.Ribbon, or `System.Windows.Controls.Ribbon` | E6 `ribbon` | Default |
 | D3 | Range highlighting in the editor | **Changed 2026-11-14.** Highlight in the code editor: an AvalonEdit `IBackgroundRenderer` on `CodeEditor`, as `SelectionOccurrencesRenderer` already does for matching words. A layout that needs highlighting (Transcription) opens its text in Code mode as Plain Text. No highlighting in Text, Markdown or Spreadsheet modes. | Adorner layer over the `TextBox` (the previous choice; still needed if highlighting must work in Text mode) | E5 `audio` | Default |
-| D4 | View-model library for new components | CommunityToolkit.Mvvm | Hand-rolled `INotifyPropertyChanged` | E5, W3 — **needed for 4.17** | Default |
-| D5 | Layout scope | Per window instance, with a per-file-type default and a global default | One global layout | E4a — **needed for 4.17** | Default |
+| D4 | View-model library for new components | Use CommunityToolkit.Mvvm | Hand-rolled `INotifyPropertyChanged` | E5, W3 — **needed for 4.17** | Confirmed |
+| D5 | Layout scope | Per window instance, with a per-file-type default and a global default | One global layout | E4a — **needed for 4.17** | Confirmed |
 | D6 | Document of record (new 2026-11-14) | Keep the `TextBox` as the document in every mode through 4.18; the code editor mirrors it edit by edit. Revisit before 5.0 with a release of Code mode behind us. | Make AvalonEdit the Text surface too and retire the `TextBox`: one editor, one undo stack, half the memory for large documents — but it loses spell check, the link and email context-menu items and Use Margins until they are rebuilt, and changes IME and touch behavior | Nothing yet | Default |
 
 Fixed decisions (do not revisit):
@@ -109,7 +110,7 @@ Fixed decisions (do not revisit):
 These names are used across phase files. The phase that introduces each one owns its final shape; later phases consume it as built.
 
 | Name | Introduced in | What it is |
-|---|---|---|
+| --- | --- | --- |
 | `ServiceAccess` | F1 | Core-side static through which lower tiers reach the app's DI container. |
 | `OcrOptions` | F2 | Immutable per-call OCR options record. |
 | `IOcrService` | F3 | Headless OCR of a file, stream or screen region. |
