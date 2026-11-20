@@ -463,6 +463,54 @@ Register-UiTest -Suite 'EditText' -Name 'mermaid-pane-is-not-in-the-classic-layo
     Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
 }
 
+Register-UiTest -Suite 'EditText' -Name 'markdown-preview-layout-opens-an-md-file-in-code-mode-with-the-preview-pane' -Script {
+    param($Context)
+
+    # v5 E5 markdown-preview: reachable by --layout only. The file opens in Code mode with Markdown highlighting
+    # (not Markdown mode), the preview pane is right of the editor, and there is no calc pane.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mdpreview-open' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Folder 'MarkdownPreview' -Name 'notes.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'markdown-preview', $path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'Markdown' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicLeftOf -Target $editText -Left 'EditText.CodeEditor' -Right 'EditText.MarkdownPreview.Document'
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*Preview fixture*Some bold words*' } -Description 'the rendered file' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'markdown-preview-editing-the-source-updates-the-preview' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mdpreview-edit' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Folder 'MarkdownPreview' -Name 'notes.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'markdown-preview', $path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestForegroundWindow -Target $editText
+
+    # The preview's help text is the start of its rendered text, so the test waits on text, not pixels.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "# Edited heading`r`n`r`nA *new* sentence."
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*Edited heading*A new sentence*' } -Description 'the edited source to be rendered' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'markdown-preview-an-md-file-without-a-layout-still-opens-in-classic-in-markdown-mode' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mdpreview-classic' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Folder 'MarkdownPreview' -Name 'notes.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
 Register-UiTest -Suite 'EditText' -Name 'clipboard-watcher-remains-system-integration-only' -SkipReason 'Clipboard watcher behavior depends on an external clipboard change and is owned by the system-integration suite.' -Script {
     param($Context)
 }

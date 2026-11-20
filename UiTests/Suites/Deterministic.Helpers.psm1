@@ -174,12 +174,13 @@ function Copy-DeterministicMermaidFixture {
     #>
     param(
         [Parameter(Mandatory)][string]$ProfileDirectory,
-        [Parameter(Mandatory)][string]$Name
+        [Parameter(Mandatory)][string]$Name,
+        [string]$Folder = 'Mermaid'
     )
 
     $temp = Join-Path $ProfileDirectory 'temp'
     New-Item -ItemType Directory -Path $temp -Force | Out-Null
-    $source = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $PSScriptRoot) "Fixtures\Mermaid\$Name"))
+    $source = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $PSScriptRoot) "Fixtures\$Folder\$Name"))
     $destination = Join-Path $temp $Name
     Copy-Item -LiteralPath $source -Destination $destination -Force
     return $destination
