@@ -2336,33 +2336,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
-        InitializeExpressionEvaluator();
-
-        // Restore calc pane width from settings if not loading from history
-        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
-        {
-            _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
-        }
-
-        if (ShowCalcPaneMenuItem.Tag is not true)
-            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
-
-        ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
-        SetCalcPaneVisibility();
-
-        // Wire up calc pane context menu
-        HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
-        ShowCalcErrorsContextItem.Click += ShowCalcErrorsContextItem_Click;
-        CopyAllContextItem.Click += CopyAllContextItem_Click;
-
-        // Attach scrolling synchronization
-        try
-        {
-            PassedTextControl.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged), true);
-            CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
-            CalcResultsTextControl.PreviewMouseWheel += CalcResultsTextControl_PreviewMouseWheel;
-        }
-        catch { /* ignore if not ready yet */ }
+        InitializeCalcPane();
 
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {

@@ -35,6 +35,55 @@ namespace Text_Grab;
 
 public partial class EditTextWindow
 {
+    /// <summary>
+    /// The calc pane's part of <c>Window_Loaded</c>: its open state and width from settings (unless a
+    /// history item set them), Show Errors, and the pane's own event wiring.
+    /// </summary>
+    private void InitializeCalcPane()
+    {
+        InitializeExpressionEvaluator();
+
+        // Restore calc pane width from settings if not loading from history
+        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
+        {
+            _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
+        }
+
+        if (ShowCalcPaneMenuItem.Tag is not true)
+            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
+
+        ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
+        SetCalcPaneVisibility();
+
+        // Wire up calc pane context menu
+        HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
+        ShowCalcErrorsContextItem.Click += ShowCalcErrorsContextItem_Click;
+        CopyAllContextItem.Click += CopyAllContextItem_Click;
+
+        // Attach scrolling synchronization
+        try
+        {
+            PassedTextControl.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged), true);
+            CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
+            CalcResultsTextControl.PreviewMouseWheel += CalcResultsTextControl_PreviewMouseWheel;
+        }
+        catch { /* ignore if not ready yet */ }
+    }
+
+    /// <summary>
+    /// Shows or hides the calc pane in this window only, the way restoring a history item does: the
+    /// default for new windows (<c>CalcShowPane</c>) is left as it is.
+    /// </summary>
+    internal void SetCalcPaneOpen(bool open)
+    {
+        ShowCalcPaneMenuItem.Tag = true;
+        ShowCalcPaneMenuItem.IsChecked = open;
+        SetCalcPaneVisibility();
+    }
+
+    /// <summary>Evaluates the calc pane now, rather than after the typing delay.</summary>
+    internal Task EvaluateCalcPaneAsync() => EvaluateExpressions();
+
     private void SyncCalcScrollToMain()
     {
         try
