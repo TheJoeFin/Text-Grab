@@ -63,6 +63,7 @@ public partial class CalcPane : UserControl, IEditorPane
     private CalculationResult? calculationResult;
     private AggregateType _selectedAggregate = AggregateType.None;
     private bool isOpen;
+    private int evaluationGeneration;
 
     public CalcPane()
     {
@@ -115,6 +116,8 @@ public partial class CalcPane : UserControl, IEditorPane
             }
             else
             {
+                evaluationGeneration++;
+                _debounceTimer?.Stop();
                 CalcResultsTextControl.Visibility = Visibility.Collapsed;
             }
         }
@@ -169,6 +172,8 @@ public partial class CalcPane : UserControl, IEditorPane
     {
         if (session is null)
             return;
+
+        evaluationGeneration++;
 
         if (_debounceTimer is not null)
         {
@@ -295,7 +300,18 @@ public partial class CalcPane : UserControl, IEditorPane
         if (CalcResultsTextControl.Visibility != Visibility.Visible)
             return;
 
-        await EvaluateExpressions();
+        try
+        {
+            await EvaluateExpressions();
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancellation when the dispatcher is shutting down
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to evaluate calc pane expressions: {ex.Message}");
+        }
     }
 
     private async Task EvaluateExpressions()
@@ -303,6 +319,8 @@ public partial class CalcPane : UserControl, IEditorPane
         // Don't waste cycles if the pane isn't visible
         if (session is null || CalcResultsTextControl.Visibility != Visibility.Visible)
             return;
+
+        int generation = ++evaluationGeneration;
 
         string input = session.Text;
         if (string.IsNullOrWhiteSpace(input))
@@ -312,7 +330,11 @@ public partial class CalcPane : UserControl, IEditorPane
             _calculationService.ClearParameters();
             UpdateAggregateStatusDisplay();
             // Keep scrolls aligned even when clearing
-            await Dispatcher.InvokeAsync(SyncScrollToEditor, DispatcherPriority.Render);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (generation == evaluationGeneration)
+                    SyncScrollToEditor();
+            }, DispatcherPriority.Render);
             return;
         }
 
@@ -321,7 +343,12 @@ public partial class CalcPane : UserControl, IEditorPane
         _calculationService.ShowErrors = ShowErrors;
 
         // Evaluate expressions using the service
-        calculationResult = await _calculationService.EvaluateExpressionsAsync(input);
+        CalculationResult result = await _calculationService.EvaluateExpressionsAsync(input);
+
+        if (generation != evaluationGeneration || session is null || CalcResultsTextControl.Visibility != Visibility.Visible)
+            return;
+
+        calculationResult = result;
 
         // Update the text control with results or current spreadsheet selection preview
         UpdateCalcPaneTextDisplay();
@@ -330,7 +357,11 @@ public partial class CalcPane : UserControl, IEditorPane
         UpdateAggregateStatusDisplay();
 
         // After updating calc text, its ScrollViewer resets; resync to the editor's scroll
-        await Dispatcher.InvokeAsync(SyncScrollToEditor, DispatcherPriority.Render);
+        await Dispatcher.InvokeAsync(() =>
+        {
+            if (generation == evaluationGeneration)
+                SyncScrollToEditor();
+        }, DispatcherPriority.Render);
 
         // Optional status (kept commented)
         // if (result.ErrorCount == 0) { } else { }
@@ -428,13 +459,7 @@ public partial class CalcPane : UserControl, IEditorPane
             ShowProductContextItem.Tag = (AggregateType.Product, product);
 
             // Update checked states based on current selection
-            ShowSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
-            ShowAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
-            ShowMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
-            ShowCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
-            ShowMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
-            ShowMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
-            ShowProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
+            SyncAggregateMenuCheckedStates();
         }
     }
 
@@ -449,37 +474,19 @@ public partial class CalcPane : UserControl, IEditorPane
         {
             (AggregateType aggregateType, double value) = tagData;
 
-            // If clicking a checked item, uncheck it and clear selection
-            if (menuItem.IsChecked && _selectedAggregate == aggregateType)
+            // WPF toggles IsChecked on a checkable MenuItem before raising Click, so clicking
+            // the active aggregate arrives with IsChecked == false.
+            if (!menuItem.IsChecked && _selectedAggregate == aggregateType)
             {
-                menuItem.IsChecked = false;
                 _selectedAggregate = AggregateType.None;
+                SyncAggregateMenuCheckedStates();
                 UpdateAggregateStatusDisplay();
                 return;
             }
 
-            // Uncheck all other aggregate menu items (both context menus)
-            ShowSumContextItem.IsChecked = false;
-            ShowAverageContextItem.IsChecked = false;
-            ShowMedianContextItem.IsChecked = false;
-            ShowCountContextItem.IsChecked = false;
-            ShowMinContextItem.IsChecked = false;
-            ShowMaxContextItem.IsChecked = false;
-            ShowProductContextItem.IsChecked = false;
-
-            AggregateSumContextItem.IsChecked = false;
-            AggregateAverageContextItem.IsChecked = false;
-            AggregateMedianContextItem.IsChecked = false;
-            AggregateCountContextItem.IsChecked = false;
-            AggregateMinContextItem.IsChecked = false;
-            AggregateMaxContextItem.IsChecked = false;
-            AggregateProductContextItem.IsChecked = false;
-
-            // Check the clicked item
-            menuItem.IsChecked = true;
-
-            // Store the selected aggregate type
+            // Store the selected aggregate type and sync both context menus
             _selectedAggregate = aggregateType;
+            SyncAggregateMenuCheckedStates();
 
             // Copy value to clipboard
             string valueToCopy = NumericUtilities.FormatNumber(value);
@@ -492,6 +499,25 @@ public partial class CalcPane : UserControl, IEditorPane
         {
             Debug.WriteLine($"Failed to process aggregate selection: {ex.Message}");
         }
+    }
+
+    private void SyncAggregateMenuCheckedStates()
+    {
+        ShowSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
+        ShowAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
+        ShowMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
+        ShowCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
+        ShowMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
+        ShowMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
+        ShowProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
+
+        AggregateSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
+        AggregateAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
+        AggregateMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
+        AggregateCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
+        AggregateMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
+        AggregateMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
+        AggregateProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
     }
 
     private void UpdateAggregateStatusDisplay()
@@ -683,13 +709,7 @@ public partial class CalcPane : UserControl, IEditorPane
             AggregateProductContextItem.Tag = (AggregateType.Product, product);
 
             // Update checked states based on current selection
-            AggregateSumContextItem.IsChecked = _selectedAggregate == AggregateType.Sum;
-            AggregateAverageContextItem.IsChecked = _selectedAggregate == AggregateType.Average;
-            AggregateMedianContextItem.IsChecked = _selectedAggregate == AggregateType.Median;
-            AggregateCountContextItem.IsChecked = _selectedAggregate == AggregateType.Count;
-            AggregateMinContextItem.IsChecked = _selectedAggregate == AggregateType.Min;
-            AggregateMaxContextItem.IsChecked = _selectedAggregate == AggregateType.Max;
-            AggregateProductContextItem.IsChecked = _selectedAggregate == AggregateType.Product;
+            SyncAggregateMenuCheckedStates();
         }
     }
 

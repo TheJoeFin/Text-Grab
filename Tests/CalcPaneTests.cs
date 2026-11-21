@@ -200,6 +200,31 @@ public class CalcPaneTests : IDisposable
     }
 
     [WpfFact]
+    public async Task ClosingOrDetaching_CancelsQueuedAndInFlightEvaluations()
+    {
+        EditTextWindow window = CreateWindow("2 + 2");
+        InitializeCalcPane(window);
+        window.SetCalcPaneOpen(true);
+        await window.EvaluateCalcPaneAsync();
+        Assert.Equal("4", CalcResults(window).Text);
+
+        // Queue a debounced evaluation, then close before it fires.
+        RawTextBox(window).Text = "3 * 3";
+        window.SetCalcPaneOpen(false);
+        await Task.Delay(450);
+        DoEvents();
+        Assert.Equal("4", CalcResults(window).Text);
+
+        // Reopen, start an evaluation, and detach while it is in flight.
+        window.SetCalcPaneOpen(true);
+        RawTextBox(window).Text = "5 * 5";
+        Task inFlight = window.EvaluateCalcPaneAsync();
+        Pane(window).Detach();
+        await inFlight;
+        DoEvents();
+    }
+
+    [WpfFact]
     public void Attach_TwiceIsAnError()
     {
         EditTextWindow window = CreateWindow("1");
@@ -222,6 +247,45 @@ public class CalcPaneTests : IDisposable
         Assert.Equal(PaneDock.Right, pane.Descriptor.DefaultDock);
         Assert.Null(pane.SaveConfig());
         Assert.NotSame(pane, factory.Create());
+    }
+
+    // ---- Aggregate toggle ----
+
+    [WpfFact]
+    public async Task AggregateMenuItem_ClickingActiveAggregateAgain_UnchecksAndClearsBadge()
+    {
+        EditTextWindow window = CreateWindow("1 + 1\r\n2 + 3");
+        InitializeCalcPane(window);
+        window.SetCalcPaneOpen(true);
+        await window.EvaluateCalcPaneAsync();
+
+        _ = OpenAggregateMenu(window);
+
+        CalcPane pane = Pane(window);
+        MenuItem showSum = (MenuItem)pane.FindName("ShowSumContextItem");
+        MenuItem aggregateSum = (MenuItem)pane.FindName("AggregateSumContextItem");
+        Border badge = (Border)pane.FindName("CalcAggregateStatusBorder");
+        TextBlock badgeText = (TextBlock)pane.FindName("CalcAggregateStatusText");
+
+        // Simulate WPF's checkable MenuItem click sequence: toggle IsChecked, then raise Click.
+        static void ClickCheckableMenuItem(MenuItem item)
+        {
+            item.IsChecked = !item.IsChecked;
+            item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, item));
+        }
+
+        ClickCheckableMenuItem(showSum);
+
+        Assert.True(showSum.IsChecked);
+        Assert.True(aggregateSum.IsChecked);
+        Assert.Equal(Visibility.Visible, badge.Visibility);
+        Assert.Equal($"Sum: {NumericUtilities.FormatNumber(7)}", badgeText.Text);
+
+        ClickCheckableMenuItem(showSum);
+
+        Assert.False(showSum.IsChecked);
+        Assert.False(aggregateSum.IsChecked);
+        Assert.Equal(Visibility.Collapsed, badge.Visibility);
     }
 
     private static CalcPane Pane(EditTextWindow window) => (CalcPane)window.FindName("CalcPaneControl");
