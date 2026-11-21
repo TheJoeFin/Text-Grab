@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab;
 using Text_Grab.Core.Actions;
@@ -454,6 +455,34 @@ public class RecentPaneTests
         Assert.Empty(pane.ViewModel.Items);
         Assert.Equal(0, ItemsListOf(pane).Items.Count);
         Assert.Equal(Visibility.Visible, VisualDescendants<TextBlock>(pane).First(t => System.Windows.Automation.AutomationProperties.GetAutomationId(t) == "EditText.Recent.EmptyText").Visibility);
+        pane.Detach();
+    }
+
+    [WpfFact]
+    public void FocusSelectedRow_RealizesAndFocusesVirtualizedOffScreenSelection()
+    {
+        EditTextWindow window = CreateWindow("x");
+        ListRecentItemsSource source = new([.. Enumerable.Range(0, 50).Select(i => RecentItemsViewModelTests.Text($"item {i}", i))]);
+        RecentPane pane = new(source);
+        FocusManager.SetIsFocusScope(pane, true);
+        pane.Attach(window.Session, config: null);
+        pane.Measure(new Size(260, 200));
+        pane.Arrange(new Rect(0, 0, 260, 200));
+        pane.UpdateLayout();
+
+        ListBox itemsList = ItemsListOf(pane);
+        TrayFlyoutItem offScreenItem = pane.ViewModel.Items[^1];
+        pane.ViewModel.SelectedItem = offScreenItem;
+        pane.UpdateLayout();
+
+        Assert.Null(itemsList.ItemContainerGenerator.ContainerFromItem(offScreenItem));
+
+        pane.FocusSearch();
+        pane.FocusSelectedRow();
+
+        ListBoxItem row = Assert.IsType<ListBoxItem>(itemsList.ItemContainerGenerator.ContainerFromItem(offScreenItem));
+        Assert.Same(row, FocusManager.GetFocusedElement(pane));
+        Assert.True(row.IsFocused);
         pane.Detach();
     }
 

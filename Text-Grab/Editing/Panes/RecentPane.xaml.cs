@@ -138,7 +138,7 @@ public partial class RecentPane : UserControl, IEditorPane
     /// <summary>Puts keyboard focus in the search box.</summary>
     internal void FocusSearch()
     {
-        SearchBox.Focus();
+        FocusElement(SearchBox);
         SearchBox.SelectAll();
     }
 
@@ -202,12 +202,26 @@ public partial class RecentPane : UserControl, IEditorPane
             viewModel.OpenCommand.Execute(null);
     }
 
-    private void FocusSelectedRow()
+    internal void FocusSelectedRow()
     {
+        if (viewModel.SelectedItem is null)
+            return;
+
+        ItemsList.ScrollIntoView(viewModel.SelectedItem);
         ItemsList.UpdateLayout();
-        if (viewModel.SelectedItem is not null
-            && ItemsList.ItemContainerGenerator.ContainerFromItem(viewModel.SelectedItem) is ListBoxItem row)
-            row.Focus();
+        if (ItemsList.ItemContainerGenerator.ContainerFromItem(viewModel.SelectedItem) is ListBoxItem row)
+            FocusElement(row);
+    }
+
+    private static void FocusElement(UIElement element)
+    {
+        if (!element.Focus()
+            && element.Focusable
+            && element.IsEnabled
+            && FocusManager.GetFocusScope(element) is DependencyObject scope)
+        {
+            FocusManager.SetFocusedElement(scope, element);
+        }
     }
 
     private void Item_MouseDoubleClick(object sender, MouseButtonEventArgs e)
