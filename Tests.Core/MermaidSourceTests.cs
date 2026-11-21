@@ -82,6 +82,19 @@ public class MermaidSourceTests
         => Assert.Equal(expected, MermaidSource.ForDocument(markdown, EtwEditorMode.Markdown, markdown.IndexOf(caretAt, StringComparison.Ordinal) + 1));
 
     [Fact]
+    public void InlineBacktickCodeSpanStartingWithMermaidIsNotAFence()
+    {
+        const string markdown = "```mermaid graph TD```\n\n```mermaid\nflowchart LR\nA --> B\n```";
+
+        IReadOnlyList<MermaidBlock> blocks = MermaidSource.FindBlocks(markdown);
+
+        Assert.Single(blocks);
+        Assert.Equal("flowchart LR\nA --> B", blocks[0].Source);
+        Assert.Null(MermaidSource.FindBlockAt(markdown, 5));
+        Assert.Equal("flowchart LR\nA --> B", MermaidSource.ForDocument(markdown, EtwEditorMode.Markdown, markdown.IndexOf("A --> B", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void ALongerFenceIsClosedOnlyByAtLeastAsManyMarkers()
     {
         const string markdown = "````mermaid\nA --> B\n```\nC --> D\n````\nafter";

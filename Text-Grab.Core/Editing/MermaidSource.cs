@@ -119,6 +119,9 @@ public static class MermaidSource
             return false;
 
         ReadOnlySpan<char> info = line[(i + run)..].Trim();
+        if (marker == '`' && info.Contains('`'))
+            return false;
+
         int wordEnd = info.IndexOfAny(' ', '\t', '{');
         ReadOnlySpan<char> word = wordEnd < 0 ? info : info[..wordEnd];
         if (!word.Equals("mermaid", StringComparison.OrdinalIgnoreCase))
