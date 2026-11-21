@@ -156,16 +156,36 @@ public partial class EditTextWindow
         if (!IsLoaded)
             return;
 
-        if (sender is MenuItem bbMi && bbMi.IsChecked)
+        bool hidden = sender is MenuItem bbMi && bbMi.IsChecked;
+        SetBottomBarHidden(hidden);
+        if (BottomBarFileTypePreferences.SetHidden(DefaultSettings, BottomBarPreferencePath, hidden))
+            DefaultSettings.Save();
+    }
+
+    private void SetBottomBarHidden(bool hidden)
+    {
+        HideBottomBarMenuItem.IsChecked = hidden;
+        BottomBar.Visibility = hidden ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void RestoreBottomBarForFileType()
+        => SetBottomBarHidden(BottomBarFileTypePreferences.IsHidden(DefaultSettings, BottomBarPreferencePath));
+
+    private string? historyBottomBarPreferencePath;
+
+    private string? BottomBarPreferencePath => OpenedFilePath ?? historyBottomBarPreferencePath;
+
+    private void UseHistoryBottomBarPreference(HistoryInfo history)
+    {
+        string extension = history.BottomBarFileExtension ?? history.EditorMode switch
         {
-            BottomBar.Visibility = Visibility.Collapsed;
-            DefaultSettings.EditWindowBottomBarIsHidden = true;
-        }
-        else
-        {
-            BottomBar.Visibility = Visibility.Visible;
-            DefaultSettings.EditWindowBottomBarIsHidden = false;
-        }
+            EtwEditorMode.Markdown => ".md",
+            EtwEditorMode.Spreadsheet => ".csv",
+            EtwEditorMode.Code => CodeLanguages.Find(history.CodeLanguage)?.DefaultExtension ?? ".txt",
+            _ => ".txt",
+        };
+        historyBottomBarPreferencePath = "history" + extension;
+        RestoreBottomBarForFileType();
     }
 
     private void SelectAllMenuItem_Click(Object? sender = null, RoutedEventArgs? e = null)

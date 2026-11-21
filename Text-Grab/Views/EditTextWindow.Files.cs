@@ -280,7 +280,9 @@ public partial class EditTextWindow
             SaveReadingPosition();
             ResetSpreadsheetUndoHistory();
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
+            historyBottomBarPreferencePath = null;
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
+            RestoreBottomBarForFileType();
             if (shouldTrackOpenedFile)
             {
                 await UseFileTypeLayoutAsync(pathOfFileToOpen);
@@ -574,7 +576,12 @@ public partial class EditTextWindow
 
     private void SetOpenedFileState(string? openedFilePath)
     {
+        bool fileTypeChanged = BottomBarFileTypePreferences.KeyFor(BottomBarPreferencePath)
+            != BottomBarFileTypePreferences.KeyFor(openedFilePath);
+        historyBottomBarPreferencePath = null;
         OpenedFilePath = openedFilePath;
+        if (fileTypeChanged)
+            RestoreBottomBarForFileType();
         savedFileText = string.IsNullOrWhiteSpace(openedFilePath) ? string.Empty : Session.Text;
         hasPendingFileEdits = false;
         UpdateWindowTitle();

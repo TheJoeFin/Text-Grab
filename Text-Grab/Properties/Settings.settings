@@ -86,6 +86,9 @@
     <Setting Name="EditWindowBottomBarIsHidden" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="EditWindowBottomBarHiddenByFileType" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
     <Setting Name="LookupFileLocation" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>

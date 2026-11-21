@@ -354,8 +354,21 @@ namespace Text_Grab.Properties {
             get {
                 return ((bool)(this["EditWindowBottomBarIsHidden"]));
             }
+
             set {
                 this["EditWindowBottomBarIsHidden"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EditWindowBottomBarHiddenByFileType {
+            get {
+                return ((string)(this["EditWindowBottomBarHiddenByFileType"]));
+            }
+            set {
+                this["EditWindowBottomBarHiddenByFileType"] = value;
             }
         }
         

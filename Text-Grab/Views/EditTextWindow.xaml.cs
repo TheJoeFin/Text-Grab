@@ -213,6 +213,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RestoreCodeLanguage(historyInfo);
 
         historyId = historyInfo.ID;
+        UseHistoryBottomBarPreference(historyInfo);
 
         if (historyInfo.PositionRect != System.Drawing.RectangleF.Empty)
         {
@@ -585,6 +586,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             // Plain text is saved as "", not null, so restoring keeps it rather than detecting a language.
             CodeLanguage = editorMode == EtwEditorMode.Code && isCodeLanguageSet ? codeLanguageName ?? string.Empty : null,
             EditTextTableDocumentJson = tableDocument?.SerializeToJson(),
+            BottomBarFileExtension = BottomBarPreferencePath is string path ? System.IO.Path.GetExtension(path) : null,
             LayoutId = LayoutIdToSave(),
         };
 
@@ -1827,11 +1829,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
         }
 
-        if (DefaultSettings.EditWindowBottomBarIsHidden)
-        {
-            HideBottomBarMenuItem.IsChecked = true;
-            BottomBar.Visibility = Visibility.Collapsed;
-        }
+        RestoreBottomBarForFileType();
 
         if (DefaultSettings.EtwUseMargins)
         {
