@@ -95,6 +95,12 @@ public interface IEditorSession
     double FirstVisibleLine { get; }
 
     /// <summary>
+    /// How far down the editor <see cref="FirstVisibleLine"/> follows is scrolled, from 0 at the top
+    /// to 1 at the bottom (and 0 when the document fits in the viewport).
+    /// </summary>
+    double VerticalScrollFraction => 0;
+
+    /// <summary>
     /// Raised when the editor <see cref="FirstVisibleLine"/> follows scrolls or its viewport changes size.
     /// Not raised when the mode changes which editor that is; listen to <see cref="ModeChanged"/> for that.
     /// </summary>

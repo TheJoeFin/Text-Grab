@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
@@ -92,6 +93,7 @@ public partial class MermaidPane : UserControl, IEditorPane
         session.TextChanged += Session_Changed;
         session.ModeChanged += Session_Changed;
         IsVisibleChanged += MermaidPane_IsVisibleChanged;
+        viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
         viewModel.SetTheme(readIsLightTheme());
         Refresh();
@@ -105,8 +107,10 @@ public partial class MermaidPane : UserControl, IEditorPane
         session.TextChanged -= Session_Changed;
         session.ModeChanged -= Session_Changed;
         IsVisibleChanged -= MermaidPane_IsVisibleChanged;
+        viewModel.PropertyChanged -= ViewModel_PropertyChanged;
 
         // The picture and its SVG can be large; a pane that left its window has no reason to keep them.
+        Zoom.ContextMenu = null;
         viewModel.Release();
         session = null;
         Interlocked.Decrement(ref attachedCount);
@@ -157,7 +161,7 @@ public partial class MermaidPane : UserControl, IEditorPane
     }
 
     /// <summary>A hidden pane draws nothing; a shown one draws what it was last asked for. Called when the view's visibility changes.</summary>
-    internal void OnVisibilityChanged(bool visible) => viewModel.SetActive(visible);
+    public void OnVisibilityChanged(bool visible) => viewModel.SetActive(visible);
 
     internal void OpenFullScreen() => CreateDiagram()?.OpenViewer(Window.GetWindow(this));
 
@@ -183,11 +187,18 @@ public partial class MermaidPane : UserControl, IEditorPane
         if (CreateDiagram() is not MermaidDiagram diagram)
             return null;
 
-        ContextMenu menu = diagram.CreateContextMenu();
+        ContextMenu menu = diagram.CreateContextMenu(Window.GetWindow(this));
         MenuItem copy = new() { Header = "Copy image" };
         copy.Click += (_, _) => CopyImage();
         menu.Items.Insert(1, copy);
         return menu;
+    }
+
+    internal bool UpdateContextMenu()
+    {
+        ContextMenu? menu = CreateContextMenu();
+        Zoom.ContextMenu = menu;
+        return menu is not null;
     }
 
     /// <summary>
@@ -216,16 +227,19 @@ public partial class MermaidPane : UserControl, IEditorPane
     private void MermaidPane_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         => OnVisibilityChanged(e.NewValue is true);
 
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MermaidPaneViewModel.DiagramImage)
+            && (viewModel.DiagramImage is null || Zoom.ContextMenu is { IsOpen: false }))
+        {
+            Zoom.ContextMenu = null;
+        }
+    }
+
     private void Zoom_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        ContextMenu? menu = CreateContextMenu();
-        if (menu is null)
-        {
+        if (!UpdateContextMenu())
             e.Handled = true;
-            return;
-        }
-
-        Zoom.ContextMenu = menu;
     }
 
     private void OpenFullScreen_Click(object sender, RoutedEventArgs e) => OpenFullScreen();

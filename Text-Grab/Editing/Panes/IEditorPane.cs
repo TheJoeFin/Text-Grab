@@ -55,6 +55,15 @@ public interface IEditorPane
     void OnWindowActivated()
     {
     }
+
+    /// <summary>
+    /// The host showed or hid the pane. A hidden pane should stop work whose results nobody can see
+    /// and catch up when shown again. Called by the host even when WPF's <c>IsVisibleChanged</c> does
+    /// not fire, such as when a layout opens with the pane collapsed.
+    /// </summary>
+    void OnVisibilityChanged(bool visible)
+    {
+    }
 }
 
 /// <summary>One entry a pane adds to the command palette.</summary>

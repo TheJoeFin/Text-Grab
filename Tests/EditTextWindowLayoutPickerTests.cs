@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using Text_Grab;
 using Text_Grab.Core.Editing;
 using Text_Grab.Core.Layouts;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Models;
 using static Tests.CalcPaneCharacterizationTests;
@@ -550,5 +551,131 @@ public sealed class EditTextWindowLayoutPickerTests : IDisposable
         Assert.Null(PendingNotice(window));
         Assert.Null(window.AsHistoryItem().LayoutId);
         Assert.False(Directory.Exists(directory));
+    }
+
+    // ---- Async races and closing while awaiting ----
+
+    [WpfFact]
+    public async Task OverlappingSwitchLayoutCalls_DropTheOlderResultWhenItCompletesLast()
+    {
+        TaskCompletionSource<LayoutReadResult> firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        DelayedLayoutStore delayedStore = new(store)
+        {
+            LoadAsyncOverride = (id, ct) => id == LayoutIds.Explorer
+                ? firstLoad.Task
+                : store.LoadAsync(id, ct),
+        };
+        EditTextWindow.LayoutStoreOverride = delayedStore;
+
+        EditTextWindow window = CreateWindow("text");
+
+        Task<string?> first = window.SwitchLayoutAsync(LayoutIds.Explorer);
+        Assert.Null(await window.SwitchLayoutAsync(LayoutIds.Mermaid));
+        Assert.Equal(LayoutIds.Mermaid, window.LayoutId);
+
+        firstLoad.SetResult(store.Load(LayoutIds.Explorer));
+        Assert.Null(await first);
+        Assert.Equal(LayoutIds.Mermaid, window.LayoutId);
+    }
+
+    [WpfFact]
+    public async Task ClosingWhileSwitchLayoutIsInFlight_DoesNotApplyLayoutOrAttachPanes()
+    {
+        TaskCompletionSource loadStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<LayoutReadResult> loadGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        DelayedLayoutStore delayedStore = new(store)
+        {
+            LoadAsyncOverride = (id, ct) =>
+            {
+                if (id == LayoutIds.Explorer)
+                {
+                    loadStarted.TrySetResult();
+                    return loadGate.Task;
+                }
+
+                return store.LoadAsync(id, ct);
+            },
+        };
+        EditTextWindow.LayoutStoreOverride = delayedStore;
+
+        EditTextWindow window = CreateWindow("text");
+        Task<string?> switchTask = window.SwitchLayoutAsync(LayoutIds.Explorer);
+        await loadStarted.Task;
+
+        SimulateWindowClose(window);
+        int recentCreated = RecentPane.CreatedCount;
+        int calcAttached = CalcPane.AttachedCount;
+
+        loadGate.SetResult(store.Load(LayoutIds.Explorer));
+        Assert.Null(await switchTask);
+
+        Assert.Equal(LayoutIds.Classic, window.LayoutId);
+        Assert.Equal(recentCreated, RecentPane.CreatedCount);
+        Assert.Equal(calcAttached, CalcPane.AttachedCount);
+        Assert.Null(PendingNotice(window));
+    }
+
+    [WpfFact]
+    public async Task ClosingWhileSaveCurrentLayoutIsInFlight_DoesNotApplyLayoutOrAttachPanes()
+    {
+        TaskCompletionSource saveStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource saveGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        DelayedLayoutStore delayedStore = new(store)
+        {
+            SaveAsyncOverride = async (layout, ct) =>
+            {
+                saveStarted.TrySetResult();
+                await saveGate.Task;
+                await store.SaveAsync(layout, ct);
+            },
+        };
+        EditTextWindow.LayoutStoreOverride = delayedStore;
+
+        EditTextWindow window = CreateWindow("text");
+        Task<string?> saveTask = window.SaveCurrentLayoutAsync("Saved While Closing");
+        await saveStarted.Task;
+
+        SimulateWindowClose(window);
+        int calcAttached = CalcPane.AttachedCount;
+
+        saveGate.SetResult();
+        Assert.Null(await saveTask);
+
+        Assert.Equal(LayoutIds.Classic, window.LayoutId);
+        Assert.Equal(calcAttached, CalcPane.AttachedCount);
+    }
+
+    private static void SimulateWindowClose(EditTextWindow window)
+    {
+        typeof(EditTextWindow).GetField("_isClosed", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(window, true);
+        Field<IPaneHost>(window, "paneLayout").Close();
+    }
+
+    private sealed class DelayedLayoutStore(ILayoutStore inner) : ILayoutStore
+    {
+        public Func<string, CancellationToken, Task<LayoutReadResult>>? LoadAsyncOverride { get; set; }
+        public Func<EtwLayoutDefinition, CancellationToken, Task>? SaveAsyncOverride { get; set; }
+
+        public Task<IReadOnlyList<LayoutSummary>> ListAsync(CancellationToken cancellationToken = default)
+            => inner.ListAsync(cancellationToken);
+
+        public Task<LayoutReadResult> LoadAsync(string id, CancellationToken cancellationToken = default)
+            => LoadAsyncOverride is { } fn ? fn(id, cancellationToken) : inner.LoadAsync(id, cancellationToken);
+
+        public Task SaveAsync(EtwLayoutDefinition layout, CancellationToken cancellationToken = default)
+            => SaveAsyncOverride is { } fn ? fn(layout, cancellationToken) : inner.SaveAsync(layout, cancellationToken);
+
+        public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
+            => inner.DeleteAsync(id, cancellationToken);
+
+        public LayoutReadResult Load(string id) => inner.Load(id);
+
+        public LayoutStoreDefaults ReadDefaults() => inner.ReadDefaults();
+
+        public Task<LayoutStoreDefaults> ReadDefaultsAsync(CancellationToken cancellationToken = default)
+            => inner.ReadDefaultsAsync(cancellationToken);
+
+        public Task SetGlobalDefaultAsync(string? id, CancellationToken cancellationToken = default)
+            => inner.SetGlobalDefaultAsync(id, cancellationToken);
     }
 }

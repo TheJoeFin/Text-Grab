@@ -365,6 +365,9 @@ public partial class EditTextWindow
     /// </summary>
     private void ShowLayoutNotice(string notice)
     {
+        if (_isClosed)
+            return;
+
         Debug.WriteLine($"Layout notice: {notice}");
         AutomationDiagnostics.Record("layout-notice", new { notice });
 
@@ -387,11 +390,15 @@ public partial class EditTextWindow
     /// <summary>Shows the notice a layout left while the window was being made. Called from <c>Window_Loaded</c>.</summary>
     private void ShowPendingLayoutNotice()
     {
-        if (pendingLayoutNotice is not string notice)
+        if (_isClosed || pendingLayoutNotice is not string notice)
             return;
 
         pendingLayoutNotice = null;
-        Dispatcher.BeginInvoke(() => ShowLayoutNotice(notice), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isClosed)
+                ShowLayoutNotice(notice);
+        }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
 
     // The one place the window names LayoutRenderer, kept out of line so that compiling any other method

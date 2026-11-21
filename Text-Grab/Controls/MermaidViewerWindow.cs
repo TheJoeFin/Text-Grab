@@ -52,7 +52,7 @@ internal sealed class MermaidViewerWindow : Window
         };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
-        zoomBorder = new ZoomBorder { ClipToBounds = true, Child = image, ContextMenu = diagram.CreateContextMenu() };
+        zoomBorder = new ZoomBorder { ClipToBounds = true, Child = image, ContextMenu = diagram.CreateContextMenu(owner) };
         zoomBorder.MouseLeftButtonDown += (_, e) =>
         {
             if (e.ClickCount == 2)

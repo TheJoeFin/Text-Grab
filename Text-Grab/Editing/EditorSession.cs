@@ -95,6 +95,8 @@ internal sealed class EditorSession : IEditorSession
 
     public double FirstVisibleLine => Viewport.FirstVisibleLine;
 
+    public double VerticalScrollFraction => Viewport.VerticalScrollFraction;
+
     public event EventHandler? ViewportChanged;
 
     public bool ScrollByWheel(int wheelDelta) => Viewport.ScrollByWheel(wheelDelta);

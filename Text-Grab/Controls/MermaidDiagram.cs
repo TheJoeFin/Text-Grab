@@ -106,10 +106,10 @@ internal sealed class MermaidDiagram : Grid
 
     internal bool IsLightTheme => isLightTheme;
 
-    internal ContextMenu CreateContextMenu()
+    internal ContextMenu CreateContextMenu(Window? owner = null)
     {
         ContextMenu menu = new();
-        menu.Items.Add(CreateMenuItem("View full screen", () => OpenViewer(), requiresImage: true));
+        menu.Items.Add(CreateMenuItem("View full screen", () => OpenViewer(owner), requiresImage: true));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateMenuItem("Save as text...", () => Save(MermaidSaveFormat.Text), requiresImage: false));
         menu.Items.Add(CreateMenuItem("Save as PNG...", () => Save(MermaidSaveFormat.Png), requiresImage: true));

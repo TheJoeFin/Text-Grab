@@ -49,6 +49,12 @@ internal sealed class TextBoxSurface : IEditorSurface, ILineViewport
     public double FirstVisibleLine
         => WindowUtilities.GetScrollViewer(textBox) is ScrollViewer viewer ? viewer.VerticalOffset / LineHeight(textBox) : 0;
 
+    /// <summary>How far down the text box is scrolled, from 0 at the top to 1 at the bottom.</summary>
+    public double VerticalScrollFraction
+        => WindowUtilities.GetScrollViewer(textBox) is ScrollViewer viewer && viewer.ScrollableHeight > 0
+            ? Math.Clamp(viewer.VerticalOffset / viewer.ScrollableHeight, 0, 1)
+            : 0;
+
     /// <summary>
     /// The height of one line of <paramref name="textBox"/>'s text, as WPF lays out a text box whose
     /// line height is not set: its font's line spacing at its font size.

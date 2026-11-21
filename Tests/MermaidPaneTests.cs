@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Text_Grab;
 using Text_Grab.Core.Actions;
 using Text_Grab.Core.Layouts;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Models;
 using Text_Grab.Services;
@@ -590,6 +591,113 @@ public class MermaidPaneTests
     }
 
     [WpfFact]
+    public async Task ZoomContextMenu_IsClearedOnDetach_WhenDiagramIsCleared_AndWhenOpeningWithoutDiagram()
+    {
+        ManualMermaid fake = new();
+        EditTextWindow window = CreateWindow(Flowchart);
+        MermaidPane pane = await PaneWithADiagramAsync(window, fake);
+        Text_Grab.Controls.ZoomBorder zoom = Assert.IsType<Text_Grab.Controls.ZoomBorder>(pane.FindName("Zoom"));
+
+        Assert.True(pane.UpdateContextMenu());
+        Assert.NotNull(zoom.ContextMenu);
+
+        // Clearing the diagram clears any cached menu referencing the old bitmap/SVG.
+        pane.ViewModel.SetSource(null);
+        Assert.Null(zoom.ContextMenu);
+
+        // Opening the context menu with no diagram clears any stale menu and reports nothing to open.
+        zoom.ContextMenu = new ContextMenu();
+        Assert.False(pane.UpdateContextMenu());
+        Assert.Null(zoom.ContextMenu);
+
+        // Re-render, populate the menu, and verify Detach clears it.
+        pane.ViewModel.SetSource(Flowchart);
+        fake.FinishLastDelay();
+        await WaitUntilAsync(() => fake.Renders.Count == 2);
+        fake.FinishLastRender();
+        await WaitUntilAsync(() => pane.ViewModel.HasDiagram);
+
+        Assert.True(pane.UpdateContextMenu());
+        Assert.NotNull(zoom.ContextMenu);
+
+        pane.Detach();
+        Assert.Null(zoom.ContextMenu);
+    }
+
+    [WpfFact]
+    public async Task ContextMenuViewFullScreen_OpensViewerOwnedByHostingWindow()
+    {
+        ManualMermaid fake = new();
+        EditTextWindow window = CreateWindow(Flowchart);
+        MermaidPane pane = await PaneWithADiagramAsync(window, fake);
+        Window host = new()
+        {
+            Content = pane,
+            Left = 120,
+            Top = 80,
+            Width = 500,
+            Height = 400,
+            ShowInTaskbar = false,
+            WindowStyle = WindowStyle.None,
+            Opacity = 0,
+        };
+
+        Window? viewerOwner = null;
+        WindowState? viewerState = null;
+        Rect viewerBounds = default;
+        try
+        {
+            host.Show();
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
+            ContextMenu menu = Assert.IsType<ContextMenu>(pane.CreateContextMenu());
+            MenuItem fullScreenItem = Assert.Single(
+                menu.Items.OfType<MenuItem>(),
+                item => string.Equals(item.Header?.ToString(), "View full screen", StringComparison.Ordinal));
+
+            _ = host.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+            {
+                Text_Grab.Controls.MermaidViewerWindow? viewer = PresentationSource.CurrentSources
+                    .OfType<PresentationSource>()
+                    .Select(source => source.RootVisual)
+                    .OfType<Text_Grab.Controls.MermaidViewerWindow>()
+                    .FirstOrDefault();
+
+                if (viewer is not null)
+                {
+                    viewerOwner = viewer.Owner;
+                    viewerState = viewer.WindowState;
+                    viewerBounds = new Rect(viewer.Left, viewer.Top, viewer.Width, viewer.Height);
+                    viewer.Close();
+                }
+            });
+
+            fullScreenItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+
+            Assert.Same(host, viewerOwner);
+            Assert.Equal(WindowState.Normal, viewerState);
+            Assert.Equal(host.Left, viewerBounds.Left, 1);
+            Assert.Equal(host.Top, viewerBounds.Top, 1);
+            Assert.Equal(host.ActualWidth, viewerBounds.Width, 1);
+            Assert.Equal(host.ActualHeight, viewerBounds.Height, 1);
+        }
+        finally
+        {
+            foreach (Text_Grab.Controls.MermaidViewerWindow viewer in PresentationSource.CurrentSources
+                .OfType<PresentationSource>()
+                .Select(source => source.RootVisual)
+                .OfType<Text_Grab.Controls.MermaidViewerWindow>()
+                .ToList())
+            {
+                viewer.Close();
+            }
+
+            host.Close();
+            pane.Detach();
+        }
+    }
+
+    [WpfFact]
     public async Task PaletteCommands_ExistOnlyWhileAttachedWithADiagram()
     {
         ManualMermaid fake = new();
@@ -743,5 +851,49 @@ public class MermaidPaneTests
         Assert.Null(window.ApplyLayout(MermaidLayout));
 
         Assert.Equal(EtwEditorMode.Text, window.Session.Mode);
+    }
+
+    [WpfFact]
+    public async Task AnInitiallyCollapsedMermaidPaneInALayout_DrawsNothingUntilShown()
+    {
+        ManualMermaid fake = new();
+        EditTextWindow window = CreateWindow(Flowchart);
+        MermaidPane pane = new(fake.CreateViewModel(), () => true);
+
+        EtwLayoutDefinition collapsedLayout = MermaidLayout with
+        {
+            Root = new SplitNode(
+                DockOrientation.Horizontal,
+                [
+                    new DockChild(new PaneNode(PaneIds.Editor), 1, DockSizeUnit.Star),
+                    new DockChild(new PaneNode(PaneIds.Mermaid), 420, DockSizeUnit.Pixel, Collapsed: true),
+                ]),
+        };
+
+        LayoutRenderer renderer = new(
+            new Border(),
+            paneId => paneId == PaneIds.Mermaid ? pane : null,
+            (created, config) => created.Attach(window.Session, config),
+            created => created.Detach());
+
+        renderer.Render(collapsedLayout);
+
+        Assert.False(renderer.IsPaneVisible(PaneIds.Mermaid));
+        Assert.Equal(Flowchart, pane.ViewModel.WantedSource);
+        Assert.Empty(fake.Delays);
+        Assert.Empty(fake.Renders);
+
+        RawTextBox(window).Text = "flowchart LR\nA --> C";
+        Assert.Equal("flowchart LR\nA --> C", pane.ViewModel.WantedSource);
+        Assert.Empty(fake.Delays);
+        Assert.Empty(fake.Renders);
+
+        renderer.SetPaneVisible(PaneIds.Mermaid, true);
+        await WaitUntilAsync(() => fake.Renders.Count == 1);
+
+        Assert.True(renderer.IsPaneVisible(PaneIds.Mermaid));
+        Assert.Equal("flowchart LR\nA --> C", fake.Renders[0].Source);
+
+        renderer.Close();
     }
 }

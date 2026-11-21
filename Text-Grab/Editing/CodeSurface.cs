@@ -1,4 +1,5 @@
 using System;
+using System.Windows.Controls.Primitives;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Rendering;
 using Text_Grab.Controls;
@@ -67,6 +68,17 @@ internal sealed class CodeSurface : IEditorSurface, ILineViewport
             double height = view.GetVisualLine(line.LineNumber)?.Height ?? view.DefaultLineHeight;
             double fraction = height > 0 ? Math.Clamp((top - lineTop) / height, 0, 1) : 0;
             return line.LineNumber - 1 + fraction;
+        }
+    }
+
+    /// <summary>How far down the code editor is scrolled, from 0 at the top to 1 at the bottom.</summary>
+    public double VerticalScrollFraction
+    {
+        get
+        {
+            IScrollInfo scrollInfo = editor.TextArea.TextView;
+            double scrollable = scrollInfo.ExtentHeight - scrollInfo.ViewportHeight;
+            return scrollable > 0 ? Math.Clamp(scrollInfo.VerticalOffset / scrollable, 0, 1) : 0;
         }
     }
 

@@ -46,6 +46,7 @@ internal sealed class LayoutRenderer : IPaneHost
     private readonly Action<IEditorPane, JsonElement?> attachPane;
     private readonly Action<IEditorPane> detachPane;
     private readonly Dictionary<string, RenderedPane> panes = new(StringComparer.Ordinal);
+    private readonly Dictionary<DockChild, RenderedChild> renderedChildren = new(System.Collections.Generic.ReferenceEqualityComparer.Instance);
     private LayoutDocument editorDocument = new();
     private EtwLayoutDefinition definition;
     private bool isHidingFromCode;
@@ -114,6 +115,8 @@ internal sealed class LayoutRenderer : IPaneHost
     /// <param name="layout">A layout <see cref="EtwLayoutValidator.FindProblem"/> found nothing wrong with.</param>
     public void Render(EtwLayoutDefinition layout)
     {
+        ClearRenderedChildren();
+
         EtwLayoutDefinition normalized = EtwLayoutValidator.Normalize(layout);
         HashSet<string> shownIds = [.. ShownPaneIds(normalized.Root)];
 
@@ -140,17 +143,24 @@ internal sealed class LayoutRenderer : IPaneHost
         editorDocument.Content = null;
         editorDocument = editor;
 
-        List<LayoutAnchorable> collapsed = [];
+        List<RenderedPane> collapsed = [];
+        List<RenderedPane> shown = [];
         LayoutPanel rootPanel = normalized.Root is SplitNode split
-            ? BuildPanel(split, collapsed)
-            : new LayoutPanel(BuildChild(new DockChild(normalized.Root, 1, DockSizeUnit.Star), horizontal: true, collapsed));
+            ? BuildPanel(split, collapsed, shown)
+            : new LayoutPanel(BuildChild(new DockChild(normalized.Root, 1, DockSizeUnit.Star), horizontal: true, collapsed, shown));
 
         manager.Layout = new LayoutRoot { RootPanel = rootPanel };
         editor.Content = editorContent;
         definition = normalized;
 
-        foreach (LayoutAnchorable anchorable in collapsed)
-            HideFromCode(anchorable);
+        foreach (RenderedPane rendered in collapsed)
+        {
+            HideFromCode(rendered.Anchorable);
+            rendered.Pane.OnVisibilityChanged(false);
+        }
+
+        foreach (RenderedPane rendered in shown)
+            rendered.Pane.OnVisibilityChanged(true);
     }
 
     public bool HasPane(string paneId) => panes.ContainsKey(paneId);
@@ -171,6 +181,8 @@ internal sealed class LayoutRenderer : IPaneHost
             rendered.Anchorable.Show();
         else
             HideFromCode(rendered.Anchorable);
+
+        rendered.Pane.OnVisibilityChanged(visible);
 
         if (focused is not null && !ReferenceEquals(Keyboard.FocusedElement, focused) && focused is UIElement { IsVisible: true })
             Keyboard.Focus(focused);
@@ -212,6 +224,8 @@ internal sealed class LayoutRenderer : IPaneHost
     /// <summary>Detaches every pane. The window calls this once, when it closes.</summary>
     public void Close()
     {
+        ClearRenderedChildren();
+
         foreach (RenderedPane rendered in panes.Values)
             detachPane(rendered.Pane);
 
@@ -228,43 +242,54 @@ internal sealed class LayoutRenderer : IPaneHost
 
     private static int SelectedTabIndex(TabGroupNode tabs) => Math.Clamp(tabs.SelectedIndex, 0, tabs.Tabs.Count - 1);
 
-    private LayoutPanel BuildPanel(SplitNode split, List<LayoutAnchorable> collapsed)
+    private LayoutPanel BuildPanel(SplitNode split, List<RenderedPane> collapsed, List<RenderedPane> shown)
     {
         bool horizontal = split.Orientation == DockOrientation.Horizontal;
         LayoutPanel panel = new() { Orientation = horizontal ? Orientation.Horizontal : Orientation.Vertical };
         foreach (DockChild child in split.Children)
-            panel.Children.Add(BuildChild(child, horizontal, collapsed));
+            panel.Children.Add(BuildChild(child, horizontal, collapsed, shown));
 
         return panel;
     }
 
-    private ILayoutPanelElement BuildChild(DockChild child, bool horizontal, List<LayoutAnchorable> collapsed)
+    private ILayoutPanelElement BuildChild(DockChild child, bool horizontal, List<RenderedPane> collapsed, List<RenderedPane> shown)
     {
         switch (child.Node)
         {
             case SplitNode nested:
-                LayoutPanel panel = BuildPanel(nested, collapsed);
+                LayoutPanel panel = BuildPanel(nested, collapsed, shown);
                 ApplySize(panel, child, horizontal, fallbackPixels: 200, minSize: 0);
+                TrackChild(child, panel, horizontal);
                 return panel;
 
             case PaneNode { PaneId: PaneIds.Editor }:
                 LayoutDocumentPane documentPane = new(editorDocument) { ShowHeader = false };
                 ApplySize(documentPane, child, horizontal, fallbackPixels: 400, minSize: 0);
+                TrackChild(child, documentPane, horizontal);
                 return documentPane;
 
             case PaneNode pane:
-                return BuildAnchorablePane(pane, child, horizontal, collapsed);
+                LayoutAnchorablePane paneContainer = BuildAnchorablePane(pane, child, horizontal, collapsed, shown);
+                TrackChild(child, paneContainer, horizontal);
+                return paneContainer;
 
             case TabGroupNode tabs:
                 // Only the selected tab is shown, or made: tab headers are hidden in 4.17.
-                return BuildAnchorablePane(tabs.Tabs[SelectedTabIndex(tabs)], child, horizontal, collapsed);
+                LayoutAnchorablePane tabContainer = BuildAnchorablePane(tabs.Tabs[SelectedTabIndex(tabs)], child, horizontal, collapsed, shown);
+                TrackChild(child, tabContainer, horizontal);
+                return tabContainer;
 
             default:
                 throw new InvalidOperationException($"Unknown dock node {child.Node.GetType().Name}.");
         }
     }
 
-    private LayoutAnchorablePane BuildAnchorablePane(PaneNode node, DockChild child, bool horizontal, List<LayoutAnchorable> collapsed)
+    private LayoutAnchorablePane BuildAnchorablePane(
+        PaneNode node,
+        DockChild child,
+        bool horizontal,
+        List<RenderedPane> collapsed,
+        List<RenderedPane> shown)
     {
         if (!panes.TryGetValue(node.PaneId, out RenderedPane? rendered))
         {
@@ -272,7 +297,13 @@ internal sealed class LayoutRenderer : IPaneHost
                 ?? throw new InvalidOperationException($"No factory makes the pane {node.PaneId}.");
             rendered = new RenderedPane(pane);
             panes.Add(node.PaneId, rendered);
+            if (child.Collapsed)
+                pane.OnVisibilityChanged(false);
             attachPane(pane, node.Config);
+        }
+        else if (!child.Collapsed)
+        {
+            shown.Add(rendered);
         }
 
         PaneDescriptor descriptor = rendered.Pane.Descriptor;
@@ -291,16 +322,30 @@ internal sealed class LayoutRenderer : IPaneHost
         };
         LayoutAnchorablePane container = new(anchorable);
         ApplySize(container, child, horizontal, descriptor.DefaultSize, descriptor.MinSize);
-        container.PropertyChanged += Container_PropertyChanged;
 
         rendered.Anchorable = anchorable;
         rendered.Container = container;
         rendered.Horizontal = horizontal;
         rendered.Node = node;
         if (child.Collapsed)
-            collapsed.Add(anchorable);
+            collapsed.Add(rendered);
 
         return container;
+    }
+
+    private void TrackChild<T>(DockChild child, LayoutPositionableGroup<T> element, bool horizontal)
+        where T : class, ILayoutElement
+    {
+        element.PropertyChanged += Container_PropertyChanged;
+        renderedChildren[child] = new RenderedChild(element, DockSize.For(element), horizontal);
+    }
+
+    private void ClearRenderedChildren()
+    {
+        foreach (RenderedChild tracked in renderedChildren.Values)
+            tracked.Element.PropertyChanged -= Container_PropertyChanged;
+
+        renderedChildren.Clear();
     }
 
     private static void ApplySize<T>(LayoutPositionableGroup<T> element, DockChild child, bool horizontal, double fallbackPixels, double minSize)
@@ -351,6 +396,23 @@ internal sealed class LayoutRenderer : IPaneHost
 
     private DockChild Capture(DockChild child)
     {
+        DockChild captured = child;
+        if (renderedChildren.TryGetValue(child, out RenderedChild? tracked))
+        {
+            GridLength size = tracked.Size.Get(tracked.Horizontal);
+            if (!size.IsAuto)
+            {
+                captured = captured with
+                {
+                    Size = size.Value,
+                    Unit = size.IsStar ? DockSizeUnit.Star : DockSizeUnit.Pixel,
+                };
+            }
+        }
+
+        if (child.Node is SplitNode)
+            return captured with { Node = Capture(child.Node) };
+
         string? paneId = child.Node switch
         {
             PaneNode pane => pane.PaneId,
@@ -358,13 +420,9 @@ internal sealed class LayoutRenderer : IPaneHost
             _ => null,
         };
 
-        if (child.Node is SplitNode)
-            return child with { Node = Capture(child.Node) };
-
         if (paneId is null || !panes.TryGetValue(paneId, out RenderedPane? rendered))
-            return child;
+            return captured;
 
-        GridLength size = rendered.Horizontal ? rendered.Container.DockWidth : rendered.Container.DockHeight;
         JsonElement? config = rendered.Pane.SaveConfig();
         DockNode node = child.Node switch
         {
@@ -372,11 +430,9 @@ internal sealed class LayoutRenderer : IPaneHost
             _ => child.Node,
         };
 
-        return child with
+        return captured with
         {
             Node = node,
-            Size = size.Value,
-            Unit = size.IsStar ? DockSizeUnit.Star : DockSizeUnit.Pixel,
             Collapsed = rendered.Anchorable.IsHidden,
         };
     }
@@ -440,6 +496,8 @@ internal sealed class LayoutRenderer : IPaneHost
             _ => null,
         };
 
+        public GridLength Get(bool horizontal) => get(horizontal);
+
         public double Min(bool horizontal) => min(horizontal);
 
         public void Resize(double actual, double delta, bool horizontal)
@@ -451,7 +509,7 @@ internal sealed class LayoutRenderer : IPaneHost
             set(horizontal, resized);
         }
 
-        private static DockSize For<T>(LayoutPositionableGroup<T> group) where T : class, ILayoutElement => new(
+        public static DockSize For<T>(LayoutPositionableGroup<T> group) where T : class, ILayoutElement => new(
             horizontal => horizontal ? group.DockWidth : group.DockHeight,
             (horizontal, value) =>
             {
@@ -462,6 +520,8 @@ internal sealed class LayoutRenderer : IPaneHost
             },
             horizontal => horizontal ? group.DockMinWidth : group.DockMinHeight);
     }
+
+    private sealed record RenderedChild(INotifyPropertyChanged Element, DockSize Size, bool Horizontal);
 
     private sealed class RenderedPane(IEditorPane pane)
     {

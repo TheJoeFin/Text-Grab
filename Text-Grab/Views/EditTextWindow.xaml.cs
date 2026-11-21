@@ -1601,12 +1601,19 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     protected override void OnClosed(EventArgs e)
     {
-        if (paneLayout is not null)
-            paneLayout.Close();
-        else
-            DetachCalcPane();
-
-        base.OnClosed(e);
+        try
+        {
+            // Raise Closed (Window_Closed) before detaching panes so CalcPaneWidthToSave()
+            // can still read the calc pane's size from paneLayout.
+            base.OnClosed(e);
+        }
+        finally
+        {
+            if (paneLayout is not null)
+                paneLayout.Close();
+            else
+                DetachCalcPane();
+        }
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -2217,22 +2224,26 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         AppServices.Provider.GetRequiredService<ClipboardMonitorService>().ContentChanged -= Clipboard_ContentChanged;
 
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
-
-        foreach (Window window in allWindows)
+        if (System.Windows.Application.Current is not null)
         {
-            if (window is GrabFrame grabFrame)
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
             {
-                grabFrame.DestinationTextBox = null;
+                if (window is GrabFrame grabFrame)
+                {
+                    grabFrame.DestinationTextBox = null;
+                }
+                else if (window is FullscreenGrab fullScreenGrab)
+                    fullScreenGrab.DestinationTextBox = null;
+                else if (window is FindAndReplaceWindow findAndReplaceWindow)
+                    findAndReplaceWindow.ShouldCloseWithThisETW(this);
             }
-            else if (window is FullscreenGrab fullScreenGrab)
-                fullScreenGrab.DestinationTextBox = null;
-            else if (window is FindAndReplaceWindow findAndReplaceWindow)
-                findAndReplaceWindow.ShouldCloseWithThisETW(this);
         }
 
         GC.Collect();
-        WindowUtilities.ShouldShutDown();
+        if (System.Windows.Application.Current is not null)
+            WindowUtilities.ShouldShutDown();
     }
 
     private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

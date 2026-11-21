@@ -18,6 +18,12 @@ internal interface ILineViewport
     /// </summary>
     double FirstVisibleLine { get; }
 
+    /// <summary>
+    /// How far down the viewport is scrolled, from 0 at the top to 1 at the bottom (0 when the
+    /// document fits in the viewport).
+    /// </summary>
+    double VerticalScrollFraction { get; }
+
     /// <summary>Raised when the editor scrolls or its viewport changes size.</summary>
     event EventHandler? ViewportChanged;
 

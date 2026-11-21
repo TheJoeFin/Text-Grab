@@ -4,9 +4,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Core.Editing;
@@ -50,7 +52,6 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
     private readonly Func<bool> readIsLightTheme;
     private IEditorSession? session;
     private MarkdownPreviewSync? sync;
-    private int lineCount = 1;
     private bool suppressScrollSync;
     private bool followUpPending;
 
@@ -156,12 +157,11 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
         }
 
         string text = session.Text;
-        lineCount = CountLines(text);
         viewModel.SetSource(text);
     }
 
     /// <summary>A hidden pane renders nothing; a shown one renders what it was last asked for. Called when the view's visibility changes.</summary>
-    internal void OnVisibilityChanged(bool visible) => viewModel.SetActive(visible);
+    public void OnVisibilityChanged(bool visible) => viewModel.SetActive(visible);
 
     /// <summary>
     /// Moves the caret in the source to where <paramref name="position"/> is in the preview. False when the
@@ -185,7 +185,7 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
         if (session is null || suppressScrollSync || !viewModel.HasDocument)
             return;
 
-        double fraction = lineCount <= 1 ? 0 : Math.Clamp(session.FirstVisibleLine / (lineCount - 1), 0, 1);
+        double fraction = Math.Clamp(session.VerticalScrollFraction, 0, 1);
         double scrollable = Math.Max(0, Preview.ExtentHeight - Preview.ViewportHeight);
         Preview.ScrollToVerticalOffset(fraction * scrollable);
     }
@@ -214,18 +214,6 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
                 DisableTaskListBoxes(element);
             }
         }
-    }
-
-    private static int CountLines(string text)
-    {
-        int lines = 1;
-        foreach (char c in text)
-        {
-            if (c == '\n')
-                lines++;
-        }
-
-        return lines;
     }
 
     private void ViewModel_DocumentRendered(object? sender, EventArgs e)
@@ -287,6 +275,10 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
 
     private void Preview_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        // Scrollbar clicks and thumb releases tunnel through the RichTextBox before ScrollBar handles them.
+        if (IsInScrollBar(e.OriginalSource))
+            return;
+
         // A drag that selected text is for copying, not for moving the caret.
         if (!Preview.Selection.IsEmpty)
             return;
@@ -305,6 +297,21 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
 
         if (GoToSource(Preview.CaretPosition))
             e.Handled = true;
+    }
+
+    private static bool IsInScrollBar(object? source)
+    {
+        for (DependencyObject? current = source as DependencyObject; current is not null;)
+        {
+            if (current is ScrollBar)
+                return true;
+
+            current = current is Visual or Visual3D
+                ? VisualTreeHelper.GetParent(current)
+                : LogicalTreeHelper.GetParent(current);
+        }
+
+        return false;
     }
 
     private static bool IsInLink(TextPointer position)

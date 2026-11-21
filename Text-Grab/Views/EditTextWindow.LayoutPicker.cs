@@ -176,17 +176,23 @@ public partial class EditTextWindow
     /// </summary>
     internal async Task<string?> SwitchLayoutAsync(string layoutId)
     {
+        if (_isClosed)
+            return null;
+
         if (paneLayout is null)
             return "The pane layout is off.";
 
+        int resolution = ++layoutResolution;
         LayoutReadResult read = await LayoutStore.LoadAsync(layoutId);
+        if (_isClosed || resolution != layoutResolution)
+            return null;
+
         string? problem = read.Layout is null
             ? read.Error
             : EtwLayoutValidator.FindProblem(read.Layout, IsKnownPane);
         if (problem is null && read.Layout is not null)
         {
             // An explicit choice: a file opened later does not replace it, and a resolution under way is dropped.
-            layoutResolution++;
             requestedLayoutId = layoutId;
             problem = ApplyLayout(read.Layout);
             if (problem is null)
@@ -344,6 +350,9 @@ public partial class EditTextWindow
     /// </summary>
     internal async Task<string?> SaveCurrentLayoutAsync(string name)
     {
+        if (_isClosed)
+            return null;
+
         if (paneLayout is null)
             return "The pane layout is off.";
 
@@ -353,6 +362,9 @@ public partial class EditTextWindow
 
         ILayoutStore store = LayoutStore;
         HashSet<string> taken = [.. (await store.ListAsync()).Select(layout => layout.Id)];
+        if (_isClosed)
+            return null;
+
         string id = LayoutIds.FromName(name, taken.Contains);
 
         EtwLayoutDefinition live = paneLayout.Layout;
@@ -370,8 +382,11 @@ public partial class EditTextWindow
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
-            return $"The layout could not be saved: {ex.Message}";
+            return _isClosed ? null : $"The layout could not be saved: {ex.Message}";
         }
+
+        if (_isClosed)
+            return null;
 
         layoutResolution++;
         requestedLayoutId = id;

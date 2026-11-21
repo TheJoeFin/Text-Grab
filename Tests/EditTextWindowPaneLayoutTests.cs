@@ -163,6 +163,106 @@ public class EditTextWindowPaneLayoutTests
     }
 
     [WpfFact]
+    public void On_ResizingAStarSplit_CapturesBothEditorAndSiblingStarWeights()
+    {
+        using IDisposable _ = UsePaneLayout();
+        EditTextWindow window = CreateWindow("# Heading");
+        Assert.True(BuiltInLayouts.TryGet(LayoutIds.MarkdownPreview, out EtwLayoutDefinition markdownPreview));
+        Assert.Null(window.ApplyLayout(markdownPreview));
+        LayOut(window);
+
+        DocumentPane(window).DockWidth = new GridLength(1.6, GridUnitType.Star);
+        AnchorablePane(window).DockWidth = new GridLength(0.4, GridUnitType.Star);
+
+        SplitNode root = Assert.IsType<SplitNode>(window.CurrentLayout!.Root);
+        DockChild editor = Assert.Single(root.Children, child => child.Node is PaneNode { PaneId: PaneIds.Editor });
+        DockChild preview = Assert.Single(root.Children, child => child.Node is PaneNode { PaneId: PaneIds.MarkdownPreview });
+        Assert.Equal((1.6d, DockSizeUnit.Star), (editor.Size, editor.Unit));
+        Assert.Equal((0.4d, DockSizeUnit.Star), (preview.Size, preview.Unit));
+    }
+
+    [WpfFact]
+    public void On_ResizingANestedSplit_CapturesTheNestedSplitAndItsChildSizes()
+    {
+        using IDisposable _ = UsePaneLayout();
+        EditTextWindow window = CreateWindow("1 + 1");
+        InitializeCalcPane(window);
+        window.SetCalcPaneOpen(true);
+        EtwLayoutDefinition nested = new(
+            "1.0",
+            "nested-split",
+            "Nested split",
+            new SplitNode(DockOrientation.Horizontal,
+            [
+                new DockChild(new PaneNode(PaneIds.Editor), 1, DockSizeUnit.Star),
+                new DockChild(
+                    new SplitNode(DockOrientation.Vertical,
+                    [
+                        new DockChild(new PaneNode(PaneIds.Calc), 1, DockSizeUnit.Star),
+                        new DockChild(new PaneNode(PaneIds.MarkdownPreview), 1, DockSizeUnit.Star),
+                    ]),
+                    1,
+                    DockSizeUnit.Star),
+            ]));
+        Assert.Null(window.ApplyLayout(nested));
+        LayOut(window);
+
+        LayoutPanel rootPanel = PaneHost(window)!.Layout.RootPanel;
+        LayoutDocumentPane documentPane = DocumentPane(window);
+        LayoutPanel nestedPanel = Assert.Single(rootPanel.Children.OfType<LayoutPanel>());
+        LayoutAnchorablePane calcPane = Assert.Single(nestedPanel.Children.OfType<LayoutAnchorablePane>(), pane => pane.Children.Any(c => c.ContentId == PaneIds.Calc));
+        LayoutAnchorablePane previewPane = Assert.Single(nestedPanel.Children.OfType<LayoutAnchorablePane>(), pane => pane.Children.Any(c => c.ContentId == PaneIds.MarkdownPreview));
+
+        documentPane.DockWidth = new GridLength(1.4, GridUnitType.Star);
+        nestedPanel.DockWidth = new GridLength(0.6, GridUnitType.Star);
+        calcPane.DockHeight = new GridLength(0.7, GridUnitType.Star);
+        previewPane.DockHeight = new GridLength(1.3, GridUnitType.Star);
+
+        SplitNode capturedRoot = Assert.IsType<SplitNode>(window.CurrentLayout!.Root);
+        DockChild capturedEditor = Assert.Single(capturedRoot.Children, child => child.Node is PaneNode { PaneId: PaneIds.Editor });
+        DockChild capturedNestedChild = Assert.Single(capturedRoot.Children, child => child.Node is SplitNode);
+        SplitNode capturedNestedSplit = Assert.IsType<SplitNode>(capturedNestedChild.Node);
+        DockChild capturedCalc = Assert.Single(capturedNestedSplit.Children, child => child.Node is PaneNode { PaneId: PaneIds.Calc });
+        DockChild capturedPreview = Assert.Single(capturedNestedSplit.Children, child => child.Node is PaneNode { PaneId: PaneIds.MarkdownPreview });
+
+        Assert.Equal((1.4d, DockSizeUnit.Star), (capturedEditor.Size, capturedEditor.Unit));
+        Assert.Equal((0.6d, DockSizeUnit.Star), (capturedNestedChild.Size, capturedNestedChild.Unit));
+        Assert.Equal((0.7d, DockSizeUnit.Star), (capturedCalc.Size, capturedCalc.Unit));
+        Assert.Equal((1.3d, DockSizeUnit.Star), (capturedPreview.Size, capturedPreview.Unit));
+    }
+
+    [WpfFact]
+    public void On_ClosingWithCalcPaneOpen_SavesCalcPaneWidthAndDetachesPanes()
+    {
+        using IDisposable _ = UsePaneLayout();
+        var settings = Text_Grab.Utilities.AppUtilities.TextGrabSettings;
+        int originalCalcPaneWidth = settings.CalcPaneWidth;
+        try
+        {
+            settings.CalcPaneWidth = 0;
+
+            EditTextWindow window = CreateWindow("1 + 1");
+            InitializeCalcPane(window);
+            window.SetCalcPaneOpen(true);
+            LayOut(window);
+            AnchorablePane(window).DockWidth = new GridLength(310);
+            int attachedBeforeClose = CalcPane.AttachedCount;
+
+            typeof(EditTextWindow)
+                .GetMethod("OnClosed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .Invoke(window, [EventArgs.Empty]);
+
+            Assert.Equal(310, settings.CalcPaneWidth);
+            Assert.Equal(attachedBeforeClose - 1, CalcPane.AttachedCount);
+        }
+        finally
+        {
+            settings.CalcPaneWidth = originalCalcPaneWidth;
+            settings.Save();
+        }
+    }
+
+    [WpfFact]
     public void On_TheCalcPaneKeepsAMinimumWidth()
     {
         using IDisposable _ = UsePaneLayout();
@@ -320,6 +420,9 @@ public class EditTextWindowPaneLayoutTests
     /// </summary>
     private static LayoutAnchorablePane AnchorablePane(EditTextWindow window)
         => Assert.Single(LayoutElements(PaneHost(window)!.Layout).OfType<LayoutAnchorablePane>());
+
+    private static LayoutDocumentPane DocumentPane(EditTextWindow window)
+        => Assert.Single(LayoutElements(PaneHost(window)!.Layout).OfType<LayoutDocumentPane>());
 
     // ---- History and requested layouts (steps 10-11) ----
 

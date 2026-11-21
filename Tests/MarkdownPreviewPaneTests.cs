@@ -1,13 +1,16 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
+using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Text_Grab;
 using Text_Grab.Controls;
 using Text_Grab.Core.Actions;
 using Text_Grab.Core.Editing;
 using Text_Grab.Core.Layouts;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Editing.Panes;
 using Text_Grab.Models;
 using Text_Grab.Services;
@@ -537,6 +540,137 @@ public class MarkdownPreviewPaneTests
     }
 
     [WpfFact]
+    public async Task ScrollingTheSourceToTheBottom_ScrollsThePreviewToItsBottom()
+    {
+        string longMarkdown = string.Join("\n\n", Enumerable.Range(1, 80).Select(i => $"Paragraph {i} with some **bold** text."));
+        EditTextWindow window = CreateWindow(longMarkdown);
+        SwitchMode(window, EtwEditorMode.Code);
+        MarkdownPreviewPane pane = await RealPaneAsync(window);
+        DoEvents();
+
+        CodeEditor(window).ScrollToEnd();
+        LayOut(window);
+        pane.UpdateLayout();
+
+        double scrollable = pane.PreviewBox.ExtentHeight - pane.PreviewBox.ViewportHeight;
+        Assert.True(scrollable > 0, "The preview should be taller than its viewport.");
+        Assert.Equal(scrollable, pane.PreviewBox.VerticalOffset, precision: 1);
+        pane.Detach();
+    }
+
+    [WpfFact]
+    public async Task ClickingAScrollBarInThePreview_DoesNotJumpToSource()
+    {
+        string longMarkdown = string.Join("\n\n", Enumerable.Range(1, 40).Select(i => $"Paragraph {i} with some **bold** text."));
+        EditTextWindow window = CreateWindow(longMarkdown);
+        RecordingEditorSession session = new(window.Session);
+        MarkdownPreviewPane pane = new();
+        pane.Attach(session, config: null);
+        await WaitUntilAsync(() => pane.ViewModel.HasDocument);
+        pane.Measure(new Size(420, 200));
+        pane.Arrange(new Rect(0, 0, 420, 200));
+        pane.UpdateLayout();
+
+        ScrollBar scrollBar = VisualDescendants<ScrollBar>(pane.PreviewBox).First();
+        scrollBar.ApplyTemplate();
+        scrollBar.UpdateLayout();
+
+        MouseButtonEventArgs scrollBarUp = new(Mouse.PrimaryDevice, 0, MouseButton.Left)
+        {
+            RoutedEvent = UIElement.PreviewMouseLeftButtonUpEvent,
+        };
+        scrollBar.RaiseEvent(scrollBarUp);
+
+        Thumb? thumb = VisualDescendants<Thumb>(scrollBar).FirstOrDefault();
+        if (thumb is not null)
+        {
+            MouseButtonEventArgs thumbUp = new(Mouse.PrimaryDevice, 0, MouseButton.Left)
+            {
+                RoutedEvent = UIElement.PreviewMouseLeftButtonUpEvent,
+            };
+            thumb.RaiseEvent(thumbUp);
+        }
+
+        Assert.Empty(session.SelectInEditorCalls);
+
+        Run run = ParagraphWith(pane.PreviewBox.Document, "Paragraph 1").Inlines.OfType<Run>().First();
+        MouseButtonEventArgs textUp = new(Mouse.PrimaryDevice, 0, MouseButton.Left)
+        {
+            RoutedEvent = UIElement.PreviewMouseLeftButtonUpEvent,
+            Source = run,
+        };
+        pane.PreviewBox.RaiseEvent(textUp);
+
+        Assert.Single(session.SelectInEditorCalls);
+        pane.Detach();
+    }
+
+    private sealed class RecordingEditorSession(IEditorSession inner) : IEditorSession
+    {
+        public List<TextSpan> SelectInEditorCalls { get; } = [];
+
+        public string Text { get => inner.Text; set => inner.Text = value; }
+
+        public EtwEditorMode Mode => inner.Mode;
+
+        public TextSpan Selection { get => inner.Selection; set => inner.Selection = value; }
+
+        public string SelectedText => inner.SelectedText;
+
+        public System.Globalization.CultureInfo Culture => inner.Culture;
+
+        public IReadOnlyList<double>? SelectedCellNumbers => inner.SelectedCellNumbers;
+
+        public double FirstVisibleLine => inner.FirstVisibleLine;
+
+        public double VerticalScrollFraction => inner.VerticalScrollFraction;
+
+        public event EventHandler? SelectedCellsChanged
+        {
+            add => inner.SelectedCellsChanged += value;
+            remove => inner.SelectedCellsChanged -= value;
+        }
+
+        public event EventHandler? ViewportChanged
+        {
+            add => inner.ViewportChanged += value;
+            remove => inner.ViewportChanged -= value;
+        }
+
+        public event EventHandler? TextChanged
+        {
+            add => inner.TextChanged += value;
+            remove => inner.TextChanged -= value;
+        }
+
+        public event EventHandler? ModeChanged
+        {
+            add => inner.ModeChanged += value;
+            remove => inner.ModeChanged -= value;
+        }
+
+        public void ReplaceSelection(string replacement) => inner.ReplaceSelection(replacement);
+
+        public void ReplaceRange(TextSpan range, string replacement) => inner.ReplaceRange(range, replacement);
+
+        public void AppendText(string text) => inner.AppendText(text);
+
+        public string GetSelectedTextOrAllText() => inner.GetSelectedTextOrAllText();
+
+        public void ReplaceSelectedTextOrAllText(string replacement) => inner.ReplaceSelectedTextOrAllText(replacement);
+
+        public void SelectInEditor(TextSpan range)
+        {
+            SelectInEditorCalls.Add(range);
+            inner.SelectInEditor(range);
+        }
+
+        public void ScrollToEnd() => inner.ScrollToEnd();
+
+        public bool ScrollByWheel(int wheelDelta) => inner.ScrollByWheel(wheelDelta);
+    }
+
+    [WpfFact]
     public async Task PaletteCommands_ExistOnlyWhileAttachedWithADocument()
     {
         EditTextWindow window = CreateWindow(Markdown);
@@ -616,6 +750,50 @@ public class MarkdownPreviewPaneTests
         MarkdownPreviewPane pane = Assert.Single(VisualDescendants<MarkdownPreviewPane>(PaneHost(window)!));
         Assert.NotNull(pane.FilePathProvider);
         Assert.Null(pane.FilePathProvider!());
+    }
+
+    [WpfFact]
+    public async Task AnInitiallyCollapsedPreviewPaneInALayout_RendersNothingUntilShown()
+    {
+        ManualPreview fake = new();
+        EditTextWindow window = CreateWindow(Markdown);
+        MarkdownPreviewPane pane = new(fake.CreateViewModel(), () => true);
+
+        EtwLayoutDefinition collapsedLayout = PreviewLayout with
+        {
+            Root = new SplitNode(
+                DockOrientation.Horizontal,
+                [
+                    new DockChild(new PaneNode(PaneIds.Editor), 1, DockSizeUnit.Star),
+                    new DockChild(new PaneNode(PaneIds.MarkdownPreview), 420, DockSizeUnit.Pixel, Collapsed: true),
+                ]),
+        };
+
+        LayoutRenderer renderer = new(
+            new Border(),
+            paneId => paneId == PaneIds.MarkdownPreview ? pane : null,
+            (created, config) => created.Attach(window.Session, config),
+            created => created.Detach());
+
+        renderer.Render(collapsedLayout);
+
+        Assert.False(renderer.IsPaneVisible(PaneIds.MarkdownPreview));
+        Assert.Equal(Markdown, pane.ViewModel.WantedSource);
+        Assert.Empty(fake.Delays);
+        Assert.Empty(fake.Renders);
+
+        RawTextBox(window).Text = "# Edited while hidden";
+        Assert.Equal("# Edited while hidden", pane.ViewModel.WantedSource);
+        Assert.Empty(fake.Delays);
+        Assert.Empty(fake.Renders);
+
+        renderer.SetPaneVisible(PaneIds.MarkdownPreview, true);
+        await WaitUntilAsync(() => fake.Renders.Count == 1);
+
+        Assert.True(renderer.IsPaneVisible(PaneIds.MarkdownPreview));
+        Assert.Equal("# Edited while hidden", fake.Renders[0].Source);
+
+        renderer.Close();
     }
 }
 

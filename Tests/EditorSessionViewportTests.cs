@@ -92,6 +92,34 @@ public class EditorSessionViewportTests
         Assert.True(changes > 0);
     }
 
+    // ---- VerticalScrollFraction ----
+
+    [WpfFact]
+    public void Text_VerticalScrollFractionReachesOneAtTheBottom()
+    {
+        EditTextWindow window = CreateScrollableWindow();
+        ScrollViewer viewer = WindowUtilities.GetScrollViewer(RawTextBox(window))!;
+        Assert.Equal(0, window.Session.VerticalScrollFraction, precision: 3);
+
+        viewer.ScrollToBottom();
+        LayOut(window);
+
+        Assert.Equal(1, window.Session.VerticalScrollFraction, precision: 3);
+    }
+
+    [WpfFact]
+    public void Code_VerticalScrollFractionReachesOneAtTheBottom()
+    {
+        EditTextWindow window = CreateWindow(TwoHundredLines);
+        SwitchMode(window, EtwEditorMode.Code);
+        Assert.Equal(0, window.Session.VerticalScrollFraction, precision: 3);
+
+        CodeEditor(window).ScrollToEnd();
+        LayOut(window);
+
+        Assert.Equal(1, window.Session.VerticalScrollFraction, precision: 3);
+    }
+
     // ---- ScrollByWheel ----
 
     [WpfFact]
