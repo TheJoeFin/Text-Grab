@@ -224,6 +224,81 @@ public class EditTextWindowMarkdownFormattingTests
     }
 
     [WpfFact]
+    public void ToDoButtonCreatesInteractiveTasksAndTogglesThemBackToBullets()
+    {
+        string newline = Environment.NewLine;
+        EditTextWindow window = OpenMarkdown($"alpha{newline}{newline}**beta**");
+        RichTextBox editor = MarkdownEditor(window);
+        editor.SelectAll();
+
+        ClickButton(window, "ToDoButton");
+        Assert.Equal($"- [ ] alpha{newline}- [ ] **beta**", RawText(window));
+        List list = Assert.IsType<List>(editor.Document.Blocks.FirstBlock);
+        Assert.Equal(TextMarkerStyle.None, list.MarkerStyle);
+        CheckBox first = Assert.IsType<CheckBox>(Assert.IsType<InlineUIContainer>(
+            Assert.IsType<Paragraph>(list.ListItems.FirstListItem!.Blocks.FirstBlock).Inlines.FirstInline).Child);
+        Assert.False(first.IsChecked);
+        first.IsChecked = true;
+        Assert.Contains("- [x] alpha", RawText(window));
+
+        ClickButton(window, "ToDoButton");
+        Assert.Equal($"- alpha{newline}- **beta**", RawText(window));
+        editor.Undo();
+        Assert.Equal($"- [x] alpha{newline}- [ ] **beta**", RawText(window));
+    }
+
+    [WpfFact]
+    public void ToDoButtonConvertsOnlyTheSelectedBulletAndPreservesExistingTasks()
+    {
+        EditTextWindow window = OpenMarkdown("- [x] done\n- next");
+        RichTextBox editor = MarkdownEditor(window);
+        List list = Assert.IsType<List>(editor.Document.Blocks.FirstBlock);
+        Paragraph second = Assert.IsType<Paragraph>(list.ListItems.LastListItem!.Blocks.FirstBlock);
+        editor.CaretPosition = second.ContentStart.GetInsertionPosition(LogicalDirection.Forward);
+
+        ClickButton(window, "ToDoButton");
+
+        Assert.Equal($"- [x] done{Environment.NewLine}- [ ] next", RawText(window));
+        Assert.Equal(TextMarkerStyle.None, list.MarkerStyle);
+    }
+
+    [WpfFact]
+    public void ToDoButtonAtAnEmptyCaretSupportsTypingAndUndoRedo()
+    {
+        EditTextWindow window = OpenMarkdown("");
+        RichTextBox editor = MarkdownEditor(window);
+
+        ClickButton(window, "ToDoButton");
+        Assert.Equal("- [ ] ", RawText(window));
+        editor.Selection.Text = "new task";
+        Assert.Equal("- [ ] new task", RawText(window));
+
+        editor.Undo();
+        Assert.Equal("- [ ] ", RawText(window));
+        editor.Undo();
+        Assert.Equal("", RawText(window));
+        editor.Redo();
+        Assert.Equal("- [ ] ", RawText(window));
+        editor.Redo();
+        Assert.Equal("- [ ] new task", RawText(window));
+    }
+
+    [WpfFact]
+    public void ToDoButtonConvertsNumberedListAndPreservesFormattingOnReload()
+    {
+        EditTextWindow window = OpenMarkdown("1. first\n2. **second**");
+        RichTextBox editor = MarkdownEditor(window);
+        editor.SelectAll();
+
+        ClickButton(window, "ToDoButton");
+
+        string expected = $"- [ ] first{Environment.NewLine}- [ ] **second**";
+        Assert.Equal(expected, RawText(window));
+        FlowDocument reloaded = MarkdownFlowDocumentUtilities.CreateFlowDocument(expected, editor.FontFamily, editor.FontSize);
+        Assert.Equal(expected, MarkdownFlowDocumentUtilities.SerializeToMarkdown(reloaded, preserveLiteralMarkdown: true));
+    }
+
+    [WpfFact]
     public void CodeBlockCombinesParagraphsWithoutInterpretingTheirText()
     {
         string newline = Environment.NewLine;

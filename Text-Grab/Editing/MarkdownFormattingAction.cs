@@ -15,5 +15,6 @@ internal enum MarkdownFormattingAction
     CodeBlock = 64,
     Strikethrough = 128,
     Superscript = 256,
-    Subscript = 512
+    Subscript = 512,
+    ToDo = 1024
 }
