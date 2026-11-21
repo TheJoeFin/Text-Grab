@@ -23,6 +23,12 @@ public static partial class MarkdownFlowDocumentUtilities
         if (!GetAvailableFormatting(paragraphs, editor.Selection).HasFlag(action))
             return;
 
+        if (action == MarkdownFormattingAction.ToDo)
+        {
+            ToggleTaskList(editor, paragraphs);
+            return;
+        }
+
         RoutedUICommand? command = action switch
         {
             MarkdownFormattingAction.Bold => EditingCommands.ToggleBold,
@@ -114,6 +120,8 @@ public static partial class MarkdownFlowDocumentUtilities
             ? MarkdownFormattingAction.Bold | MarkdownFormattingAction.Italic
             : MarkdownFormattingAction.None;
         actions |= GetAvailableExtendedEmphasis(paragraphs, selection, canEmphasize);
+        if (CanToggleTaskList(paragraphs))
+            actions |= MarkdownFormattingAction.ToDo;
         if (paragraphs.All(paragraph => !StartsWithTaskListMarker(paragraph) && !HasFormattingAncestor<TableCell>(paragraph)))
         {
             actions |= MarkdownFormattingAction.Heading;
@@ -130,6 +138,66 @@ public static partial class MarkdownFlowDocumentUtilities
                 actions |= MarkdownFormattingAction.CodeBlock;
         }
         return actions;
+    }
+
+    private static bool CanToggleTaskList(List<Paragraph> paragraphs)
+    {
+        if (paragraphs.Any(paragraph => GetHeadingLevel(paragraph) != 0 || GetQuoteDepth(paragraph) != 0))
+            return false;
+
+        if (paragraphs.All(paragraph => paragraph.Parent is FlowDocument))
+            return true;
+
+        if (paragraphs[0].Parent is not ListItem { Parent: WpfList list }
+            || list.Parent is not FlowDocument || GetQuoteDepth(list) != 0
+            || GetBlockRole(list) != MarkdownBlockRole.None
+            || list.MarkerStyle is not (TextMarkerStyle.Disc or TextMarkerStyle.None or TextMarkerStyle.Decimal))
+            return false;
+
+        return paragraphs.All(paragraph => paragraph.Parent is ListItem item
+                && item.Parent == list && item.Blocks.FirstBlock == paragraph)
+            && (list.MarkerStyle != TextMarkerStyle.Decimal || paragraphs.Count == list.ListItems.Count);
+    }
+
+    private static void ToggleTaskList(RichTextBox editor, List<Paragraph> paragraphs)
+    {
+        bool hasCaret = editor.Selection.IsEmpty;
+        if (paragraphs[0].Parent is FlowDocument)
+        {
+            EditingCommands.ToggleBullets.Execute(null, editor);
+            paragraphs = GetSelectedParagraphs(editor);
+        }
+
+        WpfList list = (WpfList)((ListItem)paragraphs[0].Parent).Parent;
+        bool remove = paragraphs.All(StartsWithTaskListMarker);
+        foreach (Paragraph paragraph in paragraphs)
+        {
+            if (remove)
+            {
+                paragraph.Inlines.Remove(paragraph.Inlines.FirstInline);
+                paragraph.ClearValue(Paragraph.PaddingProperty);
+                paragraph.ClearValue(Paragraph.TextIndentProperty);
+            }
+            else if (!StartsWithTaskListMarker(paragraph))
+            {
+                TextPointer labelStart = InsertTaskListMarker(paragraph);
+                if (hasCaret && editor.CaretPosition.CompareTo(labelStart) < 0)
+                    editor.CaretPosition = labelStart;
+            }
+        }
+
+        bool allTasks = list.ListItems.All(IsTaskListItem);
+        list.MarkerStyle = allTasks ? TextMarkerStyle.None : TextMarkerStyle.Disc;
+        if (allTasks)
+        {
+            list.Padding = new Thickness(0);
+            list.MarkerOffset = 0;
+        }
+        else
+        {
+            list.ClearValue(WpfList.PaddingProperty);
+            list.ClearValue(WpfList.MarkerOffsetProperty);
+        }
     }
 
     private static bool IsEditableMarkdownParagraph(Paragraph paragraph) =>

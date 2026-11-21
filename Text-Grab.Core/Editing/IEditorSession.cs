@@ -1,3 +1,4 @@
+using System.Globalization;
 using Text_Grab.Models;
 
 namespace Text_Grab.Core.Editing;
@@ -65,6 +66,52 @@ public interface IEditorSession
 
     /// <summary>Scrolls the text editor to the end of the document.</summary>
     void ScrollToEnd();
+
+    /// <summary>
+    /// The culture the document is read in: the language picked in the window, or the current culture
+    /// when none was picked. For anything that parses or changes text by culture, such as numbers and case.
+    /// </summary>
+    CultureInfo Culture { get; }
+
+    /// <summary>
+    /// The numbers in the selected spreadsheet cells, in selection order. Null when the spreadsheet
+    /// editor is not showing or has no cells selected; empty when cells are selected but none of them
+    /// holds a number.
+    /// </summary>
+    IReadOnlyList<double>? SelectedCellNumbers { get; }
+
+    /// <summary>Raised when the spreadsheet editor's selected cells change.</summary>
+    event EventHandler? SelectedCellsChanged;
+
+    /// <summary>
+    /// The line at the top of the editor's viewport, counted from 0, plus the fraction of it scrolled up
+    /// out of view: 2.25 means the top quarter of the third line is hidden.
+    /// </summary>
+    /// <remarks>
+    /// For views that scroll along with the text line for line. It follows the code editor in code mode
+    /// and the text box in every other mode, since the text box holds the document in all of them. The
+    /// text box counts the lines on screen, so while it wraps text, a wrapped line counts once per row.
+    /// </remarks>
+    double FirstVisibleLine { get; }
+
+    /// <summary>
+    /// How far down the editor <see cref="FirstVisibleLine"/> follows is scrolled, from 0 at the top
+    /// to 1 at the bottom (and 0 when the document fits in the viewport).
+    /// </summary>
+    double VerticalScrollFraction => 0;
+
+    /// <summary>
+    /// Raised when the editor <see cref="FirstVisibleLine"/> follows scrolls or its viewport changes size.
+    /// Not raised when the mode changes which editor that is; listen to <see cref="ModeChanged"/> for that.
+    /// </summary>
+    event EventHandler? ViewportChanged;
+
+    /// <summary>
+    /// Scrolls the editor <see cref="FirstVisibleLine"/> follows as a mouse wheel turn of
+    /// <paramref name="wheelDelta"/> would (120 per notch, positive away from the user). Returns false
+    /// when it could not scroll, so the caller can let the wheel event go on.
+    /// </summary>
+    bool ScrollByWheel(int wheelDelta);
 
     /// <summary>
     /// Raised after <see cref="Text"/> changes, whatever changed it: typing, an edit through this

@@ -11,6 +11,31 @@ namespace Text_Grab.Tests.Core;
 public class ProtocolUtilitiesTests
 {
     [Theory]
+    [InlineData("text-grab://edit-text?layout=mermaid", "mermaid")]
+    [InlineData("text-grab://edit-text?LAYOUT=wide-calc", "wide-calc")]
+    [InlineData("text-grab:edit-text?layout=classic", "classic")]
+    public void TryGetLayoutId_ReadsTheLayoutParameter(string uri, string expected)
+    {
+        Assert.True(ProtocolUtilities.TryParseProtocolUri(uri, out _, out Dictionary<string, string> parameters));
+
+        Assert.True(ProtocolUtilities.TryGetLayoutId(parameters, out string layoutId));
+        Assert.Equal(expected, layoutId);
+    }
+
+    [Theory]
+    [InlineData("text-grab://edit-text")]
+    [InlineData("text-grab://edit-text?layout=")]
+    [InlineData("text-grab://edit-text?layout=..%2F..%2Fsecrets")]
+    [InlineData("text-grab://edit-text?layout=Your%20PC%20needs%20attention")]
+    [InlineData("text-grab://edit-text?layout=con")]
+    public void TryGetLayoutId_DropsWhatCannotBeALayoutId(string uri)
+    {
+        Assert.True(ProtocolUtilities.TryParseProtocolUri(uri, out _, out Dictionary<string, string> parameters));
+
+        Assert.False(ProtocolUtilities.TryGetLayoutId(parameters, out _));
+    }
+
+    [Theory]
     [InlineData("text-grab://paste-spreadsheet")]
     [InlineData("text-grab://paste-markdown")]
     [InlineData("text-grab://paste-code")]

@@ -875,6 +875,7 @@
                 </MenuItem>
                 <MenuItem
                     x:Name="WindowMenuItem"
+                    AutomationProperties.AutomationId="EditText.Menu.Window"
                     Header="_Window"
                     SubmenuOpened="WindowMenuItem_SubmenuOpened">
                     <MenuItem
@@ -918,6 +919,41 @@
                         Header="Show calculations pane"
                         InputGestureText="Ctrl + P"
                         IsCheckable="True" />
+                    <MenuItem
+                        x:Name="LayoutsMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.Layouts"
+                        Header="Lay_outs"
+                        SubmenuOpened="LayoutsMenuItem_SubmenuOpened"
+                        Visibility="Collapsed">
+                        <Separator x:Name="LayoutsListEndSeparator" />
+                        <MenuItem
+                            x:Name="SaveLayoutAsMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.SaveAs"
+                            Click="SaveLayoutAsMenuItem_Click"
+                            Header="_Save current layout as..." />
+                        <MenuItem
+                            x:Name="ResetLayoutMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.Reset"
+                            Click="ResetLayoutMenuItem_Click"
+                            Header="_Reset to built-in" />
+                        <MenuItem
+                            x:Name="DeleteLayoutMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.Delete"
+                            Click="DeleteLayoutMenuItem_Click"
+                            Header="_Delete this layout" />
+                        <MenuItem
+                            x:Name="SetDefaultLayoutMenuItem"
+                            AutomationProperties.AutomationId="EditText.Menu.Layouts.SetDefault"
+                            Click="SetDefaultLayoutMenuItem_Click"
+                            Header="Set as _default layout"
+                            IsCheckable="True" />
+                    </MenuItem>
+                    <MenuItem
+                        x:Name="PanesMenuItem"
+                        AutomationProperties.AutomationId="EditText.Menu.Panes"
+                        Header="Pane_s"
+                        SubmenuOpened="PanesMenuItem_SubmenuOpened"
+                        Visibility="Collapsed" />
                     <Separator />
                     <MenuItem
                         x:Name="NewWindowMenuItem"
@@ -1012,7 +1048,8 @@
             FormatRequested="ApplyMarkdownFormat"
             TableRequested="InsertMarkdownTable"
             Visibility="Collapsed" />
-        <Grid Grid.Row="3">
+        <!--  The editor area. With the pane layout on (v5 E4a), ReadingEditorHost moves into a DockingManager that takes this grid's place.  -->
+        <Grid x:Name="EditorAreaGrid" Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="CalcColumn" Width="200" />
@@ -1218,259 +1255,11 @@
                     </Button.Template>
                 </Button>
             </Grid>
-            <TextBox
-                x:Name="CalcResultsTextControl"
-                Grid.Column="1"
-                MinWidth="150"
-                AcceptsReturn="True"
-                AcceptsTab="True"
-                AutomationProperties.AutomationId="EditText.CalculatorResults"
-                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                ContextMenuOpening="CalcResultsTextControl_ContextMenuOpening"
-                FontSize="{Binding ElementName=PassedTextControl, Path=FontSize, Mode=OneWay}"
-                HorizontalScrollBarVisibility="Auto"
-                IsInactiveSelectionHighlightEnabled="True"
-                IsReadOnly="True"
-                Style="{DynamicResource TextBoxStyle2}"
-                TextWrapping="NoWrap"
-                VerticalScrollBarVisibility="Hidden">
-                <TextBox.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Name="HideCalcPaneContextItem" Header="Hide Pane" />
-                        <MenuItem Name="ShowCalcErrorsContextItem" Header="Show Errors" />
-                        <MenuItem Name="CopyAllContextItem" Header="Copy All" />
-                        <Separator />
-                        <MenuItem
-                            Name="ShowSumContextItem"
-                            Header="Sum: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="ShowAverageContextItem"
-                            Header="Average: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="ShowMedianContextItem"
-                            Header="Median: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="ShowCountContextItem"
-                            Header="Count: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="ShowMinContextItem"
-                            Header="Min: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="ShowMaxContextItem"
-                            Header="Max: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="ShowProductContextItem"
-                            Header="Product: -"
-                            IsCheckable="True" />
-                    </ContextMenu>
-                </TextBox.ContextMenu>
-            </TextBox>
-
-            <Border
-                x:Name="CalcAggregateStatusBorder"
-                Grid.Column="1"
-                Margin="8,0,0,8"
-                Padding="6,3"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Bottom"
-                AutomationProperties.AutomationId="EditText.CalculatorAggregateStatus"
-                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                ContextMenuOpening="CalcAggregateStatusBorder_ContextMenuOpening"
-                CornerRadius="4"
-                Cursor="Hand"
-                MouseLeftButtonDown="CalcAggregateStatusBorder_MouseLeftButtonDown"
-                ToolTip="Click to copy, right-click to change aggregate"
-                Visibility="Collapsed">
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem
-                            Name="AggregateSumContextItem"
-                            Header="Sum: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="AggregateAverageContextItem"
-                            Header="Average: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="AggregateMedianContextItem"
-                            Header="Median: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="AggregateCountContextItem"
-                            Header="Count: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="AggregateMinContextItem"
-                            Header="Min: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="AggregateMaxContextItem"
-                            Header="Max: -"
-                            IsCheckable="True" />
-                        <MenuItem
-                            Name="AggregateProductContextItem"
-                            Header="Product: -"
-                            IsCheckable="True" />
-                    </ContextMenu>
-                </Border.ContextMenu>
-                <Grid>
-                    <TextBlock
-                        x:Name="CalcAggregateStatusText"
-                        FontSize="12"
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                        Text="" />
-                    <ui:SymbolIcon
-                        x:Name="CalcAggregateCopyIcon"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="16"
-                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                        Opacity="0"
-                        Symbol="Copy24" />
-                </Grid>
-            </Border>
-
-            <StackPanel
-                Grid.Column="1"
-                Margin="8,8,8,0"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Orientation="Horizontal">
-                <Button
-                    x:Name="CalcCopyAllButton"
-                    Width="24"
-                    Height="24"
-                    Margin="0,0,4,0"
-                    Padding="0"
-                    AutomationProperties.AutomationId="EditText.CalculatorCopyAllButton"
-                    AutomationProperties.Name="Copy all calculator results"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="CalcCopyAllButton_Click"
-                    ToolTip="Copy All Results">
-                    <ui:SymbolIcon FontSize="14" Symbol="Copy24" />
-                </Button>
-                <Button
-                    x:Name="CalcInfoButton"
-                    Width="24"
-                    Height="24"
-                    Padding="0"
-                    AutomationProperties.AutomationId="EditText.CalculatorInfoButton"
-                    AutomationProperties.Name="Calculator information"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="CalcInfoButton_Click"
-                    ToolTip="Calculation Pane Help">
-                    <ui:SymbolIcon FontSize="14" Symbol="Info24" />
-                </Button>
-            </StackPanel>
-
-            <Popup
-                x:Name="CalcInfoPopup"
-                Grid.Column="1"
-                AllowsTransparency="True"
-                Placement="Left"
-                PlacementTarget="{Binding ElementName=CalcInfoButton}"
-                StaysOpen="False">
-                <Border
-                    Padding="16"
-                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                    BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4">
-                    <StackPanel Width="300">
-                        <TextBlock
-                            Margin="0,0,0,8"
-                            FontSize="16"
-                            FontWeight="Bold"
-                            Text="Calculation Pane" />
-                        <TextBlock Margin="0,0,0,8" TextWrapping="Wrap">
-                            <Run Text="Type mathematical expressions in the text area and see results calculated in real-time." />
-                        </TextBlock>
-                        <TextBlock
-                            Margin="0,0,0,4"
-                            FontWeight="SemiBold"
-                            Text="Features:" />
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Basic math: +, -, *, /, %, ** for exponent" />
-                        </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Functions: sin, cos, tan, sqrt, abs, log, etc." />
-                        </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Variables: x = 10" />
-                        </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Constants: pi, e, tau, phi, sqrt2, sqrt3, sqrt5, ln2, ln10, log2e, log10e" />
-                        </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Unit conversion: 5 miles to km, 100°F to celsius" />
-                        </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Date math: today + 5 days, 5-14-26 - 1-12-25 in weeks" />
-                        </TextBlock>
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap">
-                            <Run Text="• Supported units: length, mass, temperature, volume, speed, area, durations" />
-                        </TextBlock>
-                        <TextBlock
-                            Margin="0,0,0,4"
-                            FontWeight="SemiBold"
-                            Text="Examples:" />
-                        <TextBlock
-                            Margin="0,0,0,4"
-                            FontFamily="Consolas"
-                            FontSize="12"
-                            TextWrapping="Wrap">
-                            <Run Text="x = 10" /><LineBreak />
-                            <Run Text="y = 20" /><LineBreak />
-                            <Run Text="x + y" /><LineBreak />
-                            <Run Text="sin(pi/2)" /><LineBreak />
-                            <Run Text="sqrt(x * y)" />
-                        </TextBlock>
-                        <TextBlock
-                            Margin="0,4,0,4"
-                            FontFamily="Consolas"
-                            FontSize="12"
-                            TextWrapping="Wrap">
-                            <Run Text="5 miles to km" /><LineBreak />
-                            <Run Text="100 fahrenheit to celsius" /><LineBreak />
-                            <Run Text="3.5 gallons to liters" /><LineBreak />
-                            <Run Text="3.6 years to days" /><LineBreak />
-                            <Run Text="5-14-26 - 1-12-25 in weeks" />
-                        </TextBlock>
-                        <TextBlock
-                            Margin="0,8,0,4"
-                            FontSize="11"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            Text="Note:"
-                            TextWrapping="Wrap" />
-                        <TextBlock
-                            Margin="0,0,0,8"
-                            FontSize="11"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            TextWrapping="Wrap">
-                            <Run Text="Text wrapping is automatically disabled when the calculation pane is visible to ensure calculation results align vertically with their corresponding input lines." />
-                        </TextBlock>
-                        <TextBlock
-                            Margin="0,0,0,0"
-                            FontSize="11"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            TextWrapping="Wrap">
-                            <Run Text="Toggle with Ctrl+P or the calculator button" />
-                        </TextBlock>
-                    </StackPanel>
-                </Border>
-            </Popup>
-
+            <!--
+                The calc pane (v5 E3) goes here, in column 1 between ReadingEditorHost and the splitter. It is made by
+                its factory and inserted in code (AttachCalcPane), so that no layout constructs a pane it does not show.
+                The splitter and its shadow are the window's, drawn over the pane's edge.
+            -->
             <GridSplitter
                 x:Name="TextBoxSplitter"
                 Grid.Column="1"

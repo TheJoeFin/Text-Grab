@@ -97,6 +97,150 @@ Register-UiTest -Suite 'EditText' -Name 'calculator-pane-surface-can-be-entered'
     Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
     Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
     Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -TimeoutSeconds $Context.TimeoutSeconds
+    # The pane evaluates after its typing delay.
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-calculator-pane-opens-shows-a-result-and-hides' -Script {
+    param($Context)
+
+    # v5 E4a: the editor area rendered from classic.json through AvalonDock.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-on' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'TextBoxSplitter' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorCopyAllButton' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'TextBoxSplitter' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    $failure = Join-Path $profile 'diagnostics\failure.json'
+    Assert-UiTestFile -Path $failure -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-calculator-toggle-leaves-focus-in-the-editor' -Script {
+    param($Context)
+
+    # Showing an AvalonDock anchorable makes it the active content, which moves focus into it unless the host puts focus back.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-focus' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '2 * 3'
+    Set-UiTestForegroundWindow -Target $editText
+
+    # Visit the results first, so AvalonDock remembers them as the pane's last focused element.
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '6' -TimeoutSeconds $Context.TimeoutSeconds
+    Focus-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults'
+    Focus-UiTestElement -Target $editText -AutomationId 'EditText.Editor'
+
+    foreach ($expectResults in @($false, $true, $false)) {
+        Send-UiTestKeys -Target $editText -AutomationId 'EditText.Editor' -Keys 'ctrl+p' -Via send-input
+        if ($expectResults) {
+            Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -TimeoutSeconds $Context.TimeoutSeconds
+        }
+        else {
+            Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+        }
+        Start-Sleep -Milliseconds 300
+        $focused = Get-UiTestFocusedElement -Target $editText
+        if ($focused -notlike '*#EditText.Editor *') {
+            throw "After Ctrl+P (results shown: $expectResults) focus was on '$focused', not the editor."
+        }
+    }
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-editor-area-matches-the-hand-written-fixtures' -Script {
+    param($Context)
+
+    # v5 E4a step 7. The capture opens its own windows and sends Tab keys, so it runs in a child process
+    # with its own module state. EditTextUiaParity.psm1 lists what may differ, and why.
+    $suiteRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Join-Path (Get-Location) 'UiTests\Suites' }
+    Import-Module (Join-Path $suiteRoot 'EditTextUiaParity.psm1') -Force
+    $capture = Join-Path $Context.OutputDirectory 'uia-pane-layout'
+    $exporter = Join-Path $suiteRoot '..\Scripts\Export-EditTextUiaFixtures.ps1'
+    $shell = (Get-Process -Id $PID).Path
+    & $shell -NoProfile -File $exporter -TextGrabPath (Get-DeterministicTextGrabExecutable $Context) -OutputDirectory $capture -PaneLayout On -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The UI Automation capture failed with exit code $LASTEXITCODE." }
+
+    $problems = @(Compare-EditTextUiaParity -FixtureDirectory (Join-Path $suiteRoot '..\Fixtures\EditTextUia') -ActualDirectory $capture)
+    if ($problems.Count -gt 0) {
+        throw "The pane layout's editor area differs from the hand-written window's:`n$($problems -join "`n`n")"
+    }
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-a-layout-file-in-the-store-opens-with-the-layout-argument' -Script {
+    param($Context)
+
+    # v5 E4a "Done when": a second layout file dropped in the store opens with --layout. This one puts the
+    # calc pane on the editor's left, which Classic never does.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-store' -Settings @{ EtwPaneLayout = 'On' }
+    $layouts = Join-Path $profile 'data\layouts'
+    New-Item -ItemType Directory -Path $layouts -Force | Out-Null
+    @'
+{
+  "schemaVersion": "1.0",
+  "id": "calc-left",
+  "name": "Calc on the left",
+  "root": {
+    "type": "split",
+    "orientation": "horizontal",
+    "children": [
+      { "node": { "type": "pane", "paneId": "textgrab.pane.calc" }, "size": 220, "unit": "pixel" },
+      { "node": { "type": "pane", "paneId": "textgrab.pane.editor" }, "size": 1, "unit": "star" }
+    ]
+  }
+}
+'@ | Set-Content -LiteralPath (Join-Path $layouts 'calc-left.json') -Encoding utf8
+
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'calc-left') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+
+    $results = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.CalculatorResults', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    $editor = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.Editor', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    if ([int]$results.x -ge [int]$editor.x) {
+        throw "With --layout calc-left the calc results should be left of the editor; results x=$($results.x), editor x=$($editor.x)."
+    }
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'pane-layout-an-unknown-layout-opens-classic-and-says-why' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-unknown' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'no-such-layout') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestDiagnosticEvent -Path (Join-Path $profile 'diagnostics\events.jsonl') -EventName 'layout-notice' -TimeoutSeconds $Context.TimeoutSeconds
+    $notice = Get-Content -LiteralPath (Join-Path $profile 'diagnostics\events.jsonl') | ForEach-Object { $_ | ConvertFrom-Json } |
+        Where-Object eventName -eq 'layout-notice' | Select-Object -First 1
+    if ([string]$notice.details.notice -notlike '*no-such-layout*Classic*') {
+        throw "The notice should name the layout and say Classic opened instead; it was '$($notice.details.notice)'."
+    }
+
+    # Classic: the calc pane still opens, to the editor's right.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+}
+
+Register-UiTest -Suite 'EditText' -Name 'hand-written-grid-calculator-pane-still-opens' -Script {
+    param($Context)
+
+    # The way back for testers in 4.17: EtwPaneLayout = Off keeps the 4.16 editor grid.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'pane-layout-off' -Settings @{ EtwPaneLayout = 'Off' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    $splitterClass = Get-UiTestProperty -Target $editText -AutomationId 'TextBoxSplitter' -Property 'ClassName'
+    if ($splitterClass -ne 'GridSplitter') {
+        throw "Expected the hand-written GridSplitter with EtwPaneLayout = Off; found '$splitterClass'."
+    }
 }
 
 Register-UiTest -Suite 'EditText' -Name 'spreadsheet-and-markdown-modes-are-opened-from-stable-parent-menus' -Script {
@@ -136,6 +280,352 @@ Register-UiTest -Suite 'EditText' -Name 'native-open-and-save-as-dialogs-use-ded
     }
 }
 
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-explorer-layout-lists-seeded-items-and-opens-one-with-enter' -Script {
+    param($Context)
+
+    # v5 E5 recent: the Explorer layout shows the recent items beside the editor; Enter in the search box opens the first.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-enter' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Recent pane seeded note')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'explorer') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+    # Rows are UIA list items named "Edit Text: <text>"; a row's AutomationId does not reach UIA, and
+    # 'EditText.Recent.Item' would only match the list 'EditText.Recent.Items' by prefix.
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: Recent pane seeded note' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.EmptyText' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    $recent = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.Recent.Items', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    $editor = (Invoke-UiTestWinApp -Arguments @('ui', 'inspect', 'EditText.Editor', '--window', [string]$editText.WindowHandle, '--depth', '0') -Json).windows[0].elements[0]
+    if ([int]$recent.x -ge [int]$editor.x) {
+        throw "With --layout explorer the recent items should be left of the editor; recent x=$($recent.x), editor x=$($editor.x)."
+    }
+
+    Set-UiTestForegroundWindow -Target $editText
+    Focus-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Search'
+    Send-UiTestKeys -Target $editText -AutomationId 'EditText.Recent.Search' -Keys 'enter' -Via send-input
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'Recent pane seeded note' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-double-click-opens-an-item-in-the-blank-window' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-double-click' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Opened by a double-click')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'explorer') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: Opened by a double-click' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestForegroundWindow -Target $editText
+    Click-UiTestElement -Target $editText -AutomationId 'Edit Text: Opened by a double-click' -Double
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'Opened by a double-click' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-search-narrows-the-list-and-says-when-nothing-matches' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-search' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('alpha note', 'beta note')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'explorer') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: alpha note' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Set-UiTestForegroundWindow -Target $editText
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Recent.Search' -Value 'zzz'
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: alpha note' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.EmptyText' -Value 'No matches' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Recent.Search' -Value 'beta'
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: beta note' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: alpha note' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.EmptyText' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'recent-pane-is-not-in-the-classic-layout' -Script {
+    param($Context)
+
+    # A window that never asks for a layout is the 4.16 window: no recent pane, and it never read history for one.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'recent-classic' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Never shown in Classic')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Search' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-an-mmd-file-opens-the-mermaid-layout-in-code-mode-with-the-diagram-pane' -Script {
+    param($Context)
+
+    # v5 E5 mermaid: .mmd is in the built-in file-type map, so the file opens in the Mermaid layout, in Code mode
+    # as Plain Text, with the diagram pane beside the editor and no calc pane.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-mmd' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'flow.mmd'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'Plain Text' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Error' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicLeftOf -Target $editText -Left 'EditText.CodeEditor' -Right 'EditText.Mermaid.Diagram'
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText' `
+        -Predicate { param($value) $value -like 'flowchart LR*Draw it*' } -Description 'the diagram of the file' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-editing-the-source-updates-the-diagram-and-a-broken-source-keeps-it-under-an-error' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-edit' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'flow.mmd'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestForegroundWindow -Target $editText
+
+    # The picture follows the source. The help text is the start of the source the picture was drawn from.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "flowchart LR`r`nX --> Y"
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*X --> Y*' } -Description 'the edited source to be drawn' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+
+    # A source that does not draw keeps the last good diagram and says why in the strip.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value 'this is not a Mermaid diagram'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Error' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    $kept = Get-UiTestProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText'
+    if ($kept -notlike '*X --> Y*') {
+        throw "A broken source should leave the last good diagram; its help text is now '$kept'."
+    }
+
+    # Fixing it draws again and clears the strip.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "flowchart LR`r`nP --> Q"
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*P --> Q*' } -Description 'the fixed source to be drawn' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Error' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-layout-argument-opens-the-mermaid-layout-in-code-mode-on-a-blank-window' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-layout-arg' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'mermaid') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'Plain Text' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicLeftOf -Target $editText -Left 'EditText.CodeEditor' -Right 'EditText.Mermaid.Placeholder'
+
+    Set-UiTestForegroundWindow -Target $editText
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "flowchart LR`r`nA --> B"
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-a-txt-file-still-opens-in-classic-without-the-diagram-pane' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-txt' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'notes.txt'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -Value 'Plain notes' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    # Classic still has its calc pane.
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-a-markdown-file-still-opens-in-markdown-mode-in-classic' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-md' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Name 'readme.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'mermaid-pane-is-not-in-the-classic-layout' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mermaid-classic' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Editor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Mermaid.Diagram' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'markdown-preview-layout-opens-an-md-file-in-code-mode-with-the-preview-pane' -Script {
+    param($Context)
+
+    # v5 E5 markdown-preview: reachable by --layout only. The file opens in Code mode with Markdown highlighting
+    # (not Markdown mode), the preview pane is right of the editor, and there is no calc pane.
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mdpreview-open' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Folder 'MarkdownPreview' -Name 'notes.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'markdown-preview', $path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.StatusText' -Value 'Markdown' -Contains -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-DeterministicLeftOf -Target $editText -Left 'EditText.CodeEditor' -Right 'EditText.MarkdownPreview.Document'
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*Preview fixture*Some bold words*' } -Description 'the rendered file' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'markdown-preview-editing-the-source-updates-the-preview' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mdpreview-edit' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Folder 'MarkdownPreview' -Name 'notes.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'markdown-preview', $path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestForegroundWindow -Target $editText
+
+    # The preview's help text is the start of its rendered text, so the test waits on text, not pixels.
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.CodeEditor' -Value "# Edited heading`r`n`r`nA *new* sentence."
+    Wait-DeterministicProperty -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -Property 'HelpText' `
+        -Predicate { param($value) $value -like '*Edited heading*A new sentence*' } -Description 'the edited source to be rendered' -TimeoutSeconds $Context.TimeoutSeconds | Out-Null
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'markdown-preview-an-md-file-without-a-layout-still-opens-in-classic-in-markdown-mode' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'mdpreview-classic' -Settings @{ EtwPaneLayout = 'On' }
+    $path = Copy-DeterministicMermaidFixture -ProfileDirectory $profile -Folder 'MarkdownPreview' -Name 'notes.md'
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @($path) -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownEditor' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CodeEditor' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Document' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.MarkdownPreview.Placeholder' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
 Register-UiTest -Suite 'EditText' -Name 'clipboard-watcher-remains-system-integration-only' -SkipReason 'Clipboard watcher behavior depends on an external clipboard change and is owned by the system-integration suite.' -Script {
     param($Context)
+}
+
+# ---- v5 E6 picker: the Layouts and Panes submenus of the Window menu ----
+
+Register-UiTest -Suite 'EditText' -Name 'layouts-menu-lists-the-built-in-layouts-and-choosing-explorer-shows-the-recent-pane' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-explorer' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Picker seeded note')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Classic'
+    foreach ($name in @('Explorer', 'Markdown preview', 'Mermaid')) {
+        Wait-UiTestElement -Target $editText -AutomationId $name -TimeoutSeconds $Context.TimeoutSeconds
+    }
+    Invoke-UiTestElement -Target $editText -AutomationId 'Explorer'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'Edit Text: Picker seeded note' -TimeoutSeconds $Context.TimeoutSeconds
+
+    # And back: the recent pane leaves, and the editor still works.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Classic'
+    Invoke-UiTestElement -Target $editText -AutomationId 'Classic'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value 'still typing'
+    Assert-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Expected 'still typing'
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'panes-menu-hides-and-shows-calc-and-agrees-with-the-calc-toggle-button' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-panes' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+
+    # Panes > Calculations shows the pane. The Panes items exist before the menu opens, so their IDs reach UI Automation.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.calc'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.calc'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+
+    # The toolbar button hides it; the menu, which reads the layout as it opens, must then offer to show it.
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.calc'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.calc'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+
+    # And the menu hides what the button showed.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.calc'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.calc'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'save-current-layout-as-puts-a-layout-in-the-store-lists-it-and-opens-with-the-layout-argument' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-save' -Settings @{ EtwPaneLayout = 'On' }
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+
+    # Arrange the window: the recent pane beside the editor, which Classic never has.
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Panes' -ChildName 'EditText.Menu.Panes.recent'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Panes.recent'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Classic'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.Menu.Layouts.SaveAs'
+    $dialog = Wait-UiTestDialog -ProcessId $editText.ProcessId -Title 'Save current layout as' -TimeoutSeconds $Context.TimeoutSeconds
+    Set-UiTestValue -Target $dialog -AutomationId 'EditText.LayoutName' -Value 'Ui Saved'
+    Invoke-UiTestElement -Target $dialog -AutomationId 'Save'
+
+    $saved = Join-Path $profile 'data\layouts\ui-saved.json'
+    $deadline = [DateTimeOffset]::UtcNow.AddSeconds($Context.TimeoutSeconds)
+    while (-not (Test-Path -LiteralPath $saved) -and [DateTimeOffset]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
+    Assert-UiTestFile -Path $saved
+    $json = Get-Content -LiteralPath $saved -Raw | ConvertFrom-Json
+    if ($json.name -ne 'Ui Saved' -or $json.basedOn -ne 'classic') {
+        throw "The saved layout should be named 'Ui Saved' and based on classic; it was '$($json.name)' / '$($json.basedOn)'."
+    }
+
+    Open-DeterministicPickerSubmenu -Target $editText -Context $Context -SubmenuAutomationId 'EditText.Menu.Layouts' -ChildName 'Ui Saved'
+
+    # The saved file opens in a window of its own, here in a new profile so that no instance is shared.
+    $second = New-DeterministicSeedProfile -Context $Context -Name 'picker-save-open' -Settings @{ EtwPaneLayout = 'On' }
+    $layouts = Join-Path $second 'data\layouts'
+    New-Item -ItemType Directory -Path $layouts -Force | Out-Null
+    Copy-Item -LiteralPath $saved -Destination (Join-Path $layouts 'ui-saved.json')
+    $reopened = Start-DeterministicTextGrab -Context $Context -Arguments @('--layout', 'ui-saved') -WindowTitle 'Edit Text' -ProfileDirectory $second
+    Wait-UiTestElement -Target $reopened -AutomationId 'EditText.Recent.Items' -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestFile -Path (Join-Path $second 'diagnostics\failure.json') -Absent
+}
+
+Register-UiTest -Suite 'EditText' -Name 'a-user-who-never-opens-the-layouts-or-panes-menus-sees-the-classic-window' -Script {
+    param($Context)
+
+    $profile = New-DeterministicSeedProfile -Context $Context -Name 'picker-untouched' -Settings @{ EtwPaneLayout = 'On' }
+    Set-DeterministicTextHistory -ProfileDirectory $profile -Texts @('Not shown in Classic')
+    $editText = Start-DeterministicTextGrab -Context $Context -Arguments @('EditText') -WindowTitle 'Edit Text' -ProfileDirectory $profile
+    Set-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Value '1 + 1'
+    Invoke-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorToggle'
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.CalculatorResults' -Value '2' -TimeoutSeconds $Context.TimeoutSeconds
+    Wait-UiTestElement -Target $editText -AutomationId 'EditText.Recent.Items' -Gone -TimeoutSeconds $Context.TimeoutSeconds
+
+    # No notice, no layout folder: nothing was resolved from or written to the store.
+    $events = Join-Path $profile 'diagnostics\events.jsonl'
+    if ((Test-Path -LiteralPath $events) -and (Get-Content -LiteralPath $events | Select-String -SimpleMatch 'layout-notice')) {
+        throw 'A window that was never asked for a layout recorded a layout notice.'
+    }
+    if (Test-Path -LiteralPath (Join-Path $profile 'data\layouts')) {
+        throw 'A window that never opened the Layouts menu created the layout store folder.'
+    }
+    Assert-UiTestFile -Path (Join-Path $profile 'diagnostics\failure.json') -Absent
 }

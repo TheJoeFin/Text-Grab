@@ -30,11 +30,11 @@ Update the Status column when you finish a phase (`Not started` → `In progress
 | E1 | [Editor session and surfaces](E1-Editor-Session-Surfaces.md) | — | 4.17 | Done (E1a 21428ec, E1b 1644515) |
 | — | Code mode (#645, PR #710; not a planned phase — see [E1](E1-Editor-Session-Surfaces.md#after-e1-code-mode-2026-11-14-pr-710)) | E1 | 4.17 | Done (2bc0599) |
 | E2 | [ETW commands onto the registry](E2-Commands-Onto-Registry.md) | A1, E1 | 4.18 | Not started |
-| E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | `calc`: E1. Others: E2 | `calc`: 4.17. Others: 4.18 | Not started |
-| E4a | [Pane host and pane layouts](E4-Layout-Engine.md) | E3 `calc` | 4.17 | Not started |
+| E3 | [Extract ETW clusters into panes](E3-Extract-Clusters.md) | `calc`: E1. Others: E2 | `calc`: 4.17. Others: 4.18 | In progress (`calc` done, 0fb4420) |
+| E4a | [Pane host and pane layouts](E4-Layout-Engine.md) | E3 `calc` | 4.17 | Done (8033cba) |
 | E4b | [Chrome from the layout definition](E4-Layout-Engine.md) | E2, E3, E4a | 4.18 (opt-in) | Not started |
-| E5 | [New panes](E5-New-Panes.md) | E4a (\+ per pane) | 4.17: `recent`, `mermaid`, `markdown-preview`. 5.0: `transformer`, `audio` | Not started |
-| E6 | [Ribbon, layout picker, layout editor](E6-Ribbon-Layout-Editor.md) | `picker`: E4a. Others: E4b | `picker`: 4.17. Others: 5.0 | Not started |
+| E5 | [New panes](E5-New-Panes.md) | E4a (\+ per pane) | 4.17: `recent`, `mermaid`, `markdown-preview`. 5.0: `transformer`, `audio` | In progress (`recent` done, 191b7f4; `mermaid` done, b6cf46e; `markdown-preview` done) |
+| E6 | [Ribbon, layout picker, layout editor](E6-Ribbon-Layout-Editor.md) | `picker`: E4a. Others: E4b | `picker`: 4.17. Others: 5.0 | In progress (`picker` done, see the E6 notes) |
 
 Order from here: **4.17** — E3 `calc` → E4a → E5 `recent`, `mermaid`, `markdown-preview` and E6 `picker` (E5 `folder-tree` only if the rest lands smoothly; see the release plan). **4.18** — E2 → the other E3 clusters → E4b, with W1 alongside. **5.0** — W2, E5 `transformer` and `audio`, the rest of E6 → W3.
 

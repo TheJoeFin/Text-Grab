@@ -1,0 +1,205 @@
+<UserControl
+    x:Class="Text_Grab.Editing.Panes.RecentPane"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <!--
+        Every brush and style here is a DynamicResource: the pane is made in windows that never see the
+        app's resource dictionaries (tests), where a StaticResource would throw.
+    -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <!--  Right-click, Apps key and Shift+F10 menu for a row. DataContext is the row's TrayFlyoutItem.  -->
+        <ContextMenu x:Key="RecentItemContextMenu">
+            <MenuItem
+                AutomationProperties.AutomationId="EditText.Recent.Item.Open"
+                Click="ItemMenuOpen_Click"
+                Header="Open"
+                InputGestureText="Enter">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="Open24" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="EditText.Recent.Item.OpenInNewWindow"
+                Click="ItemMenuOpenInNewWindow_Click"
+                Header="Open in new window"
+                InputGestureText="Ctrl+Enter">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="WindowEdit20" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="EditText.Recent.Item.Copy"
+                Click="ItemMenuCopy_Click"
+                Header="Copy">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="Copy24" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="EditText.Recent.Item.CopyPath"
+                Click="ItemMenuCopyPath_Click"
+                Header="Copy path"
+                Visibility="{Binding IsFile, Converter={StaticResource BoolToVisibility}}">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="DocumentLink20" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                AutomationProperties.AutomationId="EditText.Recent.Item.OpenDirectory"
+                Click="ItemMenuOpenDirectory_Click"
+                Header="Open directory"
+                Visibility="{Binding IsFile, Converter={StaticResource BoolToVisibility}}">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="FolderOpen24" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <Style x:Key="RecentItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Margin" Value="4,1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="AutomationProperties.AutomationId" Value="EditText.Recent.Item" />
+            <Setter Property="AutomationProperties.Name" Value="{Binding AutomationName}" />
+            <Setter Property="ContextMenu" Value="{StaticResource RecentItemContextMenu}" />
+            <EventSetter Event="MouseDoubleClick" Handler="Item_MouseDoubleClick" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border
+                            x:Name="Bd"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            SnapsToDevicePixels="True">
+                            <Grid>
+                                <Rectangle
+                                    x:Name="AccentBar"
+                                    Width="3"
+                                    Height="16"
+                                    Margin="1,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Fill="{DynamicResource AccentFillColorDefaultBrush}"
+                                    RadiusX="1.5"
+                                    RadiusY="1.5"
+                                    Visibility="Collapsed" />
+                                <ContentPresenter
+                                    Margin="{TemplateBinding Padding}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                <Setter TargetName="AccentBar" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="RecentItemTemplate">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon
+                    Margin="2,0,10,0"
+                    VerticalAlignment="Center"
+                    FontSize="18"
+                    Symbol="{Binding Symbol}" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock
+                        FontSize="13"
+                        Text="{Binding Title}"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        Margin="0,1,0,0"
+                        FontSize="11"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="{Binding Subtitle}"
+                        TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Margin="12,8,12,2"
+            FontSize="12"
+            FontWeight="SemiBold"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            Text="Recent" />
+
+        <ui:TextBox
+            x:Name="SearchBox"
+            Grid.Row="1"
+            Margin="8,4,8,6"
+            AutomationProperties.AutomationId="EditText.Recent.Search"
+            AutomationProperties.Name="Search recent items"
+            PlaceholderText="Search recent items"
+            PreviewKeyDown="SearchBox_PreviewKeyDown"
+            Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" />
+
+        <ListBox
+            x:Name="ItemsList"
+            Grid.Row="2"
+            Padding="0,2"
+            AutomationProperties.AutomationId="EditText.Recent.Items"
+            AutomationProperties.Name="Recent items"
+            Background="Transparent"
+            BorderThickness="0"
+            ItemContainerStyle="{StaticResource RecentItemStyle}"
+            ItemTemplate="{StaticResource RecentItemTemplate}"
+            ItemsSource="{Binding Items}"
+            KeyboardNavigation.TabNavigation="Once"
+            PreviewKeyDown="ItemsList_PreviewKeyDown"
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+            SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+            SelectionMode="Single" />
+
+        <TextBlock
+            x:Name="EmptyText"
+            Grid.Row="2"
+            Margin="12"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            AutomationProperties.AutomationId="EditText.Recent.EmptyText"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            Text="{Binding EmptyText}"
+            TextAlignment="Center"
+            TextWrapping="Wrap"
+            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+    </Grid>
+</UserControl>

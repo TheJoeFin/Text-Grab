@@ -1,0 +1,7 @@
+Document #EditText.MarkdownEditor (RichTextBox)
+Edit #EditText.CalculatorResults (TextBox)
+Button "Copy all calculator results" #EditText.CalculatorCopyAllButton (Button)
+  Text "" (TextBlock)
+Button "Calculator information" #EditText.CalculatorInfoButton (Button)
+  Text "" (TextBlock)
+Thumb #TextBoxSplitter (GridSplitter)

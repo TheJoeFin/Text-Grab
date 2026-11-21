@@ -1504,7 +1504,8 @@ public static partial class MarkdownFlowDocumentUtilities
     /// <summary>Inserts an unchecked checkbox and returns the position for its label text.</summary>
     public static TextPointer InsertTaskListMarker(Paragraph paragraph)
     {
-        InlineUIContainer marker = CreateTaskListMarker(isChecked: false, label: string.Empty);
+        string label = new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text.Trim();
+        InlineUIContainer marker = CreateTaskListMarker(isChecked: false, label);
         if (paragraph.Inlines.FirstInline is WpfInline firstInline)
             paragraph.Inlines.InsertBefore(firstInline, marker);
         else

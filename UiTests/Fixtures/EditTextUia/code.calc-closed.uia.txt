@@ -1,0 +1,9 @@
+Document #EditText.CodeEditor
+  Document
+    List (ItemsControl)
+      DataItem "ICSharpCode.AvalonEdit.Editing.LineNumberMargin" (ItemsControlItem)
+      DataItem "System.Windows.Shapes.Line" (ItemsControlItem)
+Button "Copy all calculator results" #EditText.CalculatorCopyAllButton (Button)
+  Text "" (TextBlock)
+Button "Calculator information" #EditText.CalculatorInfoButton (Button)
+  Text "" (TextBlock)

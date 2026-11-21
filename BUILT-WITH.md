@@ -14,7 +14,9 @@ The same package inventory is also available from the app's **About → Licenses
 | --- | --- | --- | --- | --- | --- |
 | AvalonEdit | App | MIT | [Open](https://github.com/icsharpcode/AvalonEdit/blob/master/LICENSE) | [Project](https://github.com/icsharpcode/AvalonEdit) | Code mode editor in the Edit Text Window. |
 | CliWrap | App | MIT | [Open](https://github.com/Tyrrrz/CliWrap/blob/master/License.txt) | [Project](https://github.com/Tyrrrz/CliWrap) | — |
+| CommunityToolkit.Mvvm | App | MIT | [Open](https://github.com/CommunityToolkit/dotnet/blob/main/License.md) | [Project](https://github.com/CommunityToolkit/dotnet) | View models of the Edit Text Window's panes. |
 | Dapplo.Windows.User32 | App | MIT | [Open](https://github.com/dapplo/Dapplo.Windows/blob/master/LICENSE) | [Project](https://github.com/dapplo/Dapplo.Windows) | — |
+| Dirkster.AvalonDock | App | MS-PL | [Open](https://github.com/Dirkster99/AvalonDock/blob/master/LICENSE) | [Project](https://github.com/Dirkster99/AvalonDock) | Hosts the Edit Text Window's panes. Includes its Dirkster.AvalonDock.Core package, under the same license. |
 | Humanizer.Core | App | MIT | [Open](https://github.com/Humanizr/Humanizer/blob/main/license.txt) | [Project](https://github.com/Humanizr/Humanizer) | — |
 | Magick.NET-Q16-AnyCPU | App | Apache-2.0 | [Open](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | [Project](https://github.com/dlemstra/Magick.NET) | — |
 | Magick.NET.SystemDrawing | App | Apache-2.0 | [Open](https://github.com/dlemstra/Magick.NET/blob/main/License.txt) | [Project](https://github.com/dlemstra/Magick.NET) | — |

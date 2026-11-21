@@ -1,0 +1,11 @@
+# Tab from the calc toggle
+Button "Show calculator pane" #EditText.CalculatorToggle (Button)
+Edit #EditText.Editor (TextBox)
+# Ctrl+Tab from there
+Edit #EditText.Editor (TextBox)
+Edit #EditText.CalculatorResults (TextBox)
+Button "Copy all calculator results" #EditText.CalculatorCopyAllButton (Button)
+Button "Calculator information" #EditText.CalculatorInfoButton (Button)
+Thumb #TextBoxSplitter (GridSplitter)
+Window "Edit Text" #EditTextWindow (Window)
+MenuItem "File" #EditText.Menu.File (MenuItem)

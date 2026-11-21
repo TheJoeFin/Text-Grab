@@ -354,8 +354,21 @@ namespace Text_Grab.Properties {
             get {
                 return ((bool)(this["EditWindowBottomBarIsHidden"]));
             }
+
             set {
                 this["EditWindowBottomBarIsHidden"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EditWindowBottomBarHiddenByFileType {
+            get {
+                return ((string)(this["EditWindowBottomBarHiddenByFileType"]));
+            }
+            set {
+                this["EditWindowBottomBarHiddenByFileType"] = value;
             }
         }
         
@@ -1508,6 +1521,18 @@ namespace Text_Grab.Properties {
             }
             set {
                 this["GrabFrameIgnoreRepeatedHeadersFooters"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EtwPaneLayout {
+            get {
+                return ((string)(this["EtwPaneLayout"]));
+            }
+            set {
+                this["EtwPaneLayout"] = value;
             }
         }
     }
