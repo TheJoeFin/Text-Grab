@@ -49,17 +49,19 @@ public static class LayoutPaneEditor
     }
 
     /// <summary>
-    /// <paramref name="layout"/> without the pane. The editor can't be taken out. A split left holding a
-    /// single split is flattened into its parent's place.
+    /// <paramref name="layout"/> without the pane. The editor can't be taken out. An empty split or tab
+    /// group is dropped from its parent, and a split left holding a single child is unwrapped to that child.
     /// </summary>
     public static EtwLayoutDefinition RemovePane(EtwLayoutDefinition layout, string paneId)
     {
         ArgumentNullException.ThrowIfNull(layout);
 
-        if (paneId == PaneIds.Editor || layout.Root is not SplitNode root)
+        if (paneId == PaneIds.Editor || !EtwLayoutValidator.ContainsPane(layout.Root, paneId))
             return layout;
 
-        return layout with { Root = Without(root, paneId) };
+        return Without(layout.Root, paneId) is DockNode reduced
+            ? layout with { Root = reduced }
+            : layout;
     }
 
     /// <summary>
@@ -75,30 +77,49 @@ public static class LayoutPaneEditor
         return !Describe(EtwLayoutValidator.Normalize(live).Root).SequenceEqual(Describe(EtwLayoutValidator.Normalize(baseline).Root), StringComparer.Ordinal);
     }
 
-    private static DockNode Without(SplitNode split, string paneId)
+    private static DockNode? Without(DockNode node, string paneId)
     {
-        List<DockChild> children = [];
-        foreach (DockChild child in split.Children)
+        switch (node)
         {
-            switch (child.Node)
+            case PaneNode pane:
+                return pane.PaneId == paneId ? null : pane;
+
+            case TabGroupNode tabs:
             {
-                case PaneNode pane when pane.PaneId == paneId:
-                    continue;
-                case SplitNode nested:
-                    DockNode reduced = Without(nested, paneId);
-                    children.Add(child with { Node = reduced });
-                    break;
-                default:
-                    children.Add(child);
-                    break;
+                List<PaneNode> remaining = [.. tabs.Tabs.Where(tab => tab.PaneId != paneId)];
+                if (remaining.Count == 0)
+                    return null;
+
+                if (remaining.Count == tabs.Tabs.Count)
+                    return tabs;
+
+                return tabs with
+                {
+                    Tabs = remaining,
+                    SelectedIndex = Math.Clamp(tabs.SelectedIndex, 0, remaining.Count - 1),
+                };
             }
+
+            case SplitNode split:
+            {
+                List<DockChild> children = [];
+                foreach (DockChild child in split.Children)
+                {
+                    if (Without(child.Node, paneId) is DockNode reduced)
+                        children.Add(child with { Node = reduced });
+                }
+
+                return children.Count switch
+                {
+                    0 => null,
+                    1 => children[0].Node,
+                    _ => split with { Children = children },
+                };
+            }
+
+            default:
+                return node;
         }
-
-        // A split holding one split adds nothing; its parent shows that split directly.
-        if (children.Count == 1 && children[0].Node is SplitNode only)
-            return only;
-
-        return split with { Children = children };
     }
 
     private static IEnumerable<string> Describe(DockNode node) => node switch

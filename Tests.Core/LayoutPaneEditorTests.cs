@@ -97,4 +97,69 @@ public class LayoutPaneEditorTests
         EtwLayoutDefinition collapsed = explorer with { Root = root with { Children = [root.Children[0] with { Collapsed = true }, .. root.Children.Skip(1)] } };
         Assert.True(LayoutPaneEditor.HasPaneChanges(collapsed, explorer));
     }
+
+    [Fact]
+    public void RemovingAllPanesFromANestedSplit_DropsTheEmptySplitAndStaysValid()
+    {
+        EtwLayoutDefinition layout = new("1.0", "nested", "Nested", new SplitNode(DockOrientation.Horizontal,
+        [
+            new DockChild(new PaneNode(PaneIds.Editor), 1, DockSizeUnit.Star),
+            new DockChild(new PaneNode(PaneIds.Calc), 240, DockSizeUnit.Pixel),
+            new DockChild(new SplitNode(DockOrientation.Vertical,
+            [
+                new DockChild(new PaneNode(PaneIds.Recent), 1, DockSizeUnit.Star),
+            ]), 220, DockSizeUnit.Pixel),
+        ]));
+
+        EtwLayoutDefinition result = LayoutPaneEditor.RemovePane(layout, PaneIds.Recent);
+
+        Assert.Equal([PaneIds.Editor, PaneIds.Calc], Ids(result));
+        SplitNode root = Assert.IsType<SplitNode>(result.Root);
+        Assert.Equal(2, root.Children.Count);
+        Assert.Null(EtwLayoutValidator.FindProblem(result, _ => true));
+    }
+
+    [Fact]
+    public void RemovingAPaneFromATabGroup_ClampsSelectedIndexAndDropsTheGroupWhenEmpty()
+    {
+        EtwLayoutDefinition layout = new("1.0", "tabs", "Tabs", new SplitNode(DockOrientation.Horizontal,
+        [
+            new DockChild(new PaneNode(PaneIds.Editor), 1, DockSizeUnit.Star),
+            new DockChild(new TabGroupNode([new PaneNode(PaneIds.Recent), new PaneNode(PaneIds.Mermaid)], SelectedIndex: 1), 260, DockSizeUnit.Pixel),
+        ]));
+
+        EtwLayoutDefinition oneLeft = LayoutPaneEditor.RemovePane(layout, PaneIds.Mermaid);
+
+        Assert.Equal([PaneIds.Editor, PaneIds.Recent], Ids(oneLeft));
+        SplitNode oneLeftRoot = Assert.IsType<SplitNode>(oneLeft.Root);
+        TabGroupNode remainingTabs = Assert.IsType<TabGroupNode>(oneLeftRoot.Children[1].Node);
+        Assert.Equal(0, remainingTabs.SelectedIndex);
+        Assert.Equal([PaneIds.Recent], remainingTabs.Tabs.Select(tab => tab.PaneId));
+        Assert.Null(EtwLayoutValidator.FindProblem(oneLeft, _ => true));
+
+        EtwLayoutDefinition noneLeft = LayoutPaneEditor.RemovePane(oneLeft, PaneIds.Recent);
+
+        Assert.Equal([PaneIds.Editor], Ids(noneLeft));
+        PaneNode editorOnly = Assert.IsType<PaneNode>(noneLeft.Root);
+        Assert.Equal(PaneIds.Editor, editorOnly.PaneId);
+        Assert.Null(EtwLayoutValidator.FindProblem(noneLeft, _ => true));
+    }
+
+    [Fact]
+    public void RemovingAPaneFromARootTabGroup_ClampsSelectedIndexAndRefusesToEmptyRoot()
+    {
+        EtwLayoutDefinition layout = new("1.0", "root-tabs", "Root tabs",
+            new TabGroupNode([new PaneNode(PaneIds.Recent), new PaneNode(PaneIds.Mermaid)], SelectedIndex: 1));
+
+        EtwLayoutDefinition oneLeft = LayoutPaneEditor.RemovePane(layout, PaneIds.Mermaid);
+
+        TabGroupNode remainingTabs = Assert.IsType<TabGroupNode>(oneLeft.Root);
+        Assert.Equal(0, remainingTabs.SelectedIndex);
+        Assert.Equal([PaneIds.Recent], remainingTabs.Tabs.Select(tab => tab.PaneId));
+        Assert.Null(EtwLayoutValidator.FindProblem(oneLeft, _ => true));
+
+        EtwLayoutDefinition unchanged = LayoutPaneEditor.RemovePane(oneLeft, PaneIds.Recent);
+
+        Assert.Same(oneLeft, unchanged);
+    }
 }
