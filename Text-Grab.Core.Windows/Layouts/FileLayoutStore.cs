@@ -29,6 +29,20 @@ public sealed class FileLayoutStore : ILayoutStore
     public const string MetadataFileName = ".store.json";
 
     private const string GlobalDefaultMember = "globalDefault";
+    private const int MaxMoveAttempts = 6;
+
+    private static readonly JsonDocumentOptions MetadataDocumentOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
+    private static readonly JsonSerializerOptions IndentedJsonOptions = new()
+    {
+        WriteIndented = true,
+    };
+
+    private readonly SemaphoreSlim writeGate = new(1, 1);
 
     public FileLayoutStore(string directory)
     {
@@ -169,37 +183,42 @@ public sealed class FileLayoutStore : ILayoutStore
         if (id is not null && !LayoutIds.IsValid(id))
             throw new ArgumentException($"\"{id}\" can't be a layout ID.", nameof(id));
 
-        // Every other member of the file is kept: E6 `defaults` adds its own.
-        JsonObject metadata = [];
-        if (File.Exists(MetadataPath))
+        await writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            try
+            // Every other member of the file is kept: E6 `defaults` adds its own.
+            JsonObject metadata = [];
+            if (File.Exists(MetadataPath))
             {
-                if (JsonNode.Parse(await File.ReadAllTextAsync(MetadataPath, cancellationToken).ConfigureAwait(false)) is JsonObject existing)
-                    metadata = existing;
+                try
+                {
+                    if (JsonNode.Parse(await File.ReadAllTextAsync(MetadataPath, cancellationToken).ConfigureAwait(false), documentOptions: MetadataDocumentOptions) is JsonObject existing)
+                        metadata = existing;
+                }
+                catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+                {
+                    // A file that cannot be read is replaced.
+                }
             }
-            catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
-            {
-                // A file that cannot be read is replaced.
-            }
+
+            if (id is null)
+                metadata.Remove(GlobalDefaultMember);
+            else
+                metadata[GlobalDefaultMember] = id;
+
+            await WriteAtomicallyCoreAsync(MetadataPath, metadata.ToJsonString(IndentedJsonOptions), cancellationToken).ConfigureAwait(false);
         }
-
-        if (id is null)
-            metadata.Remove(GlobalDefaultMember);
-        else
-            metadata[GlobalDefaultMember] = id;
-
-        System.IO.Directory.CreateDirectory(Directory);
-        string temporaryPath = MetadataPath + ".tmp";
-        await File.WriteAllTextAsync(temporaryPath, metadata.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), cancellationToken).ConfigureAwait(false);
-        File.Move(temporaryPath, MetadataPath, overwrite: true);
+        finally
+        {
+            writeGate.Release();
+        }
     }
 
     private static LayoutStoreDefaults ParseDefaults(string json)
     {
         try
         {
-            if (JsonNode.Parse(json, documentOptions: new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip }) is not JsonObject metadata)
+            if (JsonNode.Parse(json, documentOptions: MetadataDocumentOptions) is not JsonObject metadata)
                 return new LayoutStoreDefaults(null, "The layout settings file is not valid.");
 
             if (metadata[GlobalDefaultMember] is not JsonNode node)
@@ -226,11 +245,66 @@ public sealed class FileLayoutStore : ILayoutStore
         if (BuiltInLayouts.IsBuiltIn(layout.Id))
             throw new InvalidOperationException($"\"{layout.Id}\" is a built-in layout and can't be replaced. Save a copy under another ID.");
 
+        await WriteAtomicallyAsync(PathFor(layout.Id), EtwLayoutSerializer.Serialize(layout), cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task WriteAtomicallyAsync(string path, string content, CancellationToken cancellationToken)
+    {
+        await writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await WriteAtomicallyCoreAsync(path, content, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            writeGate.Release();
+        }
+    }
+
+    private async Task WriteAtomicallyCoreAsync(string path, string content, CancellationToken cancellationToken)
+    {
         System.IO.Directory.CreateDirectory(Directory);
-        string path = PathFor(layout.Id);
-        string temporaryPath = path + ".tmp";
-        await File.WriteAllTextAsync(temporaryPath, EtwLayoutSerializer.Serialize(layout), cancellationToken).ConfigureAwait(false);
-        File.Move(temporaryPath, path, overwrite: true);
+        string temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, content, cancellationToken).ConfigureAwait(false);
+            await MoveWithRetryAsync(temporaryPath, path, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            TryDelete(temporaryPath);
+            throw;
+        }
+    }
+
+    private static async Task MoveWithRetryAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)
+    {
+        int delayMs = 10;
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(sourcePath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < MaxMoveAttempts && ex is IOException or UnauthorizedAccessException)
+            {
+                await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
+                delayMs *= 2;
+            }
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)

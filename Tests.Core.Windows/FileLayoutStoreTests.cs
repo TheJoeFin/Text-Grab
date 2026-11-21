@@ -103,6 +103,49 @@ public sealed class FileLayoutStoreTests : IDisposable
         Assert.DoesNotContain(await store.ListAsync(TestContext.Current.CancellationToken), summary => !summary.IsBuiltIn);
     }
 
+    [Fact]
+    public async Task SetGlobalDefault_PreservesUnknownMembersWhenMetadataHasCommentsAndTrailingCommas()
+    {
+        FileLayoutStore store = new(directory);
+        Directory.CreateDirectory(directory);
+        string metadataPath = Path.Combine(directory, FileLayoutStore.MetadataFileName);
+        File.WriteAllText(metadataPath, """
+            {
+              // user-edited metadata with comments and trailing commas
+              "globalDefault": "explorer",
+              "fileKinds": {
+                "markdown": "markdown-preview",
+              },
+            }
+            """);
+
+        await store.SetGlobalDefaultAsync("mermaid", TestContext.Current.CancellationToken);
+
+        string updated = File.ReadAllText(metadataPath);
+        Assert.Contains("fileKinds", updated);
+        Assert.Contains("markdown-preview", updated);
+        Assert.Equal(new LayoutStoreDefaults("mermaid"), store.ReadDefaults());
+    }
+
+    [Fact]
+    public async Task Save_ConcurrentCallsToSameId_DoNotCollideOnTempFile()
+    {
+        FileLayoutStore store = new(directory);
+        CancellationToken ct = TestContext.Current.CancellationToken;
+
+        Task[] saves = [.. Enumerable.Range(0, 16)
+            .Select(i => Task.Run(
+                () => store.SaveAsync(BuiltInLayouts.Classic with { Id = "shared", Name = $"Variant {i}" }, ct),
+                ct))];
+
+        await Task.WhenAll(saves);
+
+        LayoutReadResult read = await store.LoadAsync("shared", ct);
+        Assert.True(read.Succeeded, read.Error);
+        Assert.StartsWith("Variant ", read.Layout!.Name);
+        Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
+    }
+
     [Theory]
     [InlineData("{ not json")]
     [InlineData("[1, 2]")]
