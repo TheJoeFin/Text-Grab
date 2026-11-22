@@ -591,7 +591,7 @@ public class MermaidPaneTests
     }
 
     [WpfFact]
-    public async Task ZoomContextMenu_IsClearedOnDetach_WhenDiagramIsCleared_AndWhenOpeningWithoutDiagram()
+    public async Task ZoomContextMenu_DropsTheDiagramsMenu_WhenDiagramIsCleared_WhenOpeningWithoutDiagram_AndOnDetach()
     {
         ManualMermaid fake = new();
         EditTextWindow window = CreateWindow(Flowchart);
@@ -599,16 +599,22 @@ public class MermaidPaneTests
         Text_Grab.Controls.ZoomBorder zoom = Assert.IsType<Text_Grab.Controls.ZoomBorder>(pane.FindName("Zoom"));
 
         Assert.True(pane.UpdateContextMenu());
-        Assert.NotNull(zoom.ContextMenu);
+        ContextMenu built = Assert.IsType<ContextMenu>(zoom.ContextMenu);
+        Assert.NotEmpty(built.Items);
 
-        // Clearing the diagram clears any cached menu referencing the old bitmap/SVG.
+        // Clearing the diagram drops the menu that references the old bitmap/SVG, for an empty placeholder
+        // (a null menu would make WPF swallow the next right-click).
         pane.ViewModel.SetSource(null);
-        Assert.Null(zoom.ContextMenu);
+        Assert.NotSame(built, zoom.ContextMenu);
+        Assert.Empty(Assert.IsType<ContextMenu>(zoom.ContextMenu).Items);
 
-        // Opening the context menu with no diagram clears any stale menu and reports nothing to open.
-        zoom.ContextMenu = new ContextMenu();
+        // Opening the context menu with no diagram drops any stale menu and reports nothing to open.
+        ContextMenu stale = new();
+        stale.Items.Add(new MenuItem { Header = "Stale" });
+        zoom.ContextMenu = stale;
         Assert.False(pane.UpdateContextMenu());
-        Assert.Null(zoom.ContextMenu);
+        Assert.NotSame(stale, zoom.ContextMenu);
+        Assert.Empty(Assert.IsType<ContextMenu>(zoom.ContextMenu).Items);
 
         // Re-render, populate the menu, and verify Detach clears it.
         pane.ViewModel.SetSource(Flowchart);
@@ -623,6 +629,61 @@ public class MermaidPaneTests
         pane.Detach();
         Assert.Null(zoom.ContextMenu);
     }
+
+    [WpfFact]
+    public async Task RightClickingTheDiagram_OpensItsMenuOnTheFirstClick_AndAfterARedraw()
+    {
+        ManualMermaid fake = new();
+        EditTextWindow window = CreateWindow(Flowchart);
+        MermaidPane pane = await PaneWithADiagramAsync(window, fake);
+        Text_Grab.Controls.ZoomBorder zoom = Assert.IsType<Text_Grab.Controls.ZoomBorder>(pane.FindName("Zoom"));
+
+        // The first right-click on a new diagram.
+        Assert.Contains("View full screen", MenuHeaders(MenuWpfOpensOnRightClick(zoom)));
+
+        // A redraw, as after an edit, then the first right-click after it.
+        object? before = pane.ViewModel.DiagramImage;
+        pane.ViewModel.SetSource("flowchart LR\nA --> C");
+        fake.FinishLastDelay();
+        await WaitUntilAsync(() => fake.Renders.Count == 2);
+        fake.FinishLastRender();
+        await WaitUntilAsync(() => pane.ViewModel.DiagramImage is not null && !ReferenceEquals(pane.ViewModel.DiagramImage, before));
+
+        Assert.Contains("View full screen", MenuHeaders(MenuWpfOpensOnRightClick(zoom)));
+
+        // With nothing drawn there is no menu to open.
+        pane.ViewModel.SetSource(null);
+        Assert.Null(MenuWpfOpensOnRightClick(zoom));
+
+        pane.Detach();
+    }
+
+    /// <summary>
+    /// The menu WPF opens for a right-click on <paramref name="element"/>, or null for none. WPF raises
+    /// ContextMenuOpening and then opens the menu of the element its class handler picked as the event
+    /// routed: the first that already had a menu before any instance handler ran. That target and the
+    /// event arguments' constructor are internal to WPF, so they are reached by reflection.
+    /// </summary>
+    private static ContextMenu? MenuWpfOpensOnRightClick(UIElement element)
+    {
+        ContextMenuEventArgs args = (ContextMenuEventArgs)Activator.CreateInstance(
+            typeof(ContextMenuEventArgs),
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            [element, true],
+            null)!;
+        element.RaiseEvent(args);
+        if (args.Handled)
+            return null;
+
+        DependencyObject? target = (DependencyObject?)typeof(ContextMenuEventArgs)
+            .GetProperty("TargetElement", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(args);
+        return target is null ? null : ContextMenuService.GetContextMenu(target);
+    }
+
+    private static string[] MenuHeaders(ContextMenu? menu)
+        => menu is null ? [] : [.. menu.Items.OfType<MenuItem>().Select(item => item.Header?.ToString() ?? string.Empty)];
 
     [WpfFact]
     public async Task ContextMenuViewFullScreen_OpensViewerOwnedByHostingWindow()

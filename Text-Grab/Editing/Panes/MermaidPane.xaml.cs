@@ -49,6 +49,12 @@ public partial class MermaidPane : UserControl, IEditorPane
 
     private readonly MermaidPaneViewModel viewModel;
     private readonly Func<bool> readIsLightTheme;
+
+    // WPF opens a context menu only for an element that already has one when a right-click's
+    // ContextMenuOpening starts routing: a menu first set by the handler would open on the next click
+    // instead. So while attached the picture always holds a menu, this empty one until a right-click
+    // builds the real one (Zoom_ContextMenuOpening).
+    private readonly ContextMenu placeholderMenu = new();
     private IEditorSession? session;
 
     public MermaidPane()
@@ -94,6 +100,7 @@ public partial class MermaidPane : UserControl, IEditorPane
         session.ModeChanged += Session_Changed;
         IsVisibleChanged += MermaidPane_IsVisibleChanged;
         viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        Zoom.ContextMenu = placeholderMenu;
 
         viewModel.SetTheme(readIsLightTheme());
         Refresh();
@@ -194,10 +201,11 @@ public partial class MermaidPane : UserControl, IEditorPane
         return menu;
     }
 
+    /// <summary>Gives the picture the menu for what is drawn now. False, leaving the empty placeholder, when nothing is.</summary>
     internal bool UpdateContextMenu()
     {
         ContextMenu? menu = CreateContextMenu();
-        Zoom.ContextMenu = menu;
+        Zoom.ContextMenu = menu ?? placeholderMenu;
         return menu is not null;
     }
 
@@ -229,10 +237,12 @@ public partial class MermaidPane : UserControl, IEditorPane
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // A new picture, or none: let go of the menu built for the old one, which holds its picture and
+        // SVG, unless it is open. The placeholder takes its place so the next right-click still opens.
         if (e.PropertyName == nameof(MermaidPaneViewModel.DiagramImage)
-            && (viewModel.DiagramImage is null || Zoom.ContextMenu is { IsOpen: false }))
+            && (viewModel.DiagramImage is null || Zoom.ContextMenu is not { IsOpen: true }))
         {
-            Zoom.ContextMenu = null;
+            Zoom.ContextMenu = placeholderMenu;
         }
     }
 
