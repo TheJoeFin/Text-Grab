@@ -52,6 +52,7 @@ public partial class MarkdownFormattingBar : UserControl
         HeadingButton.IsEnabled = available.HasFlag(MarkdownFormattingAction.Heading);
         BulletsButton.IsEnabled = available.HasFlag(MarkdownFormattingAction.Bullets);
         NumberingButton.IsEnabled = available.HasFlag(MarkdownFormattingAction.Numbering);
+        ToDoButton.IsEnabled = available.HasFlag(MarkdownFormattingAction.ToDo);
         QuoteButton.IsEnabled = available.HasFlag(MarkdownFormattingAction.Quote);
         CodeBlockButton.IsEnabled = available.HasFlag(MarkdownFormattingAction.CodeBlock);
         TableButton.IsEnabled = canInsertTable;
@@ -70,6 +71,7 @@ public partial class MarkdownFormattingBar : UserControl
             _ when sender == SubscriptButton => MarkdownFormattingAction.Subscript,
             _ when sender == BulletsButton => MarkdownFormattingAction.Bullets,
             _ when sender == NumberingButton => MarkdownFormattingAction.Numbering,
+            _ when sender == ToDoButton => MarkdownFormattingAction.ToDo,
             _ when sender == QuoteButton => MarkdownFormattingAction.Quote,
             _ when sender == CodeBlockButton => MarkdownFormattingAction.CodeBlock,
             _ => throw new ArgumentOutOfRangeException(nameof(sender))

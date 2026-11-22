@@ -739,11 +739,8 @@ public partial class EditTextWindow
         {
             UpdateLineAndColumnText();
 
-            if (CalcResultsTextControl.Visibility == Visibility.Visible)
-            {
-                UpdateCalcPaneTextDisplay();
-                UpdateAggregateStatusDisplay();
-            }
+            // The calc pane shows the selected numbers in place of its results.
+            SessionImpl.RaiseSelectedCellsChanged();
         }
     }
 
@@ -1957,19 +1954,19 @@ public partial class EditTextWindow
         return editor is not null;
     }
 
-    private bool TryGetSpreadsheetSelectionNumbersPreviewText(out string previewText)
+    /// <summary>
+    /// The numbers in the selected cells, for <see cref="Core.Editing.IEditorSession.SelectedCellNumbers"/>:
+    /// null outside spreadsheet mode or with no cells selected.
+    /// </summary>
+    private IReadOnlyList<double>? GetSelectedSpreadsheetCellNumbers()
     {
-        previewText = string.Empty;
-
         if (editorMode != EtwEditorMode.Spreadsheet)
-            return false;
+            return null;
 
         List<(int RowIndex, int ColumnIndex)> selectedCellCoordinates = GetSelectedSpreadsheetCellCoordinates();
-        if (selectedCellCoordinates.Count == 0)
-            return false;
-
-        previewText = BuildSpreadsheetSelectionNumbersPreviewText(spreadsheetTable, selectedCellCoordinates);
-        return !string.IsNullOrEmpty(previewText);
+        return selectedCellCoordinates.Count == 0
+            ? null
+            : ExtractSpreadsheetSelectionNumbers(spreadsheetTable, selectedCellCoordinates);
     }
 
     private void SpreadsheetContextMenu_Opened(object sender, RoutedEventArgs e)

@@ -1,0 +1,181 @@
+<!--
+    The Edit Text Window's look for AvalonDock (v5 E4a, decision D1). In 4.17 AvalonDock only does what the
+    hand-written window did, so these templates drop every piece of AvalonDock chrome: no tab strips, pane title
+    bars, pin, close or menu buttons, side panels or auto-hide area. Nothing in them is focusable, a Tab stop or
+    invokable through UI Automation, except the resizer, which keeps the old splitter's keyboard resizing.
+
+    Merged into the window's DockingManager only (LayoutRenderer), so no other DockingManager is affected.
+-->
+<ResourceDictionary
+    x:Class="Text_Grab.Editing.Layout.PaneHostResources"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avalonDock="clr-namespace:AvalonDock;assembly=AvalonDock"
+    xmlns:avalonDockControls="clr-namespace:AvalonDock.Controls;assembly=AvalonDock">
+
+    <!--
+        The manager shows the dock tree and nothing else. Without PART_AutoHideArea the auto-hide flyout, a native
+        window that would draw over the window's overlays, is never put on screen.
+    -->
+    <ControlTemplate x:Key="PaneHost.ManagerTemplate" TargetType="{x:Type avalonDock:DockingManager}">
+        <Border Background="{TemplateBinding Background}">
+            <ContentPresenter Content="{TemplateBinding LayoutRootPanel}" />
+        </Border>
+    </ControlTemplate>
+
+    <!--
+        Both pane controls are TabControls, which show the selected TabItem's content. The items panel stays so the
+        TabItem is generated; the TabItem itself is collapsed and has no template, so no header is drawn, focused or
+        clicked. The default templates' Cycle and Contained keyboard navigation would trap Tab inside each pane; these
+        leave it to the window, as the hand-written grid did.
+    -->
+    <Style x:Key="PaneHost.HiddenTabItemStyle" TargetType="{x:Type TabItem}">
+        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+        <Setter Property="Visibility" Value="Collapsed" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <DataTemplate x:Key="PaneHost.NoHeaderTemplate" />
+
+    <Style x:Key="PaneHost.DocumentPaneStyle" TargetType="{x:Type avalonDockControls:LayoutDocumentPaneControl}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource PaneHost.HiddenTabItemStyle}" />
+        <Setter Property="ItemTemplate" Value="{StaticResource PaneHost.NoHeaderTemplate}" />
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <avalonDockControls:LayoutDocumentControl Model="{Binding}" />
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutDocumentPaneControl}">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <StackPanel x:Name="HeaderPanel" IsItemsHost="True" />
+                        <ContentPresenter
+                            x:Name="PART_SelectedContentHost"
+                            Grid.Row="1"
+                            ContentSource="SelectedContent" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PaneHost.AnchorablePaneStyle" TargetType="{x:Type avalonDockControls:LayoutAnchorablePaneControl}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource PaneHost.HiddenTabItemStyle}" />
+        <Setter Property="ItemTemplate" Value="{StaticResource PaneHost.NoHeaderTemplate}" />
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <avalonDockControls:LayoutAnchorableControl Model="{Binding}" />
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutAnchorablePaneControl}">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
+                        <StackPanel
+                            x:Name="HeaderPanel"
+                            Grid.Row="1"
+                            IsItemsHost="True" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  The editor area: the content and nothing around it. AvalonDock makes this control focusable; here it is not.  -->
+    <Style TargetType="{x:Type avalonDockControls:LayoutDocumentControl}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutDocumentControl}">
+                    <ContentPresenter Content="{Binding LayoutItem.View, RelativeSource={RelativeSource TemplatedParent}}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        A pane: its content, with no title bar (AnchorablePaneTitle and its buttons are gone), and the subtle shadow the
+        hand-written window drew over the calc pane's left edge.
+    -->
+    <Style TargetType="{x:Type avalonDockControls:LayoutAnchorableControl}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutAnchorableControl}">
+                    <Grid>
+                        <ContentPresenter Content="{Binding LayoutItem.View, RelativeSource={RelativeSource TemplatedParent}}" FlowDirection="{TemplateBinding FlowDirection}" />
+                        <Rectangle
+                            Width="8"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Stretch"
+                            IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Offset="0" Color="#33000000" />
+                                    <GradientStop Offset="1" Color="#00000000" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        The resize bar: 5 px in the window's base background, as the old splitter was, with the old splitter's
+        AutomationId. It is a Tab stop that arrow keys resize (LayoutRenderer), like the GridSplitter it replaces.
+        While a neighbor is hidden its column is 0 wide; then it is hidden too, so it is never an invisible Tab stop.
+    -->
+    <Style x:Key="PaneHost.ResizerStyle" TargetType="{x:Type avalonDockControls:LayoutGridResizerControl}">
+        <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorBaseBrush}" />
+        <Setter Property="BackgroundWhileDragging" Value="{DynamicResource ControlStrongFillColorDefaultBrush}" />
+        <Setter Property="OpacityWhileDragging" Value="0.5" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="IsTabStop" Value="True" />
+        <Setter Property="AutomationProperties.AutomationId" Value="TextBoxSplitter" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type avalonDockControls:LayoutGridResizerControl}">
+                    <Border Background="{TemplateBinding Background}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Value="0">
+                <Setter Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" Value="0">
+                <Setter Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

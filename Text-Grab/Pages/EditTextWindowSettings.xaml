@@ -412,5 +412,12 @@
             <ui:ToggleSwitch x:Name="CalcShowErrorsCheckBox" AutomationProperties.AutomationId="Settings.EditText.CalculatorErrorsToggle" Click="CalcShowErrorsCheckBox_Click" />
         </controls:SettingsCard>
 
+        <controls:SettingsCard
+            Description="Lay out the editor and the calculator pane with the new pane host. Turn this off to go back to the previous editor area. Applies to Edit Text windows opened after the change."
+            HeaderText="Use the new pane layout"
+            Icon="{ui:SymbolIcon PanelRight24}">
+            <ui:ToggleSwitch x:Name="EtwPaneLayoutToggle" AutomationProperties.AutomationId="Settings.EditText.PaneLayoutToggle" Click="EtwPaneLayoutToggle_Click" />
+        </controls:SettingsCard>
+
     </StackPanel>
 </Page>

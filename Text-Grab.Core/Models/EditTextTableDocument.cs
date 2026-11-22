@@ -62,6 +62,14 @@ public sealed class EditTextTableDocument
 
     public List<EditTextTableWrappedCell> WrappedCells { get; set; } = [];
 
+    /// <summary>
+    /// True when the table carries view formatting that its text form does not hold: wrapped cells,
+    /// column widths or row heights. Leaving the spreadsheet would lose it.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasViewFormatting
+        => WrappedCells.Count > 0 || ColumnWidths.Any(width => width.HasValue) || RowHeights.Any(height => height.HasValue);
+
     public static EditTextTableDocument CreateFromText(
         string? text,
         int minimumRowCount = DefaultMinimumRowCount,

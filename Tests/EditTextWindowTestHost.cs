@@ -1,7 +1,10 @@
+using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using AvalonDock;
 using Text_Grab;
 using Text_Grab.Models;
 using DocumentTextRange = System.Windows.Documents.TextRange;
@@ -12,13 +15,38 @@ namespace Tests;
 /// Builds and drives real <see cref="EditTextWindow"/>s in the test process.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Windows are constructed but never shown or closed: showing runs <c>Window_Loaded</c> (clipboard
 /// monitor, settings restore) and closing writes settings and history. The editors are reached through
 /// <c>FindName</c> rather than the generated fields, so the helpers keep working when those fields
 /// become private.
+/// </para>
+/// <para>
+/// Windows use the hand-written editor grid unless a test asks for the pane layout
+/// (<see cref="UsePaneLayout"/>), whatever the person's <c>EtwPaneLayout</c> setting or the build's
+/// default says. Tests never write that setting.
+/// </para>
 /// </remarks>
 internal static class EditTextWindowTestHost
 {
+    [ModuleInitializer]
+    internal static void UseTheHandWrittenGridByDefault() => EditTextWindow.PaneLayoutOverride = false;
+
+    // No test reads or writes the person's layouts or default layout: windows use a store in a temporary folder
+    // (nothing is created in it until something is saved) unless a test supplies its own.
+    [ModuleInitializer]
+    internal static void UseATemporaryLayoutStore()
+        => EditTextWindow.LayoutStoreOverride = new Text_Grab.Core.Layouts.FileLayoutStore(
+            Path.Combine(Path.GetTempPath(), "TextGrabTestLayouts", Guid.NewGuid().ToString("N")));
+
+    /// <summary>Windows made until the result is disposed render their editor area from a layout (v5 E4a).</summary>
+    public static IDisposable UsePaneLayout(bool on = true)
+    {
+        bool? previous = EditTextWindow.PaneLayoutOverride;
+        EditTextWindow.PaneLayoutOverride = on;
+        return new Restore(() => EditTextWindow.PaneLayoutOverride = previous);
+    }
+
     public static EditTextWindow CreateWindow(string text)
     {
         EditTextWindow window = new();
@@ -35,10 +63,30 @@ internal static class EditTextWindowTestHost
     /// </summary>
     public static void LayOut(EditTextWindow window)
     {
+        BuildPaneHost(window);
         FrameworkElement root = (FrameworkElement)window.Content;
         root.Measure(new Size(1000, 700));
         root.Arrange(new Rect(0, 0, 1000, 700));
         root.UpdateLayout();
+    }
+
+    /// <summary>The window's DockingManager, when it uses the pane layout.</summary>
+    public static DockingManager? PaneHost(EditTextWindow window) => window.FindName("PaneLayoutHost") as DockingManager;
+
+    /// <summary>
+    /// AvalonDock builds a DockingManager's controls when it is loaded, and rebuilds them when its
+    /// layout changes only if it is loaded, which a window that is never shown never is. This raises
+    /// Loaded on the manager alone whenever its controls are missing or were built for another layout.
+    /// </summary>
+    private static void BuildPaneHost(EditTextWindow window)
+    {
+        if (PaneHost(window) is DockingManager manager && manager.LayoutRootPanel?.Model != manager.Layout.RootPanel)
+            manager.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent, manager));
+    }
+
+    private sealed class Restore(Action restore) : IDisposable
+    {
+        public void Dispose() => restore();
     }
 
     public static void SwitchMode(EditTextWindow window, EtwEditorMode mode)

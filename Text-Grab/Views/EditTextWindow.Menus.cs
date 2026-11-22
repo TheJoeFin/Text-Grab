@@ -481,6 +481,7 @@ public partial class EditTextWindow
     /// <summary>Shows a history item in this (empty) window: its text, table, code language and mode.</summary>
     internal void ShowHistoryItem(HistoryInfo history)
     {
+        UseHistoryBottomBarPreference(history);
         ResetSpreadsheetUndoHistory();
         Session.Text = history.TextContent;
         tableDocument = EditTextTableDocument.TryDeserialize(history.EditTextTableDocumentJson);

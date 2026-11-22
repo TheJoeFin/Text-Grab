@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Text_Grab.Controls;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Models;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -193,7 +194,8 @@ public static partial class TrayFlyoutController
             return;
         }
 
-        EditTextWindow etw = new();
+        // The path goes in as the window is made, so a file with a default layout (.mmd) opens in it directly.
+        EditTextWindow etw = new(new LayoutRequest(FilePath: history.SourcePath));
         etw.Show();
         etw.Activate();
         await etw.OpenPath(history.SourcePath);

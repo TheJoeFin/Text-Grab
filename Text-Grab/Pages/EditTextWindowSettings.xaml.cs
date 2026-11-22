@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using Text_Grab.Editing.Layout;
 using Text_Grab.Properties;
 using Text_Grab.Utilities;
 
@@ -76,6 +77,7 @@ public partial class EditTextWindowSettings : Page
         CalcShowPaneCheckBox.IsChecked = DefaultSettings.CalcShowPane;
         CalcShowErrorsCheckBox.IsChecked = DefaultSettings.CalcShowErrors;
         CalcShowErrorsCheckBox.IsEnabled = DefaultSettings.CalcShowPane;
+        EtwPaneLayoutToggle.IsChecked = PaneLayoutSetting.IsOn(DefaultSettings.EtwPaneLayout);
 
         _loaded = true;
     }
@@ -303,6 +305,14 @@ public partial class EditTextWindowSettings : Page
     {
         if (!_loaded) return;
         DefaultSettings.CalcShowErrors = CalcShowErrorsCheckBox.IsChecked == true;
+        DefaultSettings.Save();
+    }
+
+    private void EtwPaneLayoutToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        // An explicit choice, so it holds whichever way a later build's default goes.
+        DefaultSettings.EtwPaneLayout = EtwPaneLayoutToggle.IsChecked == true ? PaneLayoutSetting.On : PaneLayoutSetting.Off;
         DefaultSettings.Save();
     }
 }

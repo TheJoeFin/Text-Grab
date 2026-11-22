@@ -720,6 +720,155 @@ function Wait-UiTestDiagnosticEvent {
     throw "Timed out after $TimeoutSeconds seconds waiting for diagnostic event '$EventName' in '$Path'."
 }
 
+function ConvertTo-UiTestTreeNode {
+    param([Parameter(Mandatory)]$Element)
+
+    # Only what is stable between runs: bounds, slugs (the selector of an element without an
+    # AutomationId), offscreen state and window DPI change between runs and machines.
+    $children = @()
+    $childProperty = $Element.PSObject.Properties['children']
+    if ($null -ne $childProperty -and $null -ne $childProperty.Value) {
+        $children = @($childProperty.Value | ForEach-Object { ConvertTo-UiTestTreeNode -Element $_ })
+    }
+
+    $nameProperty = $Element.PSObject.Properties['name']
+    $idProperty = $Element.PSObject.Properties['automationId']
+    $classProperty = $Element.PSObject.Properties['className']
+    $enabledProperty = $Element.PSObject.Properties['isEnabled']
+    [pscustomobject]@{
+        Type = [string]$Element.type
+        Name = if ($null -ne $nameProperty) { [string]$nameProperty.Value } else { '' }
+        AutomationId = if ($null -ne $idProperty) { [string]$idProperty.Value } else { '' }
+        ClassName = if ($null -ne $classProperty) { [string]$classProperty.Value } else { '' }
+        IsEnabled = if ($null -ne $enabledProperty) { [bool]$enabledProperty.Value } else { $true }
+        Children = $children
+    }
+}
+
+function Get-UiTestTree {
+    <#
+    .SYNOPSIS
+    The UI Automation subtree of an element (or of the whole window), from 'winapp ui inspect', as
+    nodes with only the fields that compare between runs: control type, name, AutomationId,
+    class name, enabled state and child order.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Target,
+        [string]$Selector,
+        [int]$Depth = 12
+    )
+
+    $arguments = @('ui', 'inspect')
+    if (-not [string]::IsNullOrWhiteSpace($Selector)) { $arguments += $Selector }
+    $arguments += @('--window', [string]$Target.WindowHandle, '--depth', [string]$Depth)
+    $result = Invoke-UiTestWinApp -Arguments $arguments -Json
+    $roots = @()
+    foreach ($window in @($result.windows)) {
+        foreach ($element in @($window.elements)) {
+            $roots += ConvertTo-UiTestTreeNode -Element $element
+        }
+    }
+    return $roots
+}
+
+function Select-UiTestTreeSlice {
+    <#
+    .SYNOPSIS
+    The children of a node that lie after the last child whose AutomationId is in -After and before
+    the first child whose AutomationId is -Before. The Edit Text Window's UIA tree is flat (its
+    panels have no automation peers), so a region of the window is a run of the window's children.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Node,
+        [Parameter(Mandatory)][string[]]$After,
+        [Parameter(Mandatory)][string]$Before
+    )
+
+    $children = @($Node.Children)
+    $start = -1
+    $end = $children.Count
+    for ($index = 0; $index -lt $children.Count; $index++) {
+        if ($children[$index].AutomationId -in $After) { $start = $index }
+    }
+    for ($index = $start + 1; $index -lt $children.Count; $index++) {
+        if ($children[$index].AutomationId -eq $Before) { $end = $index; break }
+    }
+    if ($start -lt 0) { throw "No child with AutomationId $($After -join ' or ') under '$($Node.AutomationId)'." }
+    if ($end -ge $children.Count) { throw "No child with AutomationId '$Before' under '$($Node.AutomationId)'." }
+    if ($end -le $start + 1) { return @() }
+    return @($children[($start + 1)..($end - 1)])
+}
+
+function Format-UiTestTree {
+    <#
+    .SYNOPSIS
+    One line per node, indented two spaces per level: Type "Name" #AutomationId (ClassName),
+    with [disabled] on disabled elements. Fixtures are files of these lines.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Nodes, [int]$Level = 0)
+
+    foreach ($node in $Nodes) {
+        $line = ('  ' * $Level) + $node.Type
+        if ($node.Name) { $line += ' "' + $node.Name + '"' }
+        if ($node.AutomationId) { $line += ' #' + $node.AutomationId }
+        if ($node.ClassName) { $line += ' (' + $node.ClassName + ')' }
+        if (-not $node.IsEnabled) { $line += ' [disabled]' }
+        $line
+        if (@($node.Children).Count -gt 0) {
+            Format-UiTestTree -Nodes @($node.Children) -Level ($Level + 1)
+        }
+    }
+}
+
+function Get-UiTestFocusedElement {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$Target)
+
+    $result = Invoke-UiTestWinApp -Arguments @('ui', 'get-focused', '--window', [string]$Target.WindowHandle) -Json
+    $element = $result.PSObject.Properties['element']
+    if ($null -eq $element -or $null -eq $element.Value) { return '(none)' }
+    $node = ConvertTo-UiTestTreeNode -Element $element.Value
+    $node.Children = @()
+    return (Format-UiTestTree -Nodes @($node))
+}
+
+function Get-UiTestTabOrder {
+    <#
+    .SYNOPSIS
+    The focus stops a navigation key (Tab by default; ctrl+tab or shift+tab with -Key) visits from
+    an element (or from wherever focus is, without -StartAutomationId), as formatted lines. Stops
+    early when the focused element's line matches a wildcard pattern in -StopAt, such as an editor
+    that takes Tab as text. Sends real keys, so the window is brought to the foreground first.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Target,
+        [string]$StartAutomationId,
+        [int]$Count = 8,
+        [string[]]$StopAt = @(),
+        [string]$Key = 'tab'
+    )
+
+    Set-UiTestForegroundWindow -Target $Target
+    if (-not [string]::IsNullOrWhiteSpace($StartAutomationId)) {
+        Focus-UiTestElement -Target $Target -AutomationId $StartAutomationId
+        Start-Sleep -Milliseconds 150
+    }
+    $stops = [System.Collections.Generic.List[string]]::new()
+    [void]$stops.Add((Get-UiTestFocusedElement -Target $Target))
+    for ($step = 0; $step -lt $Count; $step++) {
+        Send-UiTestKeys -Target $Target -Keys $Key -Via send-input
+        Start-Sleep -Milliseconds 150
+        $focused = Get-UiTestFocusedElement -Target $Target
+        [void]$stops.Add($focused)
+        if (@($StopAt | Where-Object { $focused -like $_ }).Count -gt 0) { break }
+    }
+    return @($stops)
+}
+
 function Register-UiTest {
     [CmdletBinding()]
     param(
@@ -899,6 +1048,7 @@ Export-ModuleMember -Function @(
     'Save-UiTestScreenshot', 'Save-UiTestRecording', 'Get-UiTestClipboardSnapshot',
     'Restore-UiTestClipboardSnapshot', 'Assert-UiTestFile', 'Assert-UiTestProcess',
     'Assert-UiTestWindow', 'Get-UiTestDirectoryFingerprint', 'Assert-UiTestUserProfileUnchanged',
-    'Start-UiTestProcess', 'Wait-UiTestDiagnosticEvent', 'Register-UiTest',
+    'Start-UiTestProcess', 'Wait-UiTestDiagnosticEvent', 'Get-UiTestTree', 'Select-UiTestTreeSlice',
+    'Format-UiTestTree', 'Get-UiTestFocusedElement', 'Get-UiTestTabOrder', 'Register-UiTest',
     'Skip-UiTest', 'Import-UiTestSuites', 'Invoke-UiTestSuites', 'Write-UiTestReports', 'Stop-UiTestProcesses'
 )

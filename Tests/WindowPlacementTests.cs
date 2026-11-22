@@ -2,10 +2,12 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 using Text_Grab;
 using Text_Grab.Models;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
+using Text_Grab.Core.Layouts;
 using static Tests.EditTextWindowTestHost;
 
 namespace Tests;
@@ -13,6 +15,160 @@ namespace Tests;
 [Collection("History service")]
 public class WindowPlacementTests
 {
+    [WpfFact]
+    public async Task BottomBarPreference_FollowsFileTypeAndBlankWindow()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-bottom-bar-{Guid.NewGuid():N}");
+        var settings = AppUtilities.TextGrabSettings;
+        string originalPreferences = settings.EditWindowBottomBarHiddenByFileType;
+        bool originalHidden = settings.EditWindowBottomBarIsHidden;
+        bool originalUseHistory = settings.UseHistory;
+        try
+        {
+            settings.EditWindowBottomBarHiddenByFileType = string.Empty;
+            settings.EditWindowBottomBarIsHidden = false;
+            settings.UseHistory = false;
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, null, true));
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, "notes.md", false));
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, "notes.txt", true));
+
+            Directory.CreateDirectory(root);
+            string markdown = Path.Combine(root, "first.MD");
+            string text = Path.Combine(root, "second.txt");
+            File.WriteAllText(markdown, "# Hello");
+            File.WriteAllText(text, "Hello");
+            EditTextWindow window = CreateWindow(string.Empty);
+            Invoke(window, "RestoreBottomBarForFileType");
+            AssertBottomBar(window, hidden: true);
+
+            await window.OpenPath(markdown);
+            AssertBottomBar(window, hidden: false);
+            await window.OpenPath(text);
+            AssertBottomBar(window, hidden: true);
+
+            Invoke(window, "SetOpenedFileState", Path.Combine(root, "new.md"));
+            AssertBottomBar(window, hidden: false);
+            Invoke(window, "SetOpenedFileState", (object?)null);
+            AssertBottomBar(window, hidden: true);
+            Assert.False(BottomBarFileTypePreferences.IsHidden(settings, "unknown.csv"));
+        }
+        finally
+        {
+            settings.EditWindowBottomBarHiddenByFileType = originalPreferences;
+            settings.EditWindowBottomBarIsHidden = originalHidden;
+            settings.UseHistory = originalUseHistory;
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void BottomBarPreference_InvalidDataIsNotOverwritten()
+    {
+        Text_Grab.Properties.Settings settings = new()
+        {
+            EditWindowBottomBarIsHidden = true,
+            EditWindowBottomBarHiddenByFileType = "{invalid",
+        };
+
+        Assert.True(BottomBarFileTypePreferences.IsHidden(settings, "notes.txt"));
+        Assert.False(BottomBarFileTypePreferences.SetHidden(settings, "notes.txt", false));
+        Assert.Equal("{invalid", settings.EditWindowBottomBarHiddenByFileType);
+    }
+
+    [WpfTheory]
+    [InlineData(EtwEditorMode.Markdown, null, false)]
+    [InlineData(EtwEditorMode.Text, null, true)]
+    [InlineData(EtwEditorMode.Text, ".md", false)]
+    [InlineData(EtwEditorMode.Markdown, ".txt", true)]
+    public async Task RecentHistory_UsesDocumentTypeForBottomBar(EtwEditorMode mode, string? extension, bool hidden)
+    {
+        var settings = AppUtilities.TextGrabSettings;
+        string originalPreferences = settings.EditWindowBottomBarHiddenByFileType;
+        bool originalHidden = settings.EditWindowBottomBarIsHidden;
+        try
+        {
+            settings.EditWindowBottomBarHiddenByFileType = string.Empty;
+            settings.EditWindowBottomBarIsHidden = false;
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, null, false));
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, "notes.md", false));
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, "notes.txt", true));
+            HistoryInfo history = new()
+            {
+                ID = "history",
+                TextContent = "Some text",
+                EditorMode = mode,
+                BottomBarFileExtension = extension,
+            };
+
+            EditTextWindow newWindow = new(history);
+            Invoke(newWindow, "RestoreBottomBarForFileType");
+            AssertBottomBar(newWindow, hidden);
+
+            EditTextWindow reusedWindow = CreateWindow(string.Empty);
+            await reusedWindow.OpenRecentItemAsync(new TrayFlyoutItem(TrayFlyoutItemKind.EditText, history), inNewWindow: false);
+            AssertBottomBar(reusedWindow, hidden);
+            Assert.Equal(extension ?? (mode == EtwEditorMode.Markdown ? ".md" : ".txt"),
+                reusedWindow.AsHistoryItem().BottomBarFileExtension);
+        }
+        finally
+        {
+            settings.EditWindowBottomBarHiddenByFileType = originalPreferences;
+            settings.EditWindowBottomBarIsHidden = originalHidden;
+        }
+    }
+
+    [WpfTheory]
+    [InlineData(".md", false)]
+    [InlineData(".txt", true)]
+    public async Task RecentFile_UsesDocumentTypeForBottomBar(string extension, bool hidden)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-recent-{Guid.NewGuid():N}");
+        var settings = AppUtilities.TextGrabSettings;
+        string originalPreferences = settings.EditWindowBottomBarHiddenByFileType;
+        bool originalHidden = settings.EditWindowBottomBarIsHidden;
+        bool originalUseHistory = settings.UseHistory;
+        try
+        {
+            settings.EditWindowBottomBarHiddenByFileType = string.Empty;
+            settings.EditWindowBottomBarIsHidden = false;
+            settings.UseHistory = false;
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, "notes.md", false));
+            Assert.True(BottomBarFileTypePreferences.SetHidden(settings, "notes.txt", true));
+            Directory.CreateDirectory(root);
+            string path = Path.Combine(root, "notes" + extension);
+            File.WriteAllText(path, "Some text");
+            EditTextWindow window = CreateWindow(string.Empty);
+            await window.OpenRecentItemAsync(
+                new TrayFlyoutItem(TrayFlyoutItemKind.File, new HistoryInfo { SourcePath = path }), inNewWindow: false);
+            AssertBottomBar(window, hidden);
+
+            EditTextWindow flyoutWindow = new(new LayoutRequest(FilePath: path));
+            Invoke(flyoutWindow, "RestoreBottomBarForFileType");
+            await flyoutWindow.OpenPath(path);
+            AssertBottomBar(flyoutWindow, hidden);
+        }
+        finally
+        {
+            settings.EditWindowBottomBarHiddenByFileType = originalPreferences;
+            settings.EditWindowBottomBarIsHidden = originalHidden;
+            settings.UseHistory = originalUseHistory;
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static void AssertBottomBar(EditTextWindow window, bool hidden)
+    {
+        FrameworkElement bar = (FrameworkElement)window.FindName("BottomBar");
+        MenuItem menu = (MenuItem)window.FindName("HideBottomBarMenuItem");
+        Assert.Equal(hidden ? Visibility.Collapsed : Visibility.Visible, bar.Visibility);
+        Assert.Equal(hidden, menu.IsChecked);
+    }
+
+    private static void Invoke(EditTextWindow window, string name, params object?[] args)
+        => typeof(EditTextWindow).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, args);
+
     [WpfTheory]
     [InlineData(WindowState.Normal, false)]
     [InlineData(WindowState.Maximized, false)]

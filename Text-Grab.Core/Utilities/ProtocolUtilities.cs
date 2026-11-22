@@ -12,6 +12,7 @@ namespace Text_Grab.Utilities;
 ///   text-grab://paste-markdown         Edit Text window in Markdown mode, paste clipboard text
 ///   text-grab://paste-code             Edit Text window in code mode, paste clipboard text
 ///   text-grab://edit-text              Edit Text window with clipboard text
+///   text-grab://edit-text?layout=<id>  the same, in a layout (v5 E4a); also on paste-markdown and paste-code
 ///   text-grab://grab-frame[?path=...]  Grab Frame, optionally opening a local image/PDF
 ///   text-grab://grab-text?path=...     OCR a local image/PDF straight to the clipboard (no window)
 ///   text-grab://fullscreen             Fullscreen grab
@@ -69,6 +70,21 @@ internal static class ProtocolUtilities
             parameters[key] = value;
         }
 
+        return true;
+    }
+
+    /// <summary>
+    /// The Edit Text Window layout a link asks for (<c>?layout=&lt;id&gt;</c>, v5 E4a), if it names one
+    /// that can be a layout ID (<see cref="Core.Layouts.LayoutIds.IsValid"/>). Anything else is dropped:
+    /// the link is untrusted input, and an ID only ever names a file in the layout store.
+    /// </summary>
+    internal static bool TryGetLayoutId(IReadOnlyDictionary<string, string> parameters, out string layoutId)
+    {
+        layoutId = string.Empty;
+        if (!parameters.TryGetValue("layout", out string? value) || !Core.Layouts.LayoutIds.IsValid(value))
+            return false;
+
+        layoutId = value;
         return true;
     }
 }

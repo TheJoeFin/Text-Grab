@@ -28,6 +28,7 @@ using System.Windows.Navigation;
 using System.Windows.Threading;
 using Text_Grab.Controls;
 using Text_Grab.Core.Editing;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Editing;
 using Text_Grab.Interfaces;
 using Text_Grab.Models;
@@ -119,7 +120,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
     // Store extracted pattern and precision for mouse wheel adjustment
     private ExtractedPattern? currentExtractedPattern = null;
     private int currentPrecisionLevel = ExtractedPattern.DefaultPrecisionLevel;
-    private CalculationResult? calculationResult;
     private EditTextTableDocument? tableDocument;
     private readonly SpreadsheetUndoHistory spreadsheetUndoHistory = new();
     private readonly DataTable spreadsheetTable = new();
@@ -160,8 +160,31 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         ApplyDefaultWindowSize();
     }
 
-    public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
+    /// <summary>
+    /// A window that knows its layout before it renders (v5 E5): the one <paramref name="initialLayout"/>
+    /// names (<c>--layout</c>, a link), or the default for the file it is about to open, so that the first
+    /// layout rendered is the one it ends in and no other layout's panes are made first. Callers that open
+    /// a file in a new window give its path; the file is then opened with <see cref="OpenPath"/> as usual.
+    /// </summary>
+    internal EditTextWindow(LayoutRequest initialLayout)
     {
+        this.initialLayout = initialLayout;
+        InitializeComponent();
+        App.SetTheme();
+        ApplyDefaultWindowSize();
+    }
+
+    public EditTextWindow(string possiblyEncodedString, bool isEncoded = true)
+        : this(possiblyEncodedString, isEncoded, layoutId: null)
+    {
+    }
+
+    /// <param name="layoutId">The layout to open in (v5 E5), rendered first; null for the window's default.</param>
+    internal EditTextWindow(string possiblyEncodedString, bool isEncoded, string? layoutId)
+    {
+        if (!string.IsNullOrWhiteSpace(layoutId))
+            initialLayout = new LayoutRequest(RequestedId: layoutId);
+
         InitializeComponent();
         App.SetTheme();
         ApplyDefaultWindowSize();
@@ -176,6 +199,11 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     public EditTextWindow(HistoryInfo historyInfo)
     {
+        // The item's own mode and language win over a layout's defaults, and its layout is rendered first.
+        modeFromHistory = true;
+        if (!string.IsNullOrWhiteSpace(historyInfo.LayoutId))
+            initialLayout = new LayoutRequest(HistoryId: historyInfo.LayoutId);
+
         InitializeComponent();
         App.SetTheme();
 
@@ -185,6 +213,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         RestoreCodeLanguage(historyInfo);
 
         historyId = historyInfo.ID;
+        UseHistoryBottomBarPreference(historyInfo);
 
         if (historyInfo.PositionRect != System.Drawing.RectangleF.Empty)
         {
@@ -205,9 +234,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             if (widthToRestore <= 0)
                 widthToRestore = 400; // Fallback to default
 
-            CalcColumn.Width = new GridLength(widthToRestore, GridUnitType.Pixel);
-            _lastCalcColumnWidth = new GridLength(widthToRestore, GridUnitType.Pixel);
+            RestoreCalcPaneWidth(widthToRestore);
         }
+
+        UseHistoryLayout(historyInfo.LayoutId);
     }
 
     #endregion Constructors
@@ -245,7 +275,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
                 range => SelectInMarkdownEditor(range.Start, range.Length)),
             new SpreadsheetSurface(textSurface, GetSpreadsheetTextFromTable, RefreshSpreadsheetFromText),
             CodeSurfaceImpl,
-            () => editorMode);
+            () => editorMode,
+            () => selectedCultureInfo,
+            GetSelectedSpreadsheetCellNumbers);
         EditorModeChanged += (_, _) => session.RaiseModeChanged();
         return session;
     }
@@ -538,14 +570,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         else if (editorMode == EtwEditorMode.Markdown)
             SyncMarkdownTextFromDocument();
 
-        int calcPaneWidth = 0;
-        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
-        {
-            if (CalcColumn.Width.IsStar)
-                calcPaneWidth = (int)CalcColumn.ActualWidth;
-            else
-                calcPaneWidth = (int)CalcColumn.Width.Value;
-        }
+        int calcPaneWidth = CalcPaneWidthToSave();
 
         HistoryInfo historyInfo = new()
         {
@@ -560,7 +585,9 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             EditorMode = editorMode,
             // Plain text is saved as "", not null, so restoring keeps it rather than detecting a language.
             CodeLanguage = editorMode == EtwEditorMode.Code && isCodeLanguageSet ? codeLanguageName ?? string.Empty : null,
-            EditTextTableDocumentJson = tableDocument?.SerializeToJson()
+            EditTextTableDocumentJson = tableDocument?.SerializeToJson(),
+            BottomBarFileExtension = BottomBarPreferencePath is string path ? System.IO.Path.GetExtension(path) : null,
+            LayoutId = LayoutIdToSave(),
         };
 
         if (string.IsNullOrWhiteSpace(historyId))
@@ -972,30 +999,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         if (editorMode == EtwEditorMode.Code && CodeEditorControl.Visibility == Visibility.Visible)
             return WindowUtilities.GetScrollViewer(CodeEditorControl);
 
-        if (CalcResultsTextControl.Visibility == Visibility.Visible && CalcResultsTextControl.IsMouseOver)
-            return WindowUtilities.GetScrollViewer(CalcResultsTextControl);
+        if (calcPane?.ScrollViewerUnderMouse is ScrollViewer calcScrollViewer)
+            return calcScrollViewer;
 
         return WindowUtilities.GetScrollViewer(PassedTextControl);
-    }
-
-    // Keep calc pane scroll in sync with main text box
-    private void PassedTextControl_ScrollChanged(object sender, ScrollChangedEventArgs e)
-    {
-        try
-        {
-            if (CalcResultsTextControl.Visibility != Visibility.Visible)
-                return;
-
-            // Obtain internal ScrollViewers for both text boxes
-            if (WindowUtilities.GetScrollViewer(PassedTextControl) is ScrollViewer mainSv
-                && WindowUtilities.GetScrollViewer(CalcResultsTextControl) is ScrollViewer calcSv
-                && !NumericUtilities.AreClose(calcSv.VerticalOffset, mainSv.VerticalOffset))
-            {
-                // Mirror vertical offset only (horizontal can differ due to content widths)
-                calcSv.ScrollToVerticalOffset(mainSv.VerticalOffset);
-            }
-        }
-        catch { /* no-op */ }
     }
 
     private void InsertSelectionOnEveryLine(object? sender = null, ExecutedRoutedEventArgs? e = null)
@@ -1546,13 +1553,6 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
         UpdateLineAndColumnText();
 
-        // Reset the debounce timer
-        _debounceTimer?.Stop();
-        _debounceTimer?.Start();
-        // If a newline append auto-scrolls the main box, ensure calc scroll follows too
-        // Schedule after layout so offsets are accurate
-        Dispatcher.BeginInvoke(SyncCalcScrollToMain, DispatcherPriority.Background);
-
         if (SessionImpl.IsSyncingTextFromSpreadsheet || SessionImpl.IsSyncingTextFromMarkdown)
         {
             if (SessionImpl.IsSyncingTextFromMarkdown)
@@ -1599,15 +1599,21 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         UpdatePendingFileEditState();
     }
 
-    private DispatcherTimer? _debounceTimer = null;
-    private const int DEBOUNCE_DELAY_MS = 300;
-    private readonly CalculationService _calculationService = new();
-    private AggregateType _selectedAggregate = AggregateType.None;
-
     protected override void OnClosed(EventArgs e)
     {
-        _debounceTimer?.Stop();
-        base.OnClosed(e);
+        try
+        {
+            // Raise Closed (Window_Closed) before detaching panes so CalcPaneWidthToSave()
+            // can still read the calc pane's size from paneLayout.
+            base.OnClosed(e);
+        }
+        finally
+        {
+            if (paneLayout is not null)
+                paneLayout.Close();
+            else
+                DetachCalcPane();
+        }
     }
 
     private async void PasteExecuted(object sender, ExecutedRoutedEventArgs? e = null)
@@ -1830,11 +1836,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             PassedTextControl.TextWrapping = TextWrapping.NoWrap;
         }
 
-        if (DefaultSettings.EditWindowBottomBarIsHidden)
-        {
-            HideBottomBarMenuItem.IsChecked = true;
-            BottomBar.Visibility = Visibility.Collapsed;
-        }
+        RestoreBottomBarForFileType();
 
         if (DefaultSettings.EtwUseMargins)
         {
@@ -2158,6 +2160,10 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
 
     private void Window_Activated(object sender, EventArgs e)
     {
+        // Panes that show data from outside the window, such as the recent items, look again.
+        foreach (Editing.Panes.IEditorPane pane in Panes)
+            pane.OnWindowActivated();
+
         // Pick up a spell-check mode changed from the settings page while this window was open.
         if (Enum.TryParse(DefaultSettings.EtwSpellCheckMode, out SpellCheckMode settingsMode)
             && settingsMode != spellCheckMode)
@@ -2207,44 +2213,37 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Tick -= EscapeKeyTimer_Tick;
 
         MarkdownEditorControl.RemoveHandler(Hyperlink.RequestNavigateEvent, new RequestNavigateEventHandler(MarkdownEditorControl_RequestNavigate));
-        PassedTextControl.RemoveHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged));
-        CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
-
-        HideCalcPaneContextItem.Click -= HideCalcPaneContextItem_Click;
-        ShowCalcErrorsContextItem.Click -= ShowCalcErrorsContextItem_Click;
-        CopyAllContextItem.Click -= CopyAllContextItem_Click;
 
         ClearDynamicMenuItems();
 
         // Save calc pane width to settings when closing with pane open
-        if (ShowCalcPaneMenuItem.IsChecked is true && CalcColumn.Width.Value > 0)
-        {
-            if (CalcColumn.Width.IsStar)
-                DefaultSettings.CalcPaneWidth = (int)CalcColumn.ActualWidth;
-            else
-                DefaultSettings.CalcPaneWidth = (int)CalcColumn.Width.Value;
-        }
+        if (CalcPaneWidthToSave() is int calcPaneWidth and > 0)
+            DefaultSettings.CalcPaneWidth = calcPaneWidth;
 
         DefaultSettings.Save();
 
         AppServices.Provider.GetRequiredService<ClipboardMonitorService>().ContentChanged -= Clipboard_ContentChanged;
 
-        WindowCollection allWindows = System.Windows.Application.Current.Windows;
-
-        foreach (Window window in allWindows)
+        if (System.Windows.Application.Current is not null)
         {
-            if (window is GrabFrame grabFrame)
+            WindowCollection allWindows = System.Windows.Application.Current.Windows;
+
+            foreach (Window window in allWindows)
             {
-                grabFrame.DestinationTextBox = null;
+                if (window is GrabFrame grabFrame)
+                {
+                    grabFrame.DestinationTextBox = null;
+                }
+                else if (window is FullscreenGrab fullScreenGrab)
+                    fullScreenGrab.DestinationTextBox = null;
+                else if (window is FindAndReplaceWindow findAndReplaceWindow)
+                    findAndReplaceWindow.ShouldCloseWithThisETW(this);
             }
-            else if (window is FullscreenGrab fullScreenGrab)
-                fullScreenGrab.DestinationTextBox = null;
-            else if (window is FindAndReplaceWindow findAndReplaceWindow)
-                findAndReplaceWindow.ShouldCloseWithThisETW(this);
         }
 
         GC.Collect();
-        WindowUtilities.ShouldShutDown();
+        if (System.Windows.Application.Current is not null)
+            WindowUtilities.ShouldShutDown();
     }
 
     private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -2301,6 +2300,17 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         MarkdownEditorControl.PreviewTextInput += MarkdownEditorControl_PreviewTextInput;
         System.Windows.DataObject.AddPastingHandler(MarkdownEditorControl, MarkdownEditorControl_Pasting);
         InitializeCodeEditor();
+        if (usesPaneLayout)
+        {
+            InitializePaneLayout();
+        }
+        else
+        {
+            AttachCalcPane();
+            TakeInitialLayoutRequestWithPaneLayoutOff();
+        }
+
+        RecordReadyWhenIdle();
         SetFontFromSettings();
         UpdateSpreadsheetModeUi();
         UpdateWindowTitle();
@@ -2336,33 +2346,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         EscapeKeyTimer.Interval = TimeSpan.FromMilliseconds(700);
         EscapeKeyTimer.Tick += EscapeKeyTimer_Tick;
 
-        InitializeExpressionEvaluator();
-
-        // Restore calc pane width from settings if not loading from history
-        if (ShowCalcPaneMenuItem.Tag is not true && DefaultSettings.CalcPaneWidth > 0)
-        {
-            _lastCalcColumnWidth = new GridLength(DefaultSettings.CalcPaneWidth, GridUnitType.Pixel);
-        }
-
-        if (ShowCalcPaneMenuItem.Tag is not true)
-            ShowCalcPaneMenuItem.IsChecked = DefaultSettings.CalcShowPane;
-
-        ShowErrorsMenuItem.IsChecked = DefaultSettings.CalcShowErrors;
-        SetCalcPaneVisibility();
-
-        // Wire up calc pane context menu
-        HideCalcPaneContextItem.Click += HideCalcPaneContextItem_Click;
-        ShowCalcErrorsContextItem.Click += ShowCalcErrorsContextItem_Click;
-        CopyAllContextItem.Click += CopyAllContextItem_Click;
-
-        // Attach scrolling synchronization
-        try
-        {
-            PassedTextControl.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(PassedTextControl_ScrollChanged), true);
-            CalcResultsTextControl.PreviewMouseWheel -= CalcResultsTextControl_PreviewMouseWheel;
-            CalcResultsTextControl.PreviewMouseWheel += CalcResultsTextControl_PreviewMouseWheel;
-        }
-        catch { /* ignore if not ready yet */ }
+        InitializeCalcPane();
 
         if (WindowsAiUtilities.CanDeviceUseWinAI())
         {
@@ -2406,6 +2390,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         // A history item's text is already in place; once the editor has laid out, offer to resume it.
         if (!string.IsNullOrEmpty(historyId))
             _ = Dispatcher.BeginInvoke(ShowResumeReadingBookmarkIfNeeded, DispatcherPriority.ApplicationIdle);
+
+        ShowPendingLayoutNotice();
     }
 
     private void EscapeKeyTimer_Tick(object? sender, EventArgs e)

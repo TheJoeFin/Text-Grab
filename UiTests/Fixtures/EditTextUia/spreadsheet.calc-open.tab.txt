@@ -1,0 +1,11 @@
+# Tab from the calc toggle
+Button "Show calculator pane" #EditText.CalculatorToggle (Button)
+Custom "1 + 1  " (DataGridCell)
+# Ctrl+Tab from there
+Custom "1 + 1  " (DataGridCell)
+Edit #EditText.CalculatorResults (TextBox)
+Button "Copy all calculator results" #EditText.CalculatorCopyAllButton (Button)
+Button "Calculator information" #EditText.CalculatorInfoButton (Button)
+Thumb #TextBoxSplitter (GridSplitter)
+Window "Edit Text" #EditTextWindow (Window)
+MenuItem "Format" #EditText.Menu.Format (MenuItem)

@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Text_Grab.Controls;
+using Text_Grab.Core.Layouts;
 using Text_Grab.Extensions;
 using Text_Grab.Services;
 using Text_Grab.Views;
@@ -440,12 +441,30 @@ public static partial class WindowUtilities
     }
 
     /// <summary>
+    /// Opens a new, empty Edit Text Window, in the layout <paramref name="layoutId"/> names (v5 E4a) or,
+    /// when it is null, the window's default. A layout that cannot be used leaves Classic, and the window
+    /// says why.
+    /// </summary>
+    internal static EditTextWindow OpenNewEditTextWindow(string? layoutId = null)
+    {
+        // The layout goes in as the window is made, so it renders that layout first.
+        EditTextWindow newWindow = string.IsNullOrWhiteSpace(layoutId)
+            ? new()
+            : new(new LayoutRequest(RequestedId: layoutId));
+
+        newWindow.Show();
+        newWindow.Activate();
+        return newWindow;
+    }
+
+    /// <summary>
     /// Always opens a fresh Edit Text Window holding <paramref name="text"/>, optionally already
     /// in spreadsheet mode, regardless of whether other Edit Text Windows are open.
     /// </summary>
-    internal static EditTextWindow? OpenTextInNewEditTextWindow(string text, bool enterSpreadsheetMode = false)
+    /// <param name="layoutId">The layout to open in (v5 E4a), or null for the window's default.</param>
+    internal static EditTextWindow? OpenTextInNewEditTextWindow(string text, bool enterSpreadsheetMode = false, string? layoutId = null)
     {
-        EditTextWindow newWindow = new(text, isEncoded: false);
+        EditTextWindow newWindow = new(text, isEncoded: false, layoutId);
 
         try
         {

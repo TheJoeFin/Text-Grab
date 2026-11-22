@@ -1,0 +1,83 @@
+<UserControl
+    x:Class="Text_Grab.Editing.Panes.MarkdownPreviewPane"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        Every brush here is a DynamicResource: the pane is made in windows that never see the app's
+        resource dictionaries (tests), where a StaticResource would throw.
+    -->
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <RichTextBox
+            x:Name="Preview"
+            AutomationProperties.AutomationId="EditText.MarkdownPreview.Document"
+            AutomationProperties.HelpText="{Binding RenderedTextSummary}"
+            AutomationProperties.Name="Markdown preview"
+            Background="{DynamicResource ControlFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            FontSize="15"
+            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+            HorizontalScrollBarVisibility="Auto"
+            IsDocumentEnabled="True"
+            IsInactiveSelectionHighlightEnabled="True"
+            IsReadOnly="True"
+            IsReadOnlyCaretVisible="True"
+            Padding="8"
+            PreviewKeyDown="Preview_PreviewKeyDown"
+            PreviewMouseLeftButtonUp="Preview_PreviewMouseLeftButtonUp"
+            SelectionBrush="{DynamicResource ControlStrongFillColorDefaultBrush}"
+            SizeChanged="Preview_SizeChanged"
+            VerticalScrollBarVisibility="Auto" />
+
+        <TextBlock
+            x:Name="PlaceholderText"
+            Margin="16"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            AutomationProperties.AutomationId="EditText.MarkdownPreview.Placeholder"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            IsHitTestVisible="False"
+            Text="{Binding PlaceholderText}"
+            TextAlignment="Center"
+            TextWrapping="Wrap">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasDocument}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <Border
+            x:Name="ErrorStrip"
+            Grid.Row="1"
+            Padding="10,6"
+            Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasError}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock
+                AutomationProperties.AutomationId="EditText.MarkdownPreview.Error"
+                AutomationProperties.LiveSetting="Polite"
+                AutomationProperties.Name="Preview error"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Text="{Binding ErrorMessage}"
+                TextWrapping="Wrap" />
+        </Border>
+    </Grid>
+</UserControl>

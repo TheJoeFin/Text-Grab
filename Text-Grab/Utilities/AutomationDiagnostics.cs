@@ -22,6 +22,9 @@ internal static class AutomationDiagnostics
         EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler(WindowLoaded));
     }
 
+    /// <summary>Whether events are being recorded: only under an automation profile.</summary>
+    internal static bool IsEnabled => _profile is not null;
+
     internal static void RecordReady(bool handledArgument, bool suppressDefaultLaunch) =>
         Record("ready", new { handledArgument, suppressDefaultLaunch });
 
