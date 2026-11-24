@@ -19,8 +19,10 @@ namespace Text_Grab;
 
 public partial class EditTextWindow
 {
-    private sealed record PaletteEntry(string Name, string Group, string Gesture, string Alias, Action Execute)
+    private sealed record PaletteEntry(string Name, string Group, string Gesture, string Alias, Action Execute, bool IsAvailable = true)
     {
+        public double ItemOpacity => IsAvailable ? 1.0 : 0.5;
+
         public string SearchText { get; } = $"{Name} {Group} {Alias} {Gesture} {Gesture.Replace(" ", "")}";
     }
 
@@ -148,8 +150,8 @@ public partial class EditTextWindow
         paletteEntries = entries;
         FilterCommandPalette(preserveSelection);
 
-        void Add(string name, string group, string gesture, Action execute, string alias = "")
-            => entries.Add(new(name, group, gesture, alias, execute));
+        void Add(string name, string group, string gesture, Action execute, string alias = "", bool isAvailable = true)
+            => entries.Add(new(name, group, gesture, alias, execute, isAvailable));
 
         void AddButton(Button button, string name, string group)
         {
@@ -161,7 +163,8 @@ public partial class EditTextWindow
         {
             foreach (MenuItem item in parent.Items.OfType<MenuItem>())
             {
-                if (item.Visibility != Visibility.Visible)
+                // The palette lists commands only; recent items are data, not commands.
+                if (item.Visibility != Visibility.Visible || IsRecentItemsMenu(item))
                     continue;
 
                 string name = new MenuItemAutomationPeer(item).GetName();
@@ -171,7 +174,7 @@ public partial class EditTextWindow
                         AddMenuEntries(item, group.Length == 0 ? name : $"{group} / {name}", skipClipboardCommands);
                 }
                 else if (item != CommandPaletteMenuItem && item != LanguageMenuItem
-                         && item != WebSearchCollection && item != OpenRecentGrabsMenuItem
+                         && item != WebSearchCollection
                          && (!skipClipboardCommands || item.Command is null))
                 {
                     AddMenuEntry(item, group, name);
@@ -181,8 +184,12 @@ public partial class EditTextWindow
 
         void AddMenuEntry(MenuItem item, string group, string name)
         {
-            if (string.IsNullOrWhiteSpace(name) || !CanInvokePaletteMenuItem(item, target))
+            if (string.IsNullOrWhiteSpace(name))
                 return;
+
+            // Commands that don't apply right now (e.g. Unstack without a multi-line selection)
+            // stay listed so they can be found, but are shown dimmed and do nothing.
+            bool isAvailable = CanInvokePaletteMenuItem(item, target);
 
             ActionDescriptor? descriptor = null;
             if (GetPaletteActionId(item) is string id && !registry.TryGet(id, out descriptor))
@@ -194,9 +201,12 @@ public partial class EditTextWindow
 
             // The registry supplies metadata, but the menu owns editor-aware behavior and arguments.
             string alias = descriptor is null ? "" : $"{descriptor.DisplayName} {descriptor.Category}";
-            Add(name, group, gesture, () => InvokePaletteMenuItem(item), alias);
+            Add(name, group, gesture, () => InvokePaletteMenuItem(item), alias, isAvailable);
         }
     }
+
+    private bool IsRecentItemsMenu(MenuItem item)
+        => item == OpenRecentMenuItem || item == OpenRecentGrabsMenuItem || item == OpenRecentPdfsMenuItem;
 
     private IInputElement GetCommandPaletteTarget() => editorMode switch
     {
@@ -325,7 +335,7 @@ public partial class EditTextWindow
 
     private void ExecuteSelectedCommandPaletteEntry()
     {
-        if (CommandPaletteResults.SelectedItem is not PaletteEntry entry)
+        if (CommandPaletteResults.SelectedItem is not PaletteEntry { IsAvailable: true } entry)
             return;
 
         CloseCommandPalette();
