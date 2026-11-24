@@ -849,7 +849,8 @@ Console.WriteLine("hi");
         FlowDocument nested = MarkdownFlowDocumentUtilities.CreateFlowDocument("- parent\n  - [ ] child", new FontFamily("Segoe UI"), 16);
         System.Windows.Documents.List outer = Assert.IsType<System.Windows.Documents.List>(Assert.Single(nested.Blocks));
         System.Windows.Documents.List inner = Assert.IsType<System.Windows.Documents.List>(outer.ListItems.First().Blocks.OfType<System.Windows.Documents.List>().Single());
-        Assert.Equal(System.Windows.TextMarkerStyle.Disc, inner.MarkerStyle);
+        // A nested to-do list keeps a bullet, and the bullet is its depth's (the second level is a circle).
+        Assert.Equal(System.Windows.TextMarkerStyle.Circle, inner.MarkerStyle);
     }
 
     [WpfFact]

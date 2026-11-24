@@ -83,6 +83,38 @@ public static partial class MarkdownFlowDocumentUtilities
         double BaseFontSize,
         bool IsLightTheme);
 
+    /// <summary>
+    /// Breathing room under the last block so the text never sits on the viewport edge. It is
+    /// FlowDocument page padding, so it is part of the scrollable extent (it does not narrow the
+    /// viewport) yet is not document content (it cannot be selected, deleted or saved).
+    /// </summary>
+    internal const double BottomScrollMargin = 200;
+
+    /// <summary>
+    /// Sets the bottom scroll margin on a document that is already in <paramref name="box"/>. A
+    /// RichTextBox rewrites its document's PagePadding to 5,0,5,0 inside CreateRenderScope, the first
+    /// time its template is applied, so a value set earlier is lost; applying the template here
+    /// makes that happen first.
+    /// </summary>
+    internal static void ApplyBottomScrollMargin(RichTextBox box)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+        box.ApplyTemplate();
+        ApplyBottomScrollMargin(box.Document);
+    }
+
+    /// <summary>Sets only the bottom of the page padding, keeping whatever the sides and top are.</summary>
+    internal static void ApplyBottomScrollMargin(FlowDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        Thickness padding = document.PagePadding;
+        if (padding.Bottom == BottomScrollMargin)
+            return;
+
+        static double Finite(double value) => double.IsNaN(value) ? 0 : value;
+        document.PagePadding = new Thickness(Finite(padding.Left), Finite(padding.Top), Finite(padding.Right), BottomScrollMargin);
+    }
+
     public static FlowDocument CreateFlowDocument(string? markdownText, FontFamily fontFamily, double fontSize, string? markdownFilePath = null)
     {
         string safeMarkdown = markdownText ?? string.Empty;
@@ -105,6 +137,7 @@ public static partial class MarkdownFlowDocumentUtilities
             AppendBlock(document.Blocks, footnotes, safeMarkdown, quoteDepth: 0, markdownFilePath);
         ConnectFootnotes(document);
         InitializeExtendedInlines(document);
+        ApplyListStyling(document);
 
         if (document.Blocks.Count == 0)
             document.Blocks.Add(new Paragraph());
@@ -123,7 +156,7 @@ public static partial class MarkdownFlowDocumentUtilities
             if (wroteBlock)
                 builder.Append($"{Environment.NewLine}{Environment.NewLine}");
 
-            WriteBlock(builder, block, listDepth: 0, preserveLiteralMarkdown);
+            WriteBlock(builder, block, preserveLiteralMarkdown);
             wroteBlock = true;
         }
 
@@ -375,7 +408,7 @@ public static partial class MarkdownFlowDocumentUtilities
         document.Foreground = theme.ForegroundBrush;
         document.FontFamily = theme.BaseFontFamily;
         document.FontSize = theme.BaseFontSize;
-        document.PagePadding = new Thickness(0);
+        ApplyBottomScrollMargin(document);
 
         foreach (WpfBlock block in document.Blocks)
             ApplyBlockTheme(block, theme);
@@ -964,7 +997,7 @@ public static partial class MarkdownFlowDocumentUtilities
             throw new NotSupportedException();
     }
 
-    private static void WriteBlock(StringBuilder builder, WpfBlock block, int listDepth, bool preserveLiteralMarkdown)
+    private static void WriteBlock(StringBuilder builder, WpfBlock block, bool preserveLiteralMarkdown)
     {
         switch (block)
         {
@@ -977,7 +1010,7 @@ public static partial class MarkdownFlowDocumentUtilities
                 break;
 
             case WpfList list:
-                WriteList(builder, list, listDepth, preserveLiteralMarkdown);
+                WriteList(builder, list, preserveLiteralMarkdown);
                 break;
 
             case WpfTable table:
@@ -1043,10 +1076,15 @@ public static partial class MarkdownFlowDocumentUtilities
         _ => new TextRange(inline.ContentStart, inline.ContentEnd).Text
     };
 
-    private static void WriteList(StringBuilder builder, WpfList list, int listDepth, bool preserveLiteralMarkdown)
+    /// <remarks>
+    /// A nested list is written as part of its parent item, and the parent indents every one of that
+    /// item's lines by its marker's width, so a list never indents itself: doing both counted the
+    /// depth twice, and from the third level the item came back as a code block.
+    /// </remarks>
+    private static void WriteList(StringBuilder builder, WpfList list, bool preserveLiteralMarkdown)
     {
         string quotePrefix = MarkdownDocumentUtilities.GetQuotePrefix(GetQuoteDepth(list));
-        bool isOrdered = list.MarkerStyle == TextMarkerStyle.Decimal;
+        bool isOrdered = IsOrderedMarker(list.MarkerStyle);
         int itemIndex = isOrdered ? Math.Max(1, list.StartIndex) : 1;
         bool isFirstItem = true;
 
@@ -1057,22 +1095,22 @@ public static partial class MarkdownFlowDocumentUtilities
             isFirstItem = false;
 
             StringBuilder itemBuilder = new();
-            bool wroteItemBlock = false;
+            WpfBlock? previousBlock = null;
             foreach (WpfBlock block in item.Blocks)
             {
-                if (wroteItemBlock)
-                    itemBuilder.Append($"{Environment.NewLine}{Environment.NewLine}");
+                // A list straight after the item's text stays in the same tight item; a blank line would loosen it.
+                if (previousBlock is not null)
+                    itemBuilder.Append(previousBlock is Paragraph && block is WpfList ? Environment.NewLine : $"{Environment.NewLine}{Environment.NewLine}");
 
-                WriteBlock(itemBuilder, block, listDepth + 1, preserveLiteralMarkdown);
-                wroteItemBlock = true;
+                WriteBlock(itemBuilder, block, preserveLiteralMarkdown);
+                previousBlock = block;
             }
 
             string[] itemLines = MarkdownDocumentUtilities.NormalizeNewlines(itemBuilder.ToString()).Split('\n');
-            string indent = new(' ', listDepth * 2);
             string marker = isOrdered ? $"{itemIndex}. " : "- ";
 
-            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"{indent}{marker}{itemLines[0]}", quotePrefix));
-            string continuationIndent = $"{indent}{new string(' ', marker.Length)}";
+            builder.Append(MarkdownDocumentUtilities.ApplyQuotePrefix($"{marker}{itemLines[0]}", quotePrefix));
+            string continuationIndent = new(' ', marker.Length);
             for (int lineIndex = 1; lineIndex < itemLines.Length; lineIndex++)
             {
                 builder.AppendLine();

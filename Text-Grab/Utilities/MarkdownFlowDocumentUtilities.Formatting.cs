@@ -25,7 +25,11 @@ public static partial class MarkdownFlowDocumentUtilities
 
         if (action == MarkdownFormattingAction.ToDo)
         {
-            ToggleTaskList(editor, paragraphs);
+            using (editor.DeclareChangeBlock())
+            {
+                ToggleTaskList(editor, paragraphs);
+                ApplyListStyling(editor.Document);
+            }
             return;
         }
 
@@ -39,7 +43,13 @@ public static partial class MarkdownFlowDocumentUtilities
         };
         if (command is not null)
         {
-            command.Execute(null, editor);
+            // A new list starts with WPF's own marker and indent, so restyle in the same undo step.
+            using (editor.DeclareChangeBlock())
+            {
+                command.Execute(null, editor);
+                if (action is MarkdownFormattingAction.Bullets or MarkdownFormattingAction.Numbering)
+                    ApplyListStyling(editor.Document);
+            }
             return;
         }
 

@@ -1081,6 +1081,7 @@
                 <RichTextBox
                     x:Name="MarkdownEditorControl"
                     x:FieldModifier="private"
+                    AcceptsTab="True"
                     AllowDrop="True"
                     AutomationProperties.AutomationId="EditText.MarkdownEditor"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"

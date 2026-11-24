@@ -219,6 +219,7 @@ public partial class MarkdownPreviewPane : UserControl, IEditorPane
     private void ViewModel_DocumentRendered(object? sender, EventArgs e)
     {
         Preview.Document = viewModel.Document!;
+        MarkdownFlowDocumentUtilities.ApplyBottomScrollMargin(Preview);
         sync = new MarkdownPreviewSync(viewModel.Document!, viewModel.RenderedSource ?? string.Empty);
 
         // A new document starts at the top; table columns need the viewport's width, which is known

@@ -64,6 +64,7 @@ public partial class EditTextWindow
         markdownOffsetMap = MarkdownFlowDocumentUtilities.BuildOffsetMap(MarkdownEditorControl.Document);
         markdownOffsetMapSourceText = markdownText ?? string.Empty;
         ApplyMarkdownTheme();
+        MarkdownFlowDocumentUtilities.ApplyBottomScrollMargin(MarkdownEditorControl);
         ApplyMarkdownWrapSetting();
         SetMargins(MarginsMenuItem.IsChecked is true);
         isApplyingMarkdownDocument = false;
@@ -461,6 +462,13 @@ public partial class EditTextWindow
 
     private void MarkdownEditorControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
+        if (editorMode == EtwEditorMode.Markdown && e.Key == Key.Tab && !MarkdownEditorControl.IsReadOnly
+            && Keyboard.Modifiers is ModifierKeys.None or ModifierKeys.Shift)
+        {
+            e.Handled = MarkdownTabBehavior.TryHandle(MarkdownEditorControl, outdent: Keyboard.Modifiers == ModifierKeys.Shift);
+            return;
+        }
+
         if (editorMode != EtwEditorMode.Markdown || e.Key != Key.Enter
             || Keyboard.Modifiers != ModifierKeys.None)
             return;

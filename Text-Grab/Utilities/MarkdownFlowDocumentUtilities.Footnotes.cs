@@ -125,7 +125,7 @@ public static partial class MarkdownFlowDocumentUtilities
                     continue;
                 if (wroteBlock)
                     body.Append($"{Environment.NewLine}{Environment.NewLine}");
-                WriteBlock(body, block, listDepth: 0, preserveLiteralMarkdown);
+                WriteBlock(body, block, preserveLiteralMarkdown);
                 wroteBlock = true;
             }
 
