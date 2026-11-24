@@ -38,6 +38,19 @@ public static class LayoutDefaults
             ? layoutMode
             : fileMode;
 
+    /// <summary>
+    /// <see cref="ModeForFile(EtwEditorMode, EtwLayoutDefinition?)"/>, except that the mode the file was last
+    /// shown in wins when there is one. A spreadsheet is only restored for a file whose type opens as one,
+    /// since other text cannot be assumed to be a table.
+    /// </summary>
+    /// <param name="fileMode">What the file's type implies.</param>
+    /// <param name="layout">The layout the window shows, or null.</param>
+    /// <param name="savedMode">The mode remembered for this file, or null.</param>
+    public static EtwEditorMode ModeForFile(EtwEditorMode fileMode, EtwLayoutDefinition? layout, EtwEditorMode? savedMode)
+        => savedMode is EtwEditorMode saved && (saved != EtwEditorMode.Spreadsheet || fileMode == EtwEditorMode.Spreadsheet)
+            ? saved
+            : ModeForFile(fileMode, layout);
+
     /// <summary>The mode for a window with no file when <paramref name="layout"/> is first applied.</summary>
     /// <param name="currentMode">The window's mode now; anything but <see cref="EtwEditorMode.Text"/> was chosen on purpose and stays.</param>
     public static EtwEditorMode ModeForBlankWindow(EtwEditorMode currentMode, EtwLayoutDefinition? layout)

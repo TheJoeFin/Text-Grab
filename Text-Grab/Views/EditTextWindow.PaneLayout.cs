@@ -155,7 +155,7 @@ public partial class EditTextWindow
         LayoutStoreDefaults defaults = readStore ? LayoutStore.ReadDefaults() : new LayoutStoreDefaults(null);
         knownGlobalDefault = defaults.GlobalDefaultId;
 
-        string? id = LayoutResolver.ChooseId(new LayoutRequest(requestedLayoutId, historyLayoutId, initialFilePath, defaults.GlobalDefaultId), layoutForFile: null);
+        string? id = LayoutResolver.ChooseId(new LayoutRequest(requestedLayoutId, historyLayoutId, initialFilePath, defaults.GlobalDefaultId), layoutForFile: readStore ? LayoutForFile : null);
         if (id is null && defaults.Error is not null)
             ShowLayoutNotice($"{defaults.Error} Text Grab opened the Classic layout instead.");
 
@@ -298,9 +298,38 @@ public partial class EditTextWindow
     /// layout is applied, so that <see cref="OpenPath"/> sets the file's mode from the layout it ends up in.
     /// </summary>
     private Task UseFileTypeLayoutAsync(string filePath)
-        => requestedLayoutId is null && historyLayoutId is null && LayoutFileTypeDefaults.LayoutIdFor(filePath) is not null
+        => requestedLayoutId is null && historyLayoutId is null && LayoutForFile(filePath) is not null
             ? ResolveLayoutAsync()
             : Task.CompletedTask;
+
+    /// <summary>
+    /// A file's own layout: the one it was last shown in (<see cref="FileViewStateStore"/>) if the person
+    /// asked for files to be remembered and that layout still exists, else its type's built-in layout.
+    /// </summary>
+    private string? LayoutForFile(string? filePath)
+    {
+        if (!string.IsNullOrWhiteSpace(filePath) && paneLayout is not null && DefaultSettings.EtwRememberFileView
+            && FileViewStateStore.Get(filePath)?.LayoutId is string saved && !string.IsNullOrWhiteSpace(saved)
+            && (BuiltInLayouts.IsBuiltIn(saved) || LayoutStore.Load(saved).Layout is not null))
+            return saved;
+
+        return LayoutFileTypeDefaults.LayoutIdFor(filePath);
+    }
+
+    /// <summary>
+    /// Remembers the layout, mode and code language this window shows the opened file in, so that the file
+    /// reopens that way. Called when the window closes and when another file replaces this one.
+    /// </summary>
+    private void SaveFileViewState()
+    {
+        if (string.IsNullOrWhiteSpace(OpenedFilePath) || !DefaultSettings.EtwRememberFileView)
+            return;
+
+        // With the pane layout off there is no layout to report, so what was remembered stays.
+        string? layoutId = paneLayout is null ? FileViewStateStore.Get(OpenedFilePath)?.LayoutId : LayoutId;
+        string? codeLanguage = editorMode == EtwEditorMode.Code && isCodeLanguageSet ? codeLanguageName ?? string.Empty : null;
+        FileViewStateStore.Set(OpenedFilePath, layoutId, editorMode, codeLanguage);
+    }
 
     /// <summary>The layout to save with this window's history item: null for Classic.</summary>
     private string? LayoutIdToSave()
@@ -325,6 +354,7 @@ public partial class EditTextWindow
     {
         int resolution = ++layoutResolution;
         LayoutRequest request = new(requestedLayoutId, historyLayoutId, OpenedFilePath ?? initialFilePath);
+        Func<string?, string?> layoutForFile = LayoutForFile;
 
         if (paneLayout is null)
         {
@@ -336,7 +366,7 @@ public partial class EditTextWindow
         ResolvedLayout resolved;
         try
         {
-            resolved = await new LayoutResolver(LayoutStore, IsKnownPane).ResolveAsync(request);
+            resolved = await new LayoutResolver(LayoutStore, IsKnownPane, layoutForFile).ResolveAsync(request);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {

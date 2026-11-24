@@ -2285,6 +2285,7 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
         }
 
         SaveWindowTextToHistoryIfNeeded();
+        SaveFileViewState();
 
         string windowSizeAndPosition = WindowUtilities.GetWindowBoundsString(this);
         if (!string.IsNullOrWhiteSpace(OpenedFilePath) && DefaultSettings.EtwRememberFilePlacement)

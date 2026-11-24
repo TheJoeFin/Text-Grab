@@ -281,6 +281,11 @@ public partial class EditTextWindow
             ResetSpreadsheetUndoHistory();
             bool shouldTrackOpenedFile = KindOpened == OpenContentKind.TextFile && !isMultipleFiles;
             historyBottomBarPreferencePath = null;
+
+            // The file being replaced keeps the view it had.
+            if (!string.Equals(OpenedFilePath, pathOfFileToOpen, StringComparison.OrdinalIgnoreCase))
+                SaveFileViewState();
+
             OpenedFilePath = shouldTrackOpenedFile ? pathOfFileToOpen : null;
             RestoreBottomBarForFileType();
             if (shouldTrackOpenedFile)
@@ -301,12 +306,21 @@ public partial class EditTextWindow
                 // The layout the window shows may replace a Text or Markdown file's mode (LayoutDefaults): how
                 // .mmd reaches Code mode in the Mermaid layout. A multi-file open stays Text, and with the
                 // pane layout off there is no layout, so a file opens as its type says.
+                // The mode and language the file was last shown in come first (FileViewStateStore).
+                FileViewStateStore.Entry? savedView = shouldTrackOpenedFile && DefaultSettings.EtwRememberFileView
+                    ? FileViewStateStore.Get(pathOfFileToOpen)
+                    : null;
+
                 EtwEditorMode targetMode = isMultipleFiles
                     ? EtwEditorMode.Text
-                    : LayoutDefaults.ModeForFile(IoUtilities.GetEditorModeForPath(pathOfFileToOpen), CurrentLayout);
+                    : LayoutDefaults.ModeForFile(IoUtilities.GetEditorModeForPath(pathOfFileToOpen), CurrentLayout, savedView?.Mode);
 
                 if (targetMode == EtwEditorMode.Code)
-                    fileCodeLanguage = LayoutDefaults.CodeLanguageFor(CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name, CurrentLayout);
+                {
+                    fileCodeLanguage = savedView?.Mode == EtwEditorMode.Code && savedView.CodeLanguage is string savedLanguage
+                        ? new CodeLanguageChoice(string.IsNullOrEmpty(savedLanguage) ? null : savedLanguage, Detect: false)
+                        : LayoutDefaults.CodeLanguageFor(CodeLanguages.FindByExtension(Path.GetExtension(pathOfFileToOpen))?.Name, CurrentLayout);
+                }
 
                 // The text and Markdown document are replaced just below, so don't build the old text's document.
                 if (IsLoaded)

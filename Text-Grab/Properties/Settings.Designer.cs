@@ -743,6 +743,18 @@ namespace Text_Grab.Properties {
                 this["EtwRememberFilePlacement"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EtwRememberFileView {
+            get {
+                return ((bool)(this["EtwRememberFileView"]));
+            }
+            set {
+                this["EtwRememberFileView"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

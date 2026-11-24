@@ -29,6 +29,7 @@ public partial class EditTextWindowSettings : Page
         EditWindowIsWordWrapOnCheckBox.IsChecked = DefaultSettings.EditWindowIsWordWrapOn;
         RestoreEtwPositionsCheckBox.IsChecked = DefaultSettings.RestoreEtwPositions;
         EtwRememberFilePlacementCheckBox.IsChecked = DefaultSettings.EtwRememberFilePlacement;
+        EtwRememberFileViewCheckBox.IsChecked = DefaultSettings.EtwRememberFileView;
         EtwDefaultWidthBox.Value = DefaultSettings.EtwDefaultWidth;
         EtwDefaultHeightBox.Value = DefaultSettings.EtwDefaultHeight;
         EtwDefaultWidthPercentBox.Value = DefaultSettings.EtwDefaultWidthPercent;
@@ -114,6 +115,13 @@ public partial class EditTextWindowSettings : Page
     {
         if (!_loaded) return;
         DefaultSettings.EtwRememberFilePlacement = EtwRememberFilePlacementCheckBox.IsChecked == true;
+        DefaultSettings.Save();
+    }
+
+    private void EtwRememberFileViewCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        DefaultSettings.EtwRememberFileView = EtwRememberFileViewCheckBox.IsChecked == true;
         DefaultSettings.Save();
     }
 

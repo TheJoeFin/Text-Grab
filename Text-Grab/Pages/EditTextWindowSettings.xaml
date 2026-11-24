@@ -183,6 +183,13 @@
             <ui:ToggleSwitch x:Name="EtwRememberFilePlacementCheckBox" AutomationProperties.AutomationId="Settings.EditText.RememberFilePlacementToggle" Click="EtwRememberFilePlacementCheckBox_Click" />
         </controls:SettingsCard>
 
+        <controls:SettingsCard
+            Description="A file opened in the Edit Text Window returns to the layout, editor mode, and code language it was last shown in, instead of the defaults for its file type."
+            HeaderText="Reopen files in their last layout and mode"
+            Icon="{ui:SymbolIcon DocumentArrowRight24}">
+            <ui:ToggleSwitch x:Name="EtwRememberFileViewCheckBox" AutomationProperties.AutomationId="Settings.EditText.RememberFileViewToggle" Click="EtwRememberFileViewCheckBox_Click" />
+        </controls:SettingsCard>
+
         <TextBlock Style="{StaticResource SettingsSectionHeader}" Text="Behavior" />
 
         <controls:SettingsCard

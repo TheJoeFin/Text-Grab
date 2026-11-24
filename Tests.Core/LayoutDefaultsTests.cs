@@ -35,6 +35,17 @@ public class LayoutDefaultsTests
         Assert.Equal(fileMode, LayoutDefaults.ModeForFile(fileMode, null));
     }
 
+    [Theory]
+    [InlineData(EtwEditorMode.Markdown, EtwEditorMode.Text, EtwEditorMode.Text)]
+    [InlineData(EtwEditorMode.Text, EtwEditorMode.Markdown, EtwEditorMode.Markdown)]
+    [InlineData(EtwEditorMode.Text, EtwEditorMode.Text, EtwEditorMode.Text)]
+    [InlineData(EtwEditorMode.Spreadsheet, EtwEditorMode.Text, EtwEditorMode.Text)]
+    [InlineData(EtwEditorMode.Spreadsheet, EtwEditorMode.Spreadsheet, EtwEditorMode.Spreadsheet)]
+    [InlineData(EtwEditorMode.Text, EtwEditorMode.Spreadsheet, EtwEditorMode.Code)] // Not a table type: the layout decides.
+    [InlineData(EtwEditorMode.Markdown, null, EtwEditorMode.Code)] // Nothing remembered: the layout decides.
+    public void TheModeAFileWasLastShownIn_BeatsTheLayoutAndItsType(EtwEditorMode fileMode, EtwEditorMode? saved, EtwEditorMode expected)
+        => Assert.Equal(expected, LayoutDefaults.ModeForFile(fileMode, Layout(EtwEditorMode.Code), saved));
+
     // ---- A window with no file ----
 
     [Theory]
