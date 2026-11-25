@@ -87,4 +87,7 @@ public static class PaneIds
 
     /// <summary>The rendered Markdown preview pane (v5 E5).</summary>
     public const string MarkdownPreview = "textgrab.pane.markdownPreview";
+
+    /// <summary>The table of contents pane: the document's headings as a tree.</summary>
+    public const string Toc = "textgrab.pane.toc";
 }
