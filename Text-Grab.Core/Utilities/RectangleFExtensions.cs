@@ -6,7 +6,7 @@ namespace Text_Grab;
 /// Portable geometry helpers for the Core tier.
 ///
 /// Text-Grab's UI code works in <c>System.Windows.Rect</c>, which lives in WindowsBase.dll and
-/// is therefore only available with <c>UseWPF=true</c>. Text-Grab.Core targets plain net10.0 and
+/// is therefore only available with <c>UseWPF=true</c>. Text-Grab.Core targets plain net11.0 and
 /// Text-Grab.Core.Windows deliberately keeps <c>UseWPF=false</c>, so neither can use it.
 ///
 /// <see cref="RectangleF"/> is the substitute: it lives in System.Drawing.Primitives, which is

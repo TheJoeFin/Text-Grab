@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>Text_Grab</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -16,7 +16,7 @@
     <PackageReference Include="Markdig" Version="1.6.0" />
     <!-- ServiceAccess (Services/ServiceAccess.cs) is how Core and Core.Windows reach the app's
          container. Abstractions only: the container itself is built by the app. -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0" />
     <PackageReference Include="Microsoft.Recognizers.Text.Choice" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.13" />
     <PackageReference Include="Microsoft.Recognizers.Text.Number" Version="1.8.13" />
@@ -29,12 +29,12 @@
       <IncludeAssets>none</IncludeAssets>
     </PackageReference>
     <!-- AutomationSettingsProvider/AutomationProfile need ApplicationSettingsBase and
-         LocalFileSettingsProvider. On the app's net10.0-windows TFM those types come from the
-         Microsoft.WindowsDesktop.App shared framework for free; plain net10.0 (this project) has
+         LocalFileSettingsProvider. On the app's net11.0-windows TFM those types come from the
+         Microsoft.WindowsDesktop.App shared framework for free; plain net11.0 (this project) has
          no such framework reference, so they need this package explicitly. Verified by a
-         standalone probe: both types resolve and run correctly on plain net10.0 with this
+         standalone probe: both types resolve and run correctly on plain net11.0 with this
          package referenced. -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.15" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="11.0.0" />
     <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 
