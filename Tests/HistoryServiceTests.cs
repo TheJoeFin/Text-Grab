@@ -6,6 +6,7 @@ using System.Windows;
 using System.Reflection;
 using Text_Grab;
 using Text_Grab.Models;
+using Text_Grab.Properties;
 using Text_Grab.Services;
 using Text_Grab.Utilities;
 
@@ -289,9 +290,13 @@ public class HistoryServiceTests
         Assert.Contains(itemsToRemove, history => history.ID == "pdf-1");
     }
 
-    [WpfFact]
-    public async Task ImageHistory_KeepsInlineWordBorderJsonWhileMirroringSidecarStorage()
+    [WpfTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ImageHistory_WritesWordBorderSidecar_AndKeepsInlineJsonOnlyInClassicMode(bool fileBackedSettings)
     {
+        const string historyFileName = "HistoryWithImage.json";
+        const string sidecarFileName = "image-with-borders.wordborders.json";
         string inlineWordBorderJson = JsonSerializer.Serialize(
             new List<WordBorderInfo>
             {
@@ -309,49 +314,70 @@ public class HistoryServiceTests
             },
             HistoryJsonOptions);
 
-        await SaveHistoryFileAsync(
-            "HistoryWithImage.json",
-            [
-                new HistoryInfo
-                {
-                    ID = "image-with-borders",
-                    CaptureDateTime = new DateTimeOffset(2024, 1, 3, 12, 0, 0, TimeSpan.Zero),
-                    TextContent = "history with borders",
-                    ImagePath = "borders.bmp",
-                    SourceMode = TextGrabMode.GrabFrame,
-                    WordBorderInfoJson = inlineWordBorderJson,
-                    ManualTableColumnSeparators = [44],
-                    ManualTableRowSeparators = [18]
-                }
-            ]);
+        string root = Path.Combine(Path.GetTempPath(), $"text-grab-history-borders-{Guid.NewGuid():N}");
+        AutomationProfile profile = AutomationProfile.TryCreate(
+            ["Text-Grab.exe"],
+            name => name == AutomationProfile.ProfileEnvironmentVariable ? root : null)
+            ?? throw new InvalidOperationException("Failed to create automation profile.");
+        Settings settings = new() { EnableFileBackedManagedSettings = fileBackedSettings };
+        using IDisposable scope = AutomationProfile.OverrideCurrentForTests(profile);
+        try
+        {
+            SettingsAccess.SetResolver(() => settings);
 
-        HistoryService historyService = new();
-        HistoryInfo historyItem = Assert.Single(historyService.GetRecentGrabs());
+            Assert.True(await SaveHistoryFileAsync(
+                historyFileName,
+                [
+                    new HistoryInfo
+                    {
+                        ID = "image-with-borders",
+                        CaptureDateTime = new DateTimeOffset(2024, 1, 3, 12, 0, 0, TimeSpan.Zero),
+                        TextContent = "history with borders",
+                        ImagePath = "borders.bmp",
+                        SourceMode = TextGrabMode.GrabFrame,
+                        WordBorderInfoJson = inlineWordBorderJson,
+                        ManualTableColumnSeparators = [44],
+                        ManualTableRowSeparators = [18]
+                    }
+                ]));
 
-        Assert.Equal(inlineWordBorderJson, historyItem.WordBorderInfoJson);
-        Assert.Equal("image-with-borders.wordborders.json", historyItem.WordBorderInfoFileName);
-        Assert.Equal([44d], historyItem.ManualTableColumnSeparators);
-        Assert.Equal([18d], historyItem.ManualTableRowSeparators);
+            using HistoryService historyService = new();
+            HistoryInfo historyItem = Assert.Single(historyService.GetRecentGrabs());
+            Assert.Equal(fileBackedSettings ? null : inlineWordBorderJson, historyItem.WordBorderInfoJson);
+            Assert.Equal(sidecarFileName, historyItem.WordBorderInfoFileName);
 
-        List<WordBorderInfo> wordBorderInfos = await historyService.GetWordBorderInfosAsync(historyItem);
-        WordBorderInfo wordBorderInfo = Assert.Single(wordBorderInfos);
-        Assert.Equal("hello", wordBorderInfo.Word);
-        Assert.Equal($"hello{Environment.NewLine}world", wordBorderInfo.DisplayText);
-        Assert.Equal(30d, wordBorderInfo.BorderRect.Width);
-        Assert.Equal(40d, wordBorderInfo.BorderRect.Height);
-        Assert.Equal(18d, wordBorderInfo.DisplayLineHeight);
-        Assert.True(wordBorderInfo.KeepSingleLineOutput);
+            historyService.ReleaseLoadedHistories();
 
-        historyService.ReleaseLoadedHistories();
+            string savedHistoryJson = await FileUtilities.GetTextFileAsync(historyFileName, FileStorageKind.WithHistory);
+            using JsonDocument savedHistory = JsonDocument.Parse(savedHistoryJson);
+            JsonElement savedItem = Assert.Single(savedHistory.RootElement.EnumerateArray());
+            Assert.Equal(sidecarFileName, savedItem.GetProperty(nameof(HistoryInfo.WordBorderInfoFileName)).GetString());
+            bool hasInlineJson = savedItem.TryGetProperty(nameof(HistoryInfo.WordBorderInfoJson), out JsonElement savedInlineJson);
+            Assert.Equal(!fileBackedSettings, hasInlineJson);
+            if (!fileBackedSettings)
+                Assert.Equal(inlineWordBorderJson, savedInlineJson.GetString());
 
-        string savedHistoryJson = await FileUtilities.GetTextFileAsync("HistoryWithImage.json", FileStorageKind.WithHistory);
-        Assert.Contains("\"WordBorderInfoJson\"", savedHistoryJson);
-        Assert.Contains("\"WordBorderInfoFileName\"", savedHistoryJson);
-        Assert.Contains("\"ManualTableColumnSeparators\"", savedHistoryJson);
-        Assert.Contains("\"ManualTableRowSeparators\"", savedHistoryJson);
+            string savedWordBorderJson = await FileUtilities.GetTextFileAsync(sidecarFileName, FileStorageKind.WithHistory);
+            Assert.Equal(inlineWordBorderJson, savedWordBorderJson);
 
-        string savedWordBorderJson = await FileUtilities.GetTextFileAsync(historyItem.WordBorderInfoFileName!, FileStorageKind.WithHistory);
-        Assert.Contains("hello", savedWordBorderJson);
+            HistoryInfo reloadedItem = Assert.Single(historyService.GetRecentGrabs());
+            Assert.Equal([44d], reloadedItem.ManualTableColumnSeparators);
+            Assert.Equal([18d], reloadedItem.ManualTableRowSeparators);
+
+            WordBorderInfo wordBorderInfo = Assert.Single(await historyService.GetWordBorderInfosAsync(reloadedItem));
+            Assert.Equal("hello", wordBorderInfo.Word);
+            Assert.Equal($"hello{Environment.NewLine}world", wordBorderInfo.DisplayText);
+            Assert.Equal(30d, wordBorderInfo.BorderRect.Width);
+            Assert.Equal(40d, wordBorderInfo.BorderRect.Height);
+            Assert.Equal(18d, wordBorderInfo.DisplayLineHeight);
+            Assert.True(wordBorderInfo.KeepSingleLineOutput);
+        }
+        finally
+        {
+            SettingsAccess.SetResolver(static () => AppUtilities.TextGrabSettings);
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 
     [WpfFact]
