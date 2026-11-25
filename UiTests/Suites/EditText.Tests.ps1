@@ -22,6 +22,14 @@ Register-UiTest -Suite 'EditText' -Name 'command-palette-runs-legacy-and-registe
     Send-UiTestKeys -Target $editText -AutomationId 'EditText.Editor' -Keys 'ctrl+home ctrl+shift+p' -Via send-input
     Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
     Set-UiTestValue -Target $editText -AutomationId $search -Value 'selection isolate'
+    # With nothing selected the command is still listed (dimmed), and Enter neither runs it nor closes the palette.
+    Wait-UiTestElement -Target $editText -AutomationId 'Isolate Selected Text' -TimeoutSeconds $Context.TimeoutSeconds
+    Send-UiTestKeys -Target $editText -Keys 'enter' -Via send-input
+    Start-Sleep -Milliseconds 300
+    Wait-UiTestElement -Target $editText -AutomationId $search -TimeoutSeconds $Context.TimeoutSeconds
+    Assert-UiTestValue -Target $editText -AutomationId 'EditText.Editor' -Expected $text
+
+    Set-UiTestValue -Target $editText -AutomationId $search -Value 'no command has this name'
     Wait-UiTestElement -Target $editText -AutomationId 'EditText.CommandPalette.NoResults' -TimeoutSeconds $Context.TimeoutSeconds
     Send-UiTestKeys -Target $editText -Keys 'esc' -Via send-input
     Wait-UiTestElement -Target $editText -AutomationId $search -Gone -TimeoutSeconds $Context.TimeoutSeconds
