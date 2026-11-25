@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+Import-Module "$PSScriptRoot\Deterministic.Helpers.psm1" -Force -Global
 
 $script:SystemHelper = $null
 
@@ -207,21 +208,40 @@ function Send-SystemHotkey {
 }
 
 function Enable-SystemHotkeys {
-    param([Parameter(Mandatory)]$Context)
+    # Closing Settings is what registers the hotkeys. -KeepOpen leaves the Shortcuts page up for a test
+    # that changes more settings there; that test closes the window itself.
+    param([Parameter(Mandatory)]$Context, [switch]$KeepOpen)
 
     $settings = Start-UiTestProcess -Context $Context -FilePath $Context.TextGrab.Process.Path -Arguments @(
         '--automation-profile', $Context.ProfileDirectory, '--automation-system-integration', 'Settings'
     ) -Kind TextGrab -WindowTitle 'Settings'
     Wait-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts' -TimeoutSeconds $Context.TimeoutSeconds
-    Invoke-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts'
+    # The navigation item has no invoke pattern, so open the page with a real click.
+    Set-UiTestForegroundWindow -Target $settings
+    Click-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts'
     Wait-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.BackgroundToggle' -TimeoutSeconds $Context.TimeoutSeconds
 
     # These toggles use UIA rather than mutating user settings files, so their cleanup remains scoped to the disposable profile.
     Click-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.BackgroundToggle'
     Click-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.GlobalHotkeysToggle'
-    Send-UiTestKeys -Target $settings -Keys '%{F4}' -Via send-input -AllowSystemKeys
-    Assert-UiTestProcess -ProcessId $settings.ProcessId
+    if (-not $KeepOpen) {
+        Send-UiTestKeys -Target $settings -Keys 'alt+f4' -Via send-input -AllowSystemKeys
+        Assert-UiTestProcess -ProcessId $settings.ProcessId
+    }
     return $settings
+}
+
+function Invoke-SystemEditorMenuItem {
+    # A closed menu's items are not in the UI Automation tree, so open the parent menu first.
+    param(
+        [Parameter(Mandatory)]$Context,
+        [Parameter(Mandatory)]$Editor,
+        [Parameter(Mandatory)][string]$Menu,
+        [Parameter(Mandatory)][string]$Item
+    )
+
+    Open-DeterministicMenu -Target $Editor -MenuAutomationId $Menu -ChildAutomationId $Item -Context $Context
+    Invoke-UiTestElement -Target $Editor -AutomationId $Item
 }
 
 function Close-SystemWindows {
@@ -231,7 +251,7 @@ function Close-SystemWindows {
         $target = New-SystemUiTarget -ProcessId $Context.TextGrab.ProcessId -Window $window
         try {
             Wait-UiTestElement -Target $target -AutomationId $AutomationId -TimeoutSeconds 1
-            Send-UiTestKeys -Target $target -Keys '%{F4}' -Via send-input -AllowSystemKeys
+            Send-UiTestKeys -Target $target -Keys 'alt+f4' -Via send-input -AllowSystemKeys
         }
         catch { }
     }
@@ -269,7 +289,7 @@ foreach ($name in @(
     'Initialize-SystemIntegration', 'Require-NoSystemIntegrationCollision', 'Get-ExplorerTrayTarget',
     'Find-ExplorerTextGrabIcon', 'New-SystemUiTarget', 'Get-SystemWindow',
     'Get-SystemElementCenter', 'Send-SystemHotkey', 'Enable-SystemHotkeys',
-    'Close-SystemWindows', 'Ensure-SystemEditor'
+    'Close-SystemWindows', 'Ensure-SystemEditor', 'Invoke-SystemEditorMenuItem'
 )) {
     Set-Item -Path "function:global:$name" -Value (Get-Item -Path "function:$name").ScriptBlock
 }
@@ -288,17 +308,17 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'global-hotkeys-launch-actions-
     Enable-SystemHotkeys $Context | Out-Null
 
     $actions = @(
-        @{ Keys = '#+f'; Id = 'FullscreenGrabWindow'; Name = 'fullscreen' },
-        @{ Keys = '#+g'; Id = 'GrabFrameWindow'; Name = 'grab-frame' },
-        @{ Keys = '#+e'; Id = 'EditTextWindow'; Name = 'edit-text' },
-        @{ Keys = '#+q'; Id = 'QuickLookupWindow'; Name = 'quick-lookup' }
+        @{ Keys = 'win+shift+f'; Id = 'FullscreenGrabWindow'; Name = 'fullscreen' },
+        @{ Keys = 'win+shift+g'; Id = 'GrabFrameWindow'; Name = 'grab-frame' },
+        @{ Keys = 'win+shift+e'; Id = 'EditTextWindow'; Name = 'edit-text' },
+        @{ Keys = 'win+shift+q'; Id = 'QuickLookupWindow'; Name = 'quick-lookup' }
     )
     foreach ($action in $actions) {
         Send-SystemHotkey -Context $Context -Keys $action.Keys
         $window = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId $action.Id -TimeoutSeconds $Context.TimeoutSeconds
         Assert-UiTestWindow -ProcessId $window.ProcessId -WindowHandle $window.WindowHandle
         Save-UiTestScreenshot -Context $Context -Target $window -Name "hotkey-$($action.Name)" -CaptureScreen | Out-Null
-        Send-UiTestKeys -Target $window -Keys '%{F4}' -Via send-input -AllowSystemKeys
+        Send-UiTestKeys -Target $window -Keys 'alt+f4' -Via send-input -AllowSystemKeys
     }
 }
 
@@ -306,12 +326,11 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'global-hotkey-disable-stops-re
     param($Context)
     Initialize-SystemIntegration $Context
     Require-NoSystemIntegrationCollision -Context $Context -Scenario 'Global-hotkey disable'
-    $settings = Enable-SystemHotkeys $Context
-    Invoke-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts'
+    $settings = Enable-SystemHotkeys $Context -KeepOpen
     Wait-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.GlobalHotkeysToggle' -TimeoutSeconds $Context.TimeoutSeconds
     Click-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.GlobalHotkeysToggle'
-    Send-UiTestKeys -Target $settings -Keys '%{F4}' -Via send-input -AllowSystemKeys
-    Send-SystemHotkey -Context $Context -Keys '#+f'
+    Send-UiTestKeys -Target $settings -Keys 'alt+f4' -Via send-input -AllowSystemKeys
+    Send-SystemHotkey -Context $Context -Keys 'win+shift+f'
     $fullscreen = @(Get-UiTestWindows -ProcessId $Context.TextGrab.ProcessId | ForEach-Object {
         New-SystemUiTarget -ProcessId $Context.TextGrab.ProcessId -Window $_
     } | Where-Object {
@@ -353,23 +372,22 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'hotkey-rebinding-record-contro
     param($Context)
     Initialize-SystemIntegration $Context
     Require-NoSystemIntegrationCollision -Context $Context -Scenario 'Global-hotkey rebinding'
-    $settings = Enable-SystemHotkeys $Context
-    Invoke-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts'
+    $settings = Enable-SystemHotkeys $Context -KeepOpen
     Wait-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.FullscreenGrab.Record' -TimeoutSeconds $Context.TimeoutSeconds
     Click-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.FullscreenGrab.Record'
-    Send-UiTestKeys -Target $settings -AutomationId 'Settings.Shortcuts.FullscreenGrab.Record' -Keys '^+{F12}' -Via send-input -AllowSystemKeys
+    Send-UiTestKeys -Target $settings -AutomationId 'Settings.Shortcuts.FullscreenGrab.Record' -Keys 'ctrl+shift+f12' -Via send-input -AllowSystemKeys
     Click-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.FullscreenGrab.Record'
-    Send-UiTestKeys -Target $settings -Keys '%{F4}' -Via send-input -AllowSystemKeys
-    Send-SystemHotkey -Context $Context -Keys '^+{F12}'
+    Send-UiTestKeys -Target $settings -Keys 'alt+f4' -Via send-input -AllowSystemKeys
+    Send-SystemHotkey -Context $Context -Keys 'ctrl+shift+f12'
     $overlay = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'FullscreenGrabWindow' -TimeoutSeconds $Context.TimeoutSeconds
-    Send-UiTestKeys -Target $overlay -Keys '%{F4}' -Via send-input -AllowSystemKeys
+    Send-UiTestKeys -Target $overlay -Keys 'alt+f4' -Via send-input -AllowSystemKeys
 }
 
 Register-UiTest -Suite 'SystemIntegration' -Name 'fullscreen-real-region-empty-retry-and-cancel-inputs' -Script {
     param($Context)
     Initialize-SystemIntegration $Context
     $editor = Ensure-SystemEditor $Context
-    Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.FullscreenGrab'
+    Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.FullscreenGrab'
     $overlay = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'FullscreenGrabWindow' -TimeoutSeconds $Context.TimeoutSeconds
     $canvas = Get-SystemElementCenter -Target $overlay -AutomationId 'FullscreenGrab.SelectionCanvas'
     $fixture = Get-SystemElementCenter -Target $Context.Fixture -AutomationId 'KnownTextDisplay'
@@ -384,7 +402,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'fullscreen-real-region-empty-r
         throw 'Fullscreen region selection did not produce clipboard text.'
     }
 
-    Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.FullscreenGrab'
+    Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.FullscreenGrab'
     $overlay = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'FullscreenGrabWindow' -TimeoutSeconds $Context.TimeoutSeconds
     Invoke-SystemIntegrationHelper -Arguments @('--drag', [string]($canvas.X - 20), [string]($canvas.Y - 20), [string]($canvas.X + 20), [string]($canvas.Y + 20)) | Out-Null
     Wait-UiTestElement -Target $overlay -AutomationId 'FullscreenGrabWindow' -TimeoutSeconds $Context.TimeoutSeconds
@@ -400,7 +418,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'clipboard-text-image-and-file-
     $snapshot = Get-UiTestClipboardSnapshot
     try {
         Invoke-SystemIntegrationHelper -Arguments @('--set-text', "clipboard fixture $($Context.RunId)") | Out-Null
-        Send-SystemHotkey -Context $Context -Keys '#+^v'
+        Send-SystemHotkey -Context $Context -Keys 'win+shift+ctrl+v'
         $clipboardEditor = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'EditTextWindow' -TimeoutSeconds $Context.TimeoutSeconds
         Wait-UiTestElement -Target $clipboardEditor -AutomationId 'EditText.Editor' -TimeoutSeconds $Context.TimeoutSeconds
         Close-SystemWindows -Context $Context -AutomationId 'EditTextWindow'
@@ -409,21 +427,21 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'clipboard-text-image-and-file-
         $expected = "file opened from clipboard $($Context.RunId)"
         [IO.File]::WriteAllText($file, $expected)
         [System.Windows.Clipboard]::SetText(('"{0}"' -f $file))
-        Send-SystemHotkey -Context $Context -Keys '#+^v'
+        Send-SystemHotkey -Context $Context -Keys 'win+shift+ctrl+v'
         $fileEditor = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'EditTextWindow' -TimeoutSeconds $Context.TimeoutSeconds
         Wait-UiTestElement -Target $fileEditor -AutomationId 'EditText.Editor' -Value $expected -TimeoutSeconds $Context.TimeoutSeconds
         Close-SystemWindows -Context $Context -AutomationId 'EditTextWindow'
 
         Invoke-SystemIntegrationHelper -Arguments @('--set-image') | Out-Null
-        Send-SystemHotkey -Context $Context -Keys '#+^v'
+        Send-SystemHotkey -Context $Context -Keys 'win+shift+ctrl+v'
         $frame = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'GrabFrameWindow' -TimeoutSeconds $Context.TimeoutSeconds
         Wait-UiTestElement -Target $frame -AutomationId 'GrabFrame.Image' -TimeoutSeconds $Context.TimeoutSeconds
-        Send-UiTestKeys -Target $frame -Keys '%{F4}' -Via send-input -AllowSystemKeys
+        Send-UiTestKeys -Target $frame -Keys 'alt+f4' -Via send-input -AllowSystemKeys
 
         $image = Join-Path $Context.ProfileDirectory 'clipboard-drop.png'
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\..\Tests\Images\font_sample.png') -Destination $image -Force
         Invoke-SystemIntegrationHelper -Arguments @('--set-files', $image) | Out-Null
-        Send-SystemHotkey -Context $Context -Keys '#+^v'
+        Send-SystemHotkey -Context $Context -Keys 'win+shift+ctrl+v'
         $frame = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'GrabFrameWindow' -TimeoutSeconds $Context.TimeoutSeconds
         Wait-UiTestElement -Target $frame -AutomationId 'GrabFrame.Image' -TimeoutSeconds $Context.TimeoutSeconds
     }
@@ -438,11 +456,11 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'clipboard-watcher-observes-tex
     $snapshot = Get-UiTestClipboardSnapshot
     try {
         $editor = Ensure-SystemEditor $Context
-        Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.ClipboardWatcher'
+        Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.ClipboardWatcher'
         $expected = "clipboard watcher $($Context.RunId)"
         Invoke-SystemIntegrationHelper -Arguments @('--set-text', $expected) | Out-Null
         Wait-UiTestElement -Target $editor -AutomationId 'EditText.Editor' -Value $expected -Contains -TimeoutSeconds $Context.TimeoutSeconds
-        Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.ClipboardWatcher'
+        Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.ClipboardWatcher'
     }
     finally {
         Restore-UiTestClipboardSnapshot -Snapshot $snapshot
@@ -453,7 +471,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'fullscreen-output-controls-and
     param($Context)
     Initialize-SystemIntegration $Context
     $editor = Ensure-SystemEditor $Context
-    Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.FullscreenGrab'
+    Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.FullscreenGrab'
     $overlay = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'FullscreenGrabWindow' -TimeoutSeconds $Context.TimeoutSeconds
     foreach ($automationId in @(
         'FullscreenGrab.StandardModeToggle', 'FullscreenGrab.SingleLineToggle',
@@ -464,7 +482,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'fullscreen-output-controls-and
     }
     # The dynamic word peer IDs are intentionally coordinate-based so OCR duplicate text is unambiguous.
     # A word is created only after a completed OCR selection; the region suite exercises that path with real input.
-    Send-UiTestKeys -Target $overlay -Keys '%{F4}' -Via send-input -AllowSystemKeys
+    Send-UiTestKeys -Target $overlay -Keys 'alt+f4' -Via send-input -AllowSystemKeys
 }
 
 Register-UiTest -Suite 'SystemIntegration' -Name 'real-ole-file-drop-targets-edit-text-and-grab-frame' -Script {
@@ -495,7 +513,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'real-ole-file-drop-targets-edi
         Assert-UiTestProcess -ProcessId $dropSource.Id -Exited
     }
 
-    Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.GrabFrame'
+    Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.GrabFrame'
     $frame = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'GrabFrameWindow' -TimeoutSeconds $Context.TimeoutSeconds
     $dropSourceReady = Join-Path $Context.LogsDirectory 'grab-frame-drop-ready.txt'
     $dropSource = Start-Process -FilePath (Get-SystemIntegrationHelper) -ArgumentList @('--drag-files', $dropSourceReady, $image) -PassThru
@@ -527,7 +545,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'external-insertion-returns-to-
     $expected = "external insertion $($Context.RunId)"
     Set-UiTestValue -Target $editor -AutomationId 'EditText.Editor' -Value $expected
     Focus-UiTestElement -Target $Context.Fixture -AutomationId 'PostGrabInputTarget'
-    Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.CloseAndInsert'
+    Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.File' -Item 'EditText.Menu.CloseAndInsert'
     Wait-UiTestElement -Target $Context.Fixture -AutomationId 'ReceivedInputText' -Value $expected -Contains -TimeoutSeconds $Context.TimeoutSeconds
 }
 
@@ -538,7 +556,7 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'fullscreen-smoke-repetition-ha
     $before = @(Get-ChildItem -LiteralPath $temporaryDirectory -File -Recurse -ErrorAction SilentlyContinue).Count
     $editor = Ensure-SystemEditor $Context
     foreach ($iteration in 1..3) {
-        Invoke-UiTestElement -Target $editor -AutomationId 'EditText.Menu.FullscreenGrab'
+        Invoke-SystemEditorMenuItem -Context $Context -Editor $editor -Menu 'EditText.Menu.Capture' -Item 'EditText.Menu.FullscreenGrab'
         $overlay = Get-SystemWindow -ProcessId $Context.TextGrab.ProcessId -AutomationId 'FullscreenGrabWindow' -TimeoutSeconds $Context.TimeoutSeconds
         Invoke-SystemIntegrationHelper -Arguments @('--escape') | Out-Null
         Wait-UiTestElement -Target $overlay -AutomationId 'FullscreenGrabWindow' -Gone -TimeoutSeconds $Context.TimeoutSeconds
@@ -555,10 +573,9 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'tray-disable-removes-explorer-
     param($Context)
     Initialize-SystemIntegration $Context
     Require-NoSystemIntegrationCollision -Context $Context -Scenario 'Tray disable cleanup'
-    $settings = Enable-SystemHotkeys $Context
+    $settings = Enable-SystemHotkeys $Context -KeepOpen
     $explorerTray = Get-ExplorerTrayTarget
     Find-ExplorerTextGrabIcon -Tray $explorerTray | Out-Null
-    Invoke-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts'
     Wait-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.BackgroundToggle' -TimeoutSeconds $Context.TimeoutSeconds
     Click-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.BackgroundToggle'
     Start-Sleep -Milliseconds 500
@@ -571,15 +588,14 @@ Register-UiTest -Suite 'SystemIntegration' -Name 'tray-disable-removes-explorer-
     if ($remaining.Count -ne 0) {
         throw 'Text Grab notification icon remained visible in Explorer after disabling background mode.'
     }
-    Send-UiTestKeys -Target $settings -Keys '%{F4}' -Via send-input -AllowSystemKeys
+    Send-UiTestKeys -Target $settings -Keys 'alt+f4' -Via send-input -AllowSystemKeys
 }
 
 Register-UiTest -Suite 'SystemIntegration' -Name 'tray-background-and-process-cleanup' -Script {
     param($Context)
     Initialize-SystemIntegration $Context
     Require-NoSystemIntegrationCollision -Context $Context -Scenario 'Tray notification-area interaction'
-    $settings = Enable-SystemHotkeys $Context
-    Invoke-UiTestElement -Target $settings -AutomationId 'Settings.Nav.Shortcuts'
+    $settings = Enable-SystemHotkeys $Context -KeepOpen
     Wait-UiTestElement -Target $settings -AutomationId 'Settings.Shortcuts.BackgroundToggle' -TimeoutSeconds $Context.TimeoutSeconds
     Assert-UiTestProcess -ProcessId $settings.ProcessId
     $ownedTray = Get-SystemWindow -ProcessId $settings.ProcessId -AutomationId 'NotifyIconWindow' -TimeoutSeconds $Context.TimeoutSeconds
