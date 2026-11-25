@@ -18,7 +18,7 @@ hand-written window. The parity test (v5 E4a step 7) runs it again with the pane
 compares. Sends real keys for the focus order: the windows it opens take focus.
 
 .EXAMPLE
-pwsh -NoProfile -File UiTests\Scripts\Export-EditTextUiaFixtures.ps1 -TextGrabPath Text-Grab\bin\x64\Debug\net10.0-windows10.0.22621.0\Text-Grab.exe -OutputDirectory UiTests\Fixtures\EditTextUia
+pwsh -NoProfile -File UiTests\Scripts\Export-EditTextUiaFixtures.ps1 -TextGrabPath Text-Grab\bin\x64\Debug\net11.0-windows10.0.22621.0\Text-Grab.exe -OutputDirectory UiTests\Fixtures\EditTextUia -PaneLayout Off
 #>
 [CmdletBinding()]
 param(

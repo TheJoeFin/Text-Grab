@@ -18,7 +18,7 @@ Off and On alternate within each run so drift affects both alike. Prints the med
 writes every sample to -OutputPath when given. Windows it opens take focus.
 
 .EXAMPLE
-pwsh -NoProfile -File UiTests\Scripts\Measure-EditTextOpen.ps1 -TextGrabPath Text-Grab\bin\ARM64\Release\net10.0-windows10.0.22621.0\Text-Grab.exe -Runs 7
+pwsh -NoProfile -File UiTests\Scripts\Measure-EditTextOpen.ps1 -TextGrabPath Text-Grab\bin\ARM64\Release\net11.0-windows10.0.22621.0\Text-Grab.exe -Runs 7
 #>
 [CmdletBinding()]
 param(
