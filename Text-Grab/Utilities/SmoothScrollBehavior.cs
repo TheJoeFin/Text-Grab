@@ -127,9 +127,11 @@ public static class SmoothScrollBehavior
         // pixel scrolling keeps virtualization but gives the ScrollViewer pixel offsets we can ease.
         // Done as a metadata default (not on Loaded) so the panel is created in pixel mode.
         // WPF needs a fresh metadata instance per type.
+        // Not TreeView: its own static constructor overrides this property, so overriding it here first
+        // made the first TreeView created in the app throw "PropertyMetadata is already registered".
+        // A TreeView does not virtualize unless asked to, so it already scrolls by pixel.
         VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(ListBox), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
         VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(DataGrid), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
-        VirtualizingPanel.ScrollUnitProperty.OverrideMetadata(typeof(TreeView), new FrameworkPropertyMetadata(ScrollUnit.Pixel));
     }
 
     private static void ScrollViewer_ManipulationStarting(object? sender, ManipulationStartingEventArgs e)
