@@ -115,6 +115,7 @@ public partial class EditTextWindow
         NameScope.SetNameScope(ReadingEditorHost, NameScope.GetNameScope(this));
 
         paneLayout = CreatePaneHost();
+        paneLayout.PaneLayoutChanged += (_, _) => UpdateTocToggle();
         Grid.SetRow(paneLayout.View, Grid.GetRow(EditorAreaGrid));
         root.Children.Insert(index, paneLayout.View);
         RegisterName(PaneLayoutHostName, paneLayout.View);
@@ -265,6 +266,7 @@ public partial class EditTextWindow
         }
 
         UpdateCalcToggles();
+        UpdateTocToggle();
         return null;
     }
 

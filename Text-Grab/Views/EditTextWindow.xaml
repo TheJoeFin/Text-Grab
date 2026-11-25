@@ -1047,6 +1047,7 @@
             AutomationProperties.AutomationId="EditText.MarkdownToolbar"
             FormatRequested="ApplyMarkdownFormat"
             TableRequested="InsertMarkdownTable"
+            TocToggleRequested="MarkdownToolbar_TocToggleRequested"
             Visibility="Collapsed" />
         <!--  The editor area. With the pane layout on (v5 E4a), ReadingEditorHost moves into a DockingManager that takes this grid's place.  -->
         <Grid x:Name="EditorAreaGrid" Grid.Row="3">

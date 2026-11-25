@@ -279,6 +279,8 @@ public partial class EditTextWindow : Wpf.Ui.Controls.FluentWindow
             () => selectedCultureInfo,
             GetSelectedSpreadsheetCellNumbers);
         EditorModeChanged += (_, _) => session.RaiseModeChanged();
+        session.TextChanged += (_, _) => UpdateTocToggle();
+        session.ModeChanged += (_, _) => UpdateTocToggle();
         return session;
     }
 

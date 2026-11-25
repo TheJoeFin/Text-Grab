@@ -47,6 +47,43 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="TocToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border
+                            x:Name="Surface"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent"
+                            BorderThickness="1"
+                            SnapsToDevicePixels="True">
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="TableSizeCellStyle" TargetType="Button">
             <Setter Property="Width" Value="23" />
             <Setter Property="Height" Value="23" />
@@ -76,7 +113,31 @@
         Padding="6,3"
         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
         BorderThickness="0,1,0,0">
-        <WrapPanel x:Name="FormattingButtons" HorizontalAlignment="Center">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <!--
+                Outside the formatting WrapPanel on purpose: it navigates rather than edits, so it stays on
+                in a read-only document and is not one of the formatting commands.
+            -->
+            <ToggleButton
+                x:Name="TocToggleButton"
+                Margin="0,0,6,0"
+                VerticalAlignment="Top"
+                AutomationProperties.AutomationId="EditText.Markdown.Contents"
+                AutomationProperties.Name="Table of contents"
+                Click="TocToggleButton_Click"
+                Style="{StaticResource TocToggleButtonStyle}"
+                ToolTip="Show or hide the table of contents"
+                Visibility="Collapsed">
+                <ui:SymbolIcon FontSize="16" Symbol="TextBulletListTree24" />
+            </ToggleButton>
+        <WrapPanel
+            x:Name="FormattingButtons"
+            Grid.Column="1"
+            HorizontalAlignment="Center">
             <Button
                 x:Name="HeadingButton"
                 Padding="8,0"
@@ -264,5 +325,6 @@
                 </Border>
             </Popup>
         </WrapPanel>
+        </Grid>
     </Border>
 </UserControl>

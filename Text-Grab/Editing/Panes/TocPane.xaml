@@ -1,0 +1,43 @@
+<UserControl
+    x:Class="Text_Grab.Editing.Panes.TocPane"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        Every brush here is a DynamicResource: the pane is made in windows that never see the app's
+        resource dictionaries (tests), where a StaticResource would throw.
+    -->
+    <Grid Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        <TreeView
+            x:Name="Tree"
+            Padding="4"
+            AutomationProperties.AutomationId="EditText.Toc.Tree"
+            AutomationProperties.Name="Table of contents"
+            Background="Transparent"
+            BorderThickness="0"
+            PreviewKeyDown="Tree_PreviewKeyDown"
+            PreviewMouseLeftButtonUp="Tree_PreviewMouseLeftButtonUp">
+            <!--  The item style is made in code: it must build on the app's themed one, which a test window lacks.  -->
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Text="{Binding Title}"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTip="{Binding Title}" />
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+
+        <TextBlock
+            x:Name="PlaceholderText"
+            Margin="16"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            AutomationProperties.AutomationId="EditText.Toc.Placeholder"
+            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+            IsHitTestVisible="False"
+            Text="No headings yet. Lines that start with # show up here."
+            TextAlignment="Center"
+            TextWrapping="Wrap" />
+    </Grid>
+</UserControl>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Text_Grab.Editing;
 
@@ -18,6 +19,17 @@ public partial class MarkdownFormattingBar : UserControl
 
     internal event Action<MarkdownFormattingAction, int>? FormatRequested;
     internal event Action<int, int>? TableRequested;
+
+    /// <summary>The contents button was clicked; the argument is whether it is now on (the pane should be shown).</summary>
+    internal event Action<bool>? TocToggleRequested;
+
+    /// <summary>Whether the contents button is on the bar.</summary>
+    internal bool IsTocToggleVisible => TocToggleButton.Visibility == Visibility.Visible;
+
+    /// <summary>Whether the contents button shows the pane as open.</summary>
+    internal bool IsTocToggleChecked => TocToggleButton.IsChecked == true;
+
+    internal ToggleButton TocToggle => TocToggleButton;
 
     internal IEnumerable<Button> FormattingCommandButtons => FormattingButtons.Children.OfType<Button>();
 
@@ -59,6 +71,16 @@ public partial class MarkdownFormattingBar : UserControl
         if (!canInsertTable)
             TablePicker.IsOpen = false;
     }
+
+    /// <summary>Shows or hides the contents button and sets whether it reads as on. Does not raise <see cref="TocToggleRequested"/>.</summary>
+    internal void SetTocToggle(bool visible, bool isChecked)
+    {
+        TocToggleButton.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        TocToggleButton.IsChecked = isChecked;
+    }
+
+    private void TocToggleButton_Click(object sender, RoutedEventArgs e)
+        => TocToggleRequested?.Invoke(TocToggleButton.IsChecked == true);
 
     private void Format_Click(object sender, RoutedEventArgs e)
     {
