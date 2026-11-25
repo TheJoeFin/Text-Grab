@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Documents;
 using WpfBlock = System.Windows.Documents.Block;
@@ -65,7 +66,16 @@ public static partial class MarkdownFlowDocumentUtilities
     {
         // A list of only to-dos shows no marker and a footnote list numbers itself: both keep their look.
         bool isRestyled = list.MarkerStyle != TextMarkerStyle.None && GetBlockRole(list) == MarkdownBlockRole.None;
-        if (isRestyled)
+        if (isRestyled && !IsOrderedMarker(list.MarkerStyle)
+            && list.ListItems.Count > 0 && list.ListItems.All(IsTaskListItem))
+        {
+            // A to-do list shows the checkbox in place of the bullet, at any depth.
+            list.MarkerStyle = TextMarkerStyle.None;
+            list.Padding = new Thickness(depth == 0 ? 0 : ListLevelIndent, 0, 0, 0);
+            list.MarkerOffset = 0;
+            isRestyled = false;
+        }
+        else if (isRestyled)
         {
             list.MarkerStyle = GetListMarkerStyle(IsOrderedMarker(list.MarkerStyle), depth);
             list.Padding = new Thickness(ListLevelIndent, 0, 0, 0);

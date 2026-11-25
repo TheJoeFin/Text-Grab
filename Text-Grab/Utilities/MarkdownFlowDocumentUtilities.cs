@@ -473,15 +473,14 @@ public static partial class MarkdownFlowDocumentUtilities
                     list.ListItems.Add(listItem);
                 }
 
-                // A top-level list made only of to-dos shows just the checkbox, no bullet.
-                // Nested lists keep their bullet so the indentation still reads as a list.
-                if (listBlock.Parent is not ListItemBlock
-                    && !listBlock.IsOrdered
+                // A list made only of to-dos shows just the checkbox, no bullet. Nested ones are
+                // indented by ApplyListStyling so the nesting still reads.
+                if (!listBlock.IsOrdered
                     && list.ListItems.Count > 0
                     && list.ListItems.All(IsTaskListItem))
                 {
                     list.MarkerStyle = TextMarkerStyle.None;
-                    list.Padding = new Thickness(0);
+                    list.Padding = new Thickness(listBlock.Parent is ListItemBlock ? ListLevelIndent : 0, 0, 0, 0);
                     list.MarkerOffset = 0;
                 }
 

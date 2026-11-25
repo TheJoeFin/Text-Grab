@@ -200,7 +200,7 @@ public static partial class MarkdownFlowDocumentUtilities
         list.MarkerStyle = allTasks ? TextMarkerStyle.None : TextMarkerStyle.Disc;
         if (allTasks)
         {
-            list.Padding = new Thickness(0);
+            list.Padding = new Thickness(list.Parent is ListItem ? ListLevelIndent : 0, 0, 0, 0);
             list.MarkerOffset = 0;
         }
         else
