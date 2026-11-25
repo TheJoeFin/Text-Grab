@@ -3,7 +3,7 @@ Import-Module "$PSScriptRoot\Capability.Helpers.psm1" -Force -Global -DisableNam
 Register-UiTest -Suite 'OcrCapability' -Name 'winrt-ocr-font-table-and-qr-fixtures-match-unit-expectations' -RequiredCapabilities @('winrtOcr') -Script {
     param($Context)
 
-    Invoke-CapabilityUnitTests -Filter 'FullyQualifiedName~OcrTests.OcrFontSampleImage|FullyQualifiedName~OcrTests.AnalyzeTable|FullyQualifiedName~OcrTests.ReadQrCode'
+    Invoke-CapabilityUnitTests -Filter 'FullyQualifiedName~OcrSourceTests.OcrFontSampleImage|FullyQualifiedName~OcrSourceTests.AnalyzeTable|FullyQualifiedName~OcrSourceTests.ReadQrCode'
     $fixture = Start-CapabilityFixture -Context $Context -Surface 'OcrSamples'
     Wait-UiTestElement -Target $fixture -AutomationId 'OcrSampleImage' -TimeoutSeconds $Context.TimeoutSeconds
     Save-UiTestScreenshot -Context $Context -Target $fixture -Name 'ocr-winrt-fixtures' | Out-Null
