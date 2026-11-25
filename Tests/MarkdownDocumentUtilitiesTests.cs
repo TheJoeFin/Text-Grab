@@ -835,7 +835,7 @@ Console.WriteLine("hi");
     }
 
     [WpfFact]
-    public void Markdown_TopLevelTaskList_HasNoBullet_ButNestedAndMixedListsKeepIt()
+    public void Markdown_AllTaskLists_HaveNoBullets_AtAnyDepth()
     {
         FlowDocument todo = MarkdownFlowDocumentUtilities.CreateFlowDocument("- [ ] a\n- [x] b", new FontFamily("Segoe UI"), 16);
         Assert.Equal(System.Windows.TextMarkerStyle.None, Assert.IsType<System.Windows.Documents.List>(Assert.Single(todo.Blocks)).MarkerStyle);
@@ -848,9 +848,14 @@ Console.WriteLine("hi");
 
         FlowDocument nested = MarkdownFlowDocumentUtilities.CreateFlowDocument("- parent\n  - [ ] child", new FontFamily("Segoe UI"), 16);
         System.Windows.Documents.List outer = Assert.IsType<System.Windows.Documents.List>(Assert.Single(nested.Blocks));
-        System.Windows.Documents.List inner = Assert.IsType<System.Windows.Documents.List>(outer.ListItems.First().Blocks.OfType<System.Windows.Documents.List>().Single());
-        // A nested to-do list keeps a bullet, and the bullet is its depth's (the second level is a circle).
-        Assert.Equal(System.Windows.TextMarkerStyle.Circle, inner.MarkerStyle);
+        System.Windows.Documents.List inner = Assert.Single(outer.ListItems.First().Blocks.OfType<System.Windows.Documents.List>());
+        Assert.Equal(TextMarkerStyle.None, inner.MarkerStyle);
+        Assert.Equal(MarkdownFlowDocumentUtilities.ListLevelIndent, inner.Padding.Left);
+
+        FlowDocument nestedMixed = MarkdownFlowDocumentUtilities.CreateFlowDocument("- parent\n  - [ ] child\n  - sibling", new FontFamily("Segoe UI"), 16);
+        System.Windows.Documents.List mixedOuter = Assert.IsType<System.Windows.Documents.List>(Assert.Single(nestedMixed.Blocks));
+        System.Windows.Documents.List mixedInner = Assert.Single(mixedOuter.ListItems.First().Blocks.OfType<System.Windows.Documents.List>());
+        Assert.Equal(TextMarkerStyle.Circle, mixedInner.MarkerStyle);
     }
 
     [WpfFact]
