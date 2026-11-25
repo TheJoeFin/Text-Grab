@@ -15,8 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Text-Grab.Core\Text-Grab.Core.csproj" />
-    <EmbeddedResource Include="..\Text-Grab\Images\Code.ico;..\Text-Grab\Images\Header.ico;..\Text-Grab\Images\Markdown.ico;..\Text-Grab\Images\Markup.ico;..\Text-Grab\Images\Table.ico;..\Text-Grab\Images\Text.ico"
-                      LogicalName="Text_Grab.FileIcons.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\Text-Grab\Images\Code.ico;..\Text-Grab\Images\Header.ico;..\Text-Grab\Images\Markdown.ico;..\Text-Grab\Images\Markup.ico;..\Text-Grab\Images\Table.ico;..\Text-Grab\Images\Text.ico" LogicalName="Text_Grab.FileIcons.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!--
@@ -47,7 +46,7 @@
 
   <ItemGroup>
     <!-- Windows AI OCR (RecognizedText/RecognizedLine/RecognizedWord) for WinAiOcrLinesWords. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.6.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.AI" Version="2.7.0" />
     <!-- GDI+ Bitmap barcode reading/writing (BarcodeReader/BarcodeWriter) for BarcodeUtilities. -->
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.17" />
     <!-- Tesseract.exe process invocation for the legacy External engine in TesseractHelper. -->
@@ -63,8 +62,8 @@
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
     <!-- Magick.NET Compare for ImageChangeDetector. -->
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="15.1.0" />
-    <PackageReference Include="Magick.NET.SystemDrawing" Version="9.0.1" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="15.1.1" />
+    <PackageReference Include="Magick.NET.SystemDrawing" Version="9.0.2" />
     <!--
         Audio transcription runs on local Whisper (whisper.cpp) models via Whisper.net. This is a
         stable, CPU-based on-device path (x64 + arm64 native binaries) that replaced the unstable
