@@ -101,7 +101,7 @@
         <PackageReference Include="Magick.NET.SystemDrawing" Version="9.0.2" />
         <PackageReference Include="Magick.NET.SystemWindowsMedia" Version="9.0.2" />
         <PackageReference Include="Markdig" Version="1.6.0" />
-        <PackageReference Include="Mermaider" Version="0.18.0" />
+        <PackageReference Include="Mermaider" Version="0.19.0" />
         <!-- The app's composition root (Services/AppServices.cs). Core references only the abstractions. -->
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
         <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
